@@ -389,20 +389,20 @@ export function createImageQuery(destination: string, tipTitle: string, category
     let query = ''
     
     if (category === 'attraction') {
-      // Pre pamiatky: "Eiffel Tower Paris landmark" alebo "Eiffel Tower Paris monument"
-      query = `"${cleanTitle}" "${englishCity}" landmark monument`
+      // Pre pamiatky: presný názov + mesto + "exact location photo" - prioritizujeme Google Maps, Street View
+      query = `"${cleanTitle}" "${englishCity}" exact location photo street view`
     } else if (category === 'restaurant') {
-      // Pre reštaurácie: "restaurant name Paris restaurant"
-      query = `"${cleanTitle}" "${englishCity}" restaurant`
+      // Pre reštaurácie: presný názov + mesto + "restaurant photo exact location"
+      query = `"${cleanTitle}" "${englishCity}" restaurant photo exact location`
     } else if (category === 'activity') {
-      // Pre aktivity: "activity name Paris"
-      query = `"${cleanTitle}" "${englishCity}" activity`
+      // Pre aktivity: presný názov + mesto + "photo exact location"
+      query = `"${cleanTitle}" "${englishCity}" photo exact location`
     } else if (category === 'accommodation') {
-      // Pre ubytovanie: "hotel name Paris hotel"
-      query = `"${cleanTitle}" "${englishCity}" hotel accommodation`
+      // Pre ubytovanie: presný názov + mesto + "hotel photo exact location"
+      query = `"${cleanTitle}" "${englishCity}" hotel photo exact location`
     } else {
-      // Fallback
-      query = `"${cleanTitle}" "${englishCity}"`
+      // Fallback: presný názov + mesto + "photo exact location"
+      query = `"${cleanTitle}" "${englishCity}" photo exact location`
     }
     
     console.log(`Image query: "${query}" (from: "${tipTitle}" in "${destination}")`)
