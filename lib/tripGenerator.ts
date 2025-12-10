@@ -19,11 +19,13 @@ export async function generateTrip(
   input: UserInput,
   onProgress?: (progress: number, message: string) => void
 ): Promise<Trip> {
-  if (!input.destination) {
-    throw new Error('Destinácia je povinná')
-  }
+  try {
+    if (!input.destination) {
+      throw new Error('Destinácia je povinná')
+    }
 
-  onProgress?.(5, 'Generujem plán výletu...')
+    console.log(`[generateTrip] Starting for destination: ${input.destination}`)
+    onProgress?.(5, 'Generujem plán výletu...')
 
   // Vytvor prompt pre generovanie trip tips
   let tripPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.`
