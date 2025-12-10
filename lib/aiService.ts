@@ -1,10 +1,27 @@
 import OpenAI from 'openai'
+import { generateImageWithSDXL } from './stableDiffusionService'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 })
 
 export async function generateImage(prompt: string, retries = 2): Promise<string> {
+  // Použi Stable Diffusion SDXL + LoRA namiesto DALL-E
+  const useStableDiffusion = process.env.USE_STABLE_DIFFUSION !== 'false'
+  
+  if (useStableDiffusion) {
+    // Použi Stable Diffusion SDXL + LoRA
+    return generateImageWithSDXL(prompt, {
+      loraModel: process.env.LORA_MODEL,
+      loraWeight: parseFloat(process.env.LORA_WEIGHT || '0.8'),
+      numInferenceSteps: parseInt(process.env.SDXL_STEPS || '30'),
+      guidanceScale: parseFloat(process.env.SDXL_GUIDANCE || '7.5'),
+      width: 1024,
+      height: 1024,
+    }, retries)
+  }
+
+  // Fallback na DALL-E 3 (ak USE_STABLE_DIFFUSION=false)
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY nie je nastavený v .env súbore')
   }
@@ -32,12 +49,10 @@ export async function generateImage(prompt: string, retries = 2): Promise<string
     } catch (error: any) {
       console.error(`OpenAI API error (attempt ${attempt + 1}/${retries + 1}):`, error)
       
-      // Ak je to posledný pokus, vyhod chybu
       if (attempt === retries) {
         throw new Error(`Chyba pri generovaní obrázka: ${error.message}`)
       }
       
-      // Počkaj pred retry (exponential backoff)
       await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
     }
   }

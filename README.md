@@ -12,7 +12,8 @@ Aplikácia pre vytváranie personalizovaných komiksov, animácií a meme packov
 
 - Node.js 18+ 
 - npm alebo yarn
-- OpenAI API kľúč (pre DALL-E 3 a GPT-4)
+- OpenAI API kľúč (pre GPT-4 - text a prompty)
+- Replicate API token (pre Stable Diffusion SDXL + LoRA - obrázky)
 
 ## Inštalácia
 
@@ -23,8 +24,18 @@ npm install
 
 2. Vytvorte `.env` súbor v koreňovom adresári:
 ```env
+# OpenAI API (pre text a prompty)
 OPENAI_API_KEY=your_openai_api_key_here
+
+# Replicate API (pre Stable Diffusion SDXL + LoRA)
+REPLICATE_API_TOKEN=your_replicate_api_token_here
+
+# Voliteľné: LoRA model (ak máte vlastný)
+LORA_MODEL=username/your-lora-model
+LORA_WEIGHT=0.8
 ```
+
+**Poznámka:** Pre detailné nastavenie Stable Diffusion SDXL + LoRA pozrite si [STABLE_DIFFUSION_SETUP.md](./STABLE_DIFFUSION_SETUP.md)
 
 3. Spustite vývojový server:
 ```bash
@@ -52,7 +63,8 @@ npm run dev
 - **TypeScript** - Typovaný JavaScript
 - **Tailwind CSS** - Utility-first CSS framework
 - **Framer Motion** - Animácie
-- **OpenAI API** - DALL-E 3 pre obrázky, GPT-4 pre text
+- **OpenAI API** - GPT-4 pre text a prompty
+- **Replicate API** - Stable Diffusion SDXL + LoRA pre obrázky
 
 ## Deployment
 
