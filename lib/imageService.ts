@@ -26,10 +26,13 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
     if (googleApiKey && googleCseId) {
       try {
         const encodedQuery = encodeURIComponent(query.trim())
-        // Použijeme num=5 aby sme mali viac možností na výber najrelevantnejšieho obrázka
+        // Použijeme num=10 aby sme mali viac možností na výber najrelevantnejšieho obrázka
         // imgSize=large pre kvalitné obrázky, imgType=photo pre fotografie (nie kresby/ilustrácie)
-        // Pridáme rightContext pre lepšie výsledky
-        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodedQuery}&searchType=image&num=5&safe=active&imgSize=large&imgType=photo&fileType=jpg&rights=cc_publicdomain,cc_attribute,cc_sharealike,cc_noncommercial,cc_nonderived`
+        // Pridáme site:maps.google.com alebo site:google.com/maps pre prioritizáciu Google Maps
+        // Najprv skúsime Google Maps špecificky
+        const mapsQuery = `${query.trim()} site:maps.google.com OR site:google.com/maps`
+        const encodedMapsQuery = encodeURIComponent(mapsQuery)
+        const googleUrl = `https://www.googleapis.com/customsearch/v1?key=${googleApiKey}&cx=${googleCseId}&q=${encodedMapsQuery}&searchType=image&num=10&safe=active&imgSize=large&imgType=photo&fileType=jpg`
         
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 8000) // Zvýšený timeout
@@ -389,20 +392,20 @@ export function createImageQuery(destination: string, tipTitle: string, category
     let query = ''
     
     if (category === 'attraction') {
-      // Pre pamiatky: presný názov + mesto + "exact location photo" - prioritizujeme Google Maps, Street View
-      query = `"${cleanTitle}" "${englishCity}" exact location photo street view`
+      // Pre pamiatky: presný názov + mesto - Google Maps automaticky nájde správny obrázok
+      query = `"${cleanTitle}" "${englishCity}"`
     } else if (category === 'restaurant') {
-      // Pre reštaurácie: presný názov + mesto + "restaurant photo exact location"
-      query = `"${cleanTitle}" "${englishCity}" restaurant photo exact location`
+      // Pre reštaurácie: presný názov + mesto
+      query = `"${cleanTitle}" "${englishCity}" restaurant`
     } else if (category === 'activity') {
-      // Pre aktivity: presný názov + mesto + "photo exact location"
-      query = `"${cleanTitle}" "${englishCity}" photo exact location`
+      // Pre aktivity: presný názov + mesto
+      query = `"${cleanTitle}" "${englishCity}"`
     } else if (category === 'accommodation') {
-      // Pre ubytovanie: presný názov + mesto + "hotel photo exact location"
-      query = `"${cleanTitle}" "${englishCity}" hotel photo exact location`
+      // Pre ubytovanie: presný názov + mesto
+      query = `"${cleanTitle}" "${englishCity}" hotel`
     } else {
-      // Fallback: presný názov + mesto + "photo exact location"
-      query = `"${cleanTitle}" "${englishCity}" photo exact location`
+      // Fallback: presný názov + mesto
+      query = `"${cleanTitle}" "${englishCity}"`
     }
     
     console.log(`Image query: "${query}" (from: "${tipTitle}" in "${destination}")`)
