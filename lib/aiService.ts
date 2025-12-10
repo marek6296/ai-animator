@@ -18,9 +18,13 @@ export async function generateImage(prompt: string): Promise<string> {
       quality: 'standard',
     })
 
+    if (!response.data || response.data.length === 0) {
+      throw new Error('Nepodarilo sa vygenerovať obrázok - žiadne dáta')
+    }
+
     const imageUrl = response.data[0]?.url
     if (!imageUrl) {
-      throw new Error('Nepodarilo sa vygenerovať obrázok')
+      throw new Error('Nepodarilo sa vygenerovať obrázok - chýba URL')
     }
 
     return imageUrl
