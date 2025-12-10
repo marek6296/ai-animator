@@ -310,7 +310,7 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       
       // VŽDY musíme mať nejaký URL - aj keď je to fallback
       if (!imageUrl) {
-        console.error(`✗ CRITICAL: No image found for "${tip.title}" after ${attempts} attempts`)
+        console.error(`✗ CRITICAL: No image found for "${tip.title}"`)
         // Ako posledný pokus, použijeme generický obrázok
         const cityTranslations: Record<string, string> = {
           'Paríž': 'Paris', 'Londýn': 'London', 'Rím': 'Rome', 'Barcelona': 'Barcelona',
