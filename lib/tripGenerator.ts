@@ -115,28 +115,66 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
     onProgress?.(progress, `Načítavam obrázok pre: ${tip.title}...`)
     
     try {
-      // Vytvor query pre vyhľadávanie obrázka
-      const imageQuery = createImageQuery(input.destination, tip.title, tip.category)
-      console.log(`Image query for "${tip.title}": ${imageQuery}`)
-      
-      // Získaj obrázok s viacerými pokusmi a fallbackmi
-      // getImageFromUnsplash VŽDY vráti URL (nikdy null), takže imageUrl bude vždy string
+      // NAJPRV: Skúsime Google Places Photo API priamo (najpresnejšie)
       let imageUrl: string = ''
-      let attempts = 0
-      const maxAttempts = 10 // Zvýšený počet pokusov
       
-      // Pokus 1: Hlavné query
-      attempts++
-      try {
-        imageUrl = await getImageFromUnsplash(imageQuery)
-        if (imageUrl && !imageUrl.includes('via.placeholder.com')) {
-          console.log(`✓ Found image on first attempt for "${tip.title}"`)
-        }
-      } catch (error) {
-        console.warn(`Error in attempt ${attempts} for "${tip.title}":`, error)
-        // Aj pri chybe použijeme placeholder
-        imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
+      // Preklad destinácie do angličtiny
+      const cityTranslations: Record<string, string> = {
+        'Paríž': 'Paris', 'Londýn': 'London', 'Rím': 'Rome', 'Barcelona': 'Barcelona',
+        'Amsterdam': 'Amsterdam', 'Berlín': 'Berlin', 'Viedeň': 'Vienna', 'Praha': 'Prague',
+        'Budapešť': 'Budapest', 'Krakow': 'Krakow', 'Atény': 'Athens', 'Lisabon': 'Lisbon',
+        'Dublin': 'Dublin', 'Edinburgh': 'Edinburgh', 'Kodaň': 'Copenhagen', 'Štokholm': 'Stockholm',
+        'Oslo': 'Oslo', 'Helsinki': 'Helsinki', 'Reykjavík': 'Reykjavik', 'Zürich': 'Zurich',
+        'Miláno': 'Milan', 'Florencia': 'Florence', 'Venezia': 'Venice', 'Neapol': 'Naples',
+        'Madrid': 'Madrid', 'Sevilla': 'Seville', 'Valencia': 'Valencia', 'Porto': 'Porto',
+        'Brusel': 'Brussels', 'Antverpy': 'Antwerp', 'Bruggy': 'Bruges', 'Bratislava': 'Bratislava',
+        'Ljubljana': 'Ljubljana', 'Záhreb': 'Zagreb',
       }
+      const englishCity = cityTranslations[input.destination] || input.destination
+      
+      // Vyčistíme názov miesta
+      let cleanTitle = tip.title
+        .replace(/^(v|na|do|z|k|o|s|a|the|a|le|la|les|el|los|las)\s+/gi, '')
+        .replace(/\s+(v|na|do|z|k|o|s|a|the|a)$/gi, '')
+        .trim()
+      
+      // Skúsime Google Places API priamo
+      if (cleanTitle && englishCity) {
+        try {
+          const { getImageFromGooglePlaces } = await import('@/lib/imageService')
+          const placesImage = await getImageFromGooglePlaces(cleanTitle, englishCity)
+          if (placesImage) {
+            imageUrl = placesImage
+            console.log(`✓ Google Places found image for "${tip.title}"`)
+          }
+        } catch (error) {
+          console.warn(`Google Places API failed for "${tip.title}":`, error)
+        }
+      }
+      
+      // Ak Google Places nefunguje, použijeme bežné vyhľadávanie
+      if (!imageUrl || imageUrl.includes('via.placeholder.com')) {
+        // Vytvor query pre vyhľadávanie obrázka
+        const imageQuery = createImageQuery(input.destination, tip.title, tip.category)
+        console.log(`Image query for "${tip.title}": ${imageQuery}`)
+        
+        // Získaj obrázok s viacerými pokusmi a fallbackmi
+        // getImageFromUnsplash VŽDY vráti URL (nikdy null), takže imageUrl bude vždy string
+        let attempts = 0
+        const maxAttempts = 10 // Zvýšený počet pokusov
+        
+        // Pokus 1: Hlavné query
+        attempts++
+        try {
+          imageUrl = await getImageFromUnsplash(imageQuery)
+          if (imageUrl && !imageUrl.includes('via.placeholder.com')) {
+            console.log(`✓ Found image on first attempt for "${tip.title}"`)
+          }
+        } catch (error) {
+          console.warn(`Error in attempt ${attempts} for "${tip.title}":`, error)
+          // Aj pri chybe použijeme placeholder
+          imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
+        }
       
       // Pokus 2-6: Alternatívne query (len ak sme nenašli dobrý obrázok)
       if (!imageUrl || imageUrl.includes('via.placeholder.com')) {

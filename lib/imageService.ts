@@ -14,50 +14,62 @@
  * Získa obrázok z Google Places Photo API
  * Toto je najpresnejšia metóda - vracia presný obrázok miesta z Google Maps
  */
-async function getImageFromGooglePlaces(placeName: string, city: string): Promise<string | null> {
+export async function getImageFromGooglePlaces(placeName: string, city: string): Promise<string | null> {
   const googleApiKey = process.env.GOOGLE_API_KEY
   if (!googleApiKey) {
+    console.log('⚠ Google Places API: No API key')
     return null
   }
 
   try {
     // Krok 1: Nájdeme miesto pomocou Places API Text Search
-    const searchQuery = `${placeName}, ${city}`
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}`
+    // Skúsime viacero variantov query pre lepšie výsledky
+    const queries = [
+      `${placeName}, ${city}`,
+      `${placeName} ${city}`,
+      placeName, // Len názov miesta
+    ]
     
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-    
-    try {
-      const searchResponse = await fetch(searchUrl, {
-        signal: controller.signal
-      })
+    for (const searchQuery of queries) {
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}`
       
-      clearTimeout(timeoutId)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
       
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json()
+      try {
+        const searchResponse = await fetch(searchUrl, {
+          signal: controller.signal
+        })
         
-        if (searchData.results && searchData.results.length > 0) {
-          // Vezmeme prvý výsledok (najrelevantnejší)
-          const place = searchData.results[0]
+        clearTimeout(timeoutId)
+        
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json()
           
-          // Krok 2: Získame fotky z miesta
-          if (place.photos && place.photos.length > 0 && place.photos[0]) {
-            // Vezmeme prvú fotku (zvyčajne najlepšia)
-            const photoReference = place.photos[0].photo_reference
+          if (searchData.results && searchData.results.length > 0) {
+            // Vezmeme prvý výsledok (najrelevantnejší)
+            const place = searchData.results[0]
             
-            // Získame URL fotky (maxwidth 800 pre dobrú kvalitu)
-            const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoReference}&key=${googleApiKey}`
-            
-            console.log(`✓ Google Places found image for "${placeName}" in "${city}"`)
-            return photoUrl
+            // Krok 2: Získame fotky z miesta
+            if (place.photos && place.photos.length > 0 && place.photos[0]) {
+              // Vezmeme prvú fotku (zvyčajne najlepšia)
+              const photoReference = place.photos[0].photo_reference
+              
+              // Získame URL fotky (maxwidth 800 pre dobrú kvalitu)
+              const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoReference}&key=${googleApiKey}`
+              
+              console.log(`✓ Google Places found image for "${placeName}" in "${city}" (query: "${searchQuery}")`)
+              return photoUrl
+            }
           }
+        } else {
+          const errorData = await searchResponse.json().catch(() => ({}))
+          console.warn(`Google Places API error (${searchResponse.status}):`, errorData.error?.message || 'Unknown error')
         }
-      }
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        console.warn('Google Places API error:', error.message)
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.warn(`Google Places API error for query "${searchQuery}":`, error.message)
+        }
       }
     }
   } catch (error: any) {
@@ -75,21 +87,26 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
     return `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
   }
 
-  try {
-    // Metóda 0: Google Places Photo API (NAJPRESNEJŠIE - presné obrázky z Google Maps)
-    // Skúsime extrahovať názov miesta a mesto z query
-    const quotedParts = query.match(/"([^"]+)"/g) || []
-    if (quotedParts.length >= 2 && quotedParts[0] && quotedParts[1]) {
-      const placeName = quotedParts[0].replace(/"/g, '').trim()
-      const city = quotedParts[1].replace(/"/g, '').trim()
-      
-      if (placeName && city) {
+  // Metóda 0: Google Places Photo API (NAJPRESNEJŠIE - presné obrázky z Google Maps)
+  // Skúsime extrahovať názov miesta a mesto z query
+  const quotedParts = query.match(/"([^"]+)"/g) || []
+  if (quotedParts.length >= 2 && quotedParts[0] && quotedParts[1]) {
+    const placeName = quotedParts[0].replace(/"/g, '').trim()
+    const city = quotedParts[1].replace(/"/g, '').trim()
+    
+    if (placeName && city) {
+      try {
         const placesImage = await getImageFromGooglePlaces(placeName, city)
         if (placesImage) {
           return placesImage
         }
+      } catch (error: any) {
+        console.warn('Google Places API error in getImageFromUnsplash:', error.message)
       }
     }
+  }
+  
+  try {
     
     // Metóda 1: Google Custom Search API (najlepšie výsledky - Google Obrázky)
     const googleApiKey = process.env.GOOGLE_API_KEY
