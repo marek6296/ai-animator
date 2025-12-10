@@ -10,21 +10,40 @@ export async function generateAnimation(input: UserInput): Promise<Animation> {
     const progress = i / (frameCount - 1) // 0 až 1
     
     const framePrompt = `Animovaný rámec ${i + 1} z ${frameCount} pre krátku animáciu.
-    Osoba: ${input.self}
+    Hlavná postava: ${input.self}
     Situácia: ${input.situation}
-    Kamaráti: ${input.friends}
+    Ostatné postavy: ${input.friends}
     
     Toto je rámec ${i + 1}, ktorý zachytáva ${Math.round(progress * 100)}% príbehu.
-    Animovaný štýl, dynamické, expresívne, farebné.
-    Zachyť moment v príbehu, ktorý zodpovedá tomuto časovému bodu.`
+    Štýl: animovaný, dynamický, expresívny, farebný, profesionálny, plynulý pohyb.
+    Zachyť konkrétny moment v príbehu, ktorý zodpovedá tomuto časovému bodu. 
+    Ak je to začiatok (rámec 1), ukáž začiatok príbehu. Ak je to koniec (rámec ${frameCount}), ukáž záver alebo vrchol príbehu.`
     
-    const imageUrl = await generateImage(framePrompt)
-    frames.push(imageUrl)
+    try {
+      const imageUrl = await generateImage(framePrompt)
+      
+      if (!imageUrl) {
+        throw new Error(`Nepodarilo sa vygenerovať rámec ${i + 1}`)
+      }
+      
+      frames.push(imageUrl)
+    } catch (error: any) {
+      console.error(`Chyba pri generovaní rámca ${i + 1}:`, error)
+      // Pokračujeme s ďalšími rámcami
+      if (frames.length === 0 && i === frameCount - 1) {
+        throw new Error(`Nepodarilo sa vygenerovať žiadny rámec: ${error.message}`)
+      }
+    }
     
     // Malé oneskorenie medzi rámcami, aby sa nepreťažil API
     if (i < frameCount - 1) {
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
+  }
+
+  // Validácia - musíme mať aspoň 1 rámec
+  if (frames.length === 0) {
+    throw new Error('Nepodarilo sa vygenerovať žiadny rámec animácie')
   }
 
   return {

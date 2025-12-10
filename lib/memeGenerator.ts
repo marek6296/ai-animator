@@ -15,16 +15,18 @@ export async function generateMemePack(input: UserInput): Promise<MemePack> {
   const memeCount = 4
 
   // Vygeneruj meme texty
-  const memeTextsPrompt = `Vytvor ${memeCount} vtipných meme textov na základe:
+  const memeTextsPrompt = `Vytvor presne ${memeCount} vtipných meme textov na základe:
 - Osoba: ${input.self}
 - Situácia: ${input.situation}
 - Kamaráti: ${input.friends}
 
-Formát:
-1. [text]
-2. [text]
-3. [text]
-4. [text]`
+DÔLEŽITÉ: Použi presne tento formát, každý text na samostatnom riadku:
+1. [krátky vtipný text max 50 znakov]
+2. [krátky vtipný text max 50 znakov]
+3. [krátky vtipný text max 50 znakov]
+4. [krátky vtipný text max 50 znakov]
+
+Texty by mali byť vtipné, relevantné k situácii a vhodné pre memy.`
 
   const memeTextsResponse = await generateText(memeTextsPrompt)
   const memeTexts = parseMemeTexts(memeTextsResponse)
@@ -36,24 +38,42 @@ Formát:
     
     const memePrompt = `Vytvor meme v štýle "${template}".
     Text memu: "${text}"
-    Osoba: ${input.self}
-    Kamaráti: ${input.friends}
+    Hlavná postava: ${input.self}
+    Ostatné postavy: ${input.friends}
     Situácia: ${input.situation}
     
-    Klasický meme štýl, vtipný, farebné, čitateľný text.`
+    Štýl: klasický meme, vtipný, farebný, profesionálny, čitateľný text, známy meme formát.
+    Text musí byť jasne viditeľný a čitateľný.`
     
-    const imageUrl = await generateImage(memePrompt)
-    
-    memes.push({
-      imageUrl,
-      text,
-      template,
-    })
+    try {
+      const imageUrl = await generateImage(memePrompt)
+      
+      if (!imageUrl) {
+        throw new Error(`Nepodarilo sa vygenerovať meme ${i + 1}`)
+      }
+      
+      memes.push({
+        imageUrl,
+        text: text.trim(),
+        template,
+      })
+    } catch (error: any) {
+      console.error(`Chyba pri generovaní memu ${i + 1}:`, error)
+      // Pokračujeme s ďalšími memami
+      if (memes.length === 0 && i === memeCount - 1) {
+        throw new Error(`Nepodarilo sa vygenerovať žiadny meme: ${error.message}`)
+      }
+    }
     
     // Malé oneskorenie medzi memami
     if (i < memeCount - 1) {
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
+  }
+
+  // Validácia - musíme mať aspoň 1 meme
+  if (memes.length === 0) {
+    throw new Error('Nepodarilo sa vygenerovať žiadny meme')
   }
 
   return { memes }
