@@ -25,7 +25,6 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
     
     if (googleApiKey && googleCseId) {
       try {
-        const encodedQuery = encodeURIComponent(query.trim())
         // Použijeme num=10 aby sme mali viac možností na výber najrelevantnejšieho obrázka
         // imgSize=large pre kvalitné obrázky, imgType=photo pre fotografie (nie kresby/ilustrácie)
         // Pridáme site:maps.google.com alebo site:google.com/maps pre prioritizáciu Google Maps
@@ -116,8 +115,13 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
                   }
                 }
                 
+                // MASSIVE bonus za Google Maps - toto je najdôležitejšie!
+                if (link.includes('maps.google.com') || link.includes('google.com/maps') || displayLink.includes('maps.google.com') || displayLink.includes('google.com/maps')) {
+                  score += 100 // OBROVSKÝ bonus za Google Maps - prioritizujeme toto!
+                }
+                
                 // Bonus za zdroje, ktoré majú presné obrázky miest
-                const trustedSources = ['google', 'maps', 'streetview', 'wikipedia', 'wikimedia', 'commons', 'tripadvisor', 'getty', 'alamy']
+                const trustedSources = ['streetview', 'wikipedia', 'wikimedia', 'commons', 'tripadvisor', 'getty', 'alamy']
                 for (const source of trustedSources) {
                   if (link.includes(source) || displayLink.includes(source)) {
                     score += 15 // Veľký bonus za dôveryhodné zdroje
