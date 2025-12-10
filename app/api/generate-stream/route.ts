@@ -38,8 +38,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Spusti generovanie asynchrónne
+    console.log(`[${requestId}] Starting async generation`)
     generateWithProgress(requestId, input).catch(err => {
-      console.error('generateWithProgress error:', err)
+      console.error(`[${requestId}] Unhandled error in generateWithProgress:`, err)
+      console.error(`[${requestId}] Error stack:`, err.stack)
       progressStore.set(requestId, {
         step: 'complete',
         progress: 0,
@@ -60,12 +62,18 @@ export async function POST(request: NextRequest) {
 
 async function generateWithProgress(requestId: string, input: UserInput) {
   try {
+    console.log(`[${requestId}] Starting trip generation for: ${input.destination}`)
+    
     // Generuj trip plan
     updateProgress(requestId, 'trip', 0, 'Začínam generovať plán výletu...')
+    
     const trip = await generateTrip(input, (progress, message) => {
+      console.log(`[${requestId}] Progress: ${progress}% - ${message}`)
       updateProgress(requestId, 'trip', progress, message)
     })
 
+    console.log(`[${requestId}] Trip generation completed successfully`)
+    
     // Hotovo
     progressStore.set(requestId, {
       step: 'complete',
@@ -74,11 +82,15 @@ async function generateWithProgress(requestId: string, input: UserInput) {
       result: { trip },
     })
   } catch (error: any) {
+    console.error(`[${requestId}] Error in generateWithProgress:`, error)
+    console.error(`[${requestId}] Error stack:`, error.stack)
+    
+    const errorMessage = error.message || 'Neznáma chyba'
     progressStore.set(requestId, {
       step: 'complete',
       progress: 0,
       message: 'Chyba',
-      error: error.message,
+      error: errorMessage,
     })
   }
 }
