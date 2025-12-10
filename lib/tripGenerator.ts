@@ -175,9 +175,9 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
           // Aj pri chybe použijeme placeholder
           imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
         }
-      
-      // Pokus 2-6: Alternatívne query (len ak sme nenašli dobrý obrázok)
-      if (!imageUrl || imageUrl.includes('via.placeholder.com')) {
+        
+        // Pokus 2-6: Alternatívne query (len ak sme nenašli dobrý obrázok)
+        if (!imageUrl || imageUrl.includes('via.placeholder.com')) {
         const alternativeQueries = createAlternativeQuery(input.destination, tip.title, tip.category)
         
         for (const altQuery of alternativeQueries) {
@@ -297,10 +297,10 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
             console.warn(`Error in attempt ${attempts}:`, error)
           }
         }
-      }
-      
-      // Posledný fallback: Placeholder (Unsplash Source už nefunguje - 503)
-      if (!imageUrl) {
+        }
+        
+        // Posledný fallback: Placeholder (Unsplash Source už nefunguje - 503)
+        if (!imageUrl) {
         // Použijeme placeholder.com, ktorý vždy funguje
         const placeholderUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
         imageUrl = placeholderUrl
