@@ -56,7 +56,7 @@ function parseStoryToPanels(storyText: string): Array<{ description: string; tex
   
   // Skús nájsť panely v rôznych formátoch
   const panelRegex = /Panel\s+(\d+):\s*(.+?)\s*\|\s*(.+?)(?=Panel|\n\n|$)/gi
-  const matches = storyText.matchAll(panelRegex)
+  const matches = Array.from(storyText.matchAll(panelRegex))
   
   for (const match of matches) {
     panels.push({
