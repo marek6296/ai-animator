@@ -15,15 +15,16 @@ export async function generateAnimation(
     
     onProgress?.(frameProgress, `Generujem rámec ${i + 1} z ${frameCount}...`)
     
-    const framePrompt = `Animovaný rámec ${i + 1} z ${frameCount} pre krátku animáciu.
+    const framePrompt = `Animovaný rámec ${i + 1} z ${frameCount} pre plynulú animáciu pohybu.
     Hlavná postava: ${input.self}
     Situácia: ${input.situation}
     Ostatné postavy: ${input.friends}
     
-    Toto je rámec ${i + 1}, ktorý zachytáva ${Math.round(progress * 100)}% príbehu.
-    Štýl: animovaný, dynamický, expresívny, farebný, profesionálny, plynulý pohyb.
-    Zachyť konkrétny moment v príbehu, ktorý zodpovedá tomuto časovému bodu. 
-    Ak je to začiatok (rámec 1), ukáž začiatok príbehu. Ak je to koniec (rámec ${frameCount}), ukáž záver alebo vrchol príbehu.`
+    Toto je rámec ${i + 1} z ${frameCount} pre plynulú animáciu. Postavy sa pohybujú a menia pozíciu.
+    Pre rámec ${i + 1}: ${i === 0 ? 'začiatočná pozícia' : i === frameCount - 1 ? 'konečná pozícia' : 'stredná pozícia v pohybe'}.
+    Štýl: animovaný, dynamický, expresívny, farebný, profesionálny, plynulý pohyb, konzistentné postavy.
+    Postavy musia byť v každom rámci na mierne inej pozícii, aby vytvorili ilúziu pohybu.
+    Všetky texty musia byť v slovenčine.`
     
     try {
       const imageUrl = await generateImage(framePrompt)

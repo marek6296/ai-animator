@@ -194,7 +194,7 @@ export default function Home() {
           <InputForm onSubmit={handleSubmit} isGenerating={isGenerating} />
         </motion.div>
 
-        {results && (
+        {results && (results.comic || results.animation || results.memePack) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

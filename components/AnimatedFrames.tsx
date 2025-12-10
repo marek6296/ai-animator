@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause } from 'lucide-react'
+import { Play, Pause, Download } from 'lucide-react'
 
 interface AnimatedFramesProps {
   frames: string[]
   autoPlay?: boolean
   speed?: number // ms medzi rámcami
+  onFrameClick?: (index: number) => void
+  onDownload?: (index: number) => void
 }
 
 export default function AnimatedFrames({ 
   frames, 
   autoPlay = true,
-  speed = 500 
+  speed = 500,
+  onFrameClick,
+  onDownload
 }: AnimatedFramesProps) {
   const [currentFrame, setCurrentFrame] = useState(0)
   const [isPlaying, setIsPlaying] = useState(autoPlay)
@@ -41,16 +45,20 @@ export default function AnimatedFrames({
   return (
     <div className="w-full">
       {/* Hlavný obrázok */}
-      <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4" style={{ aspectRatio: '1/1' }}>
+      <div 
+        className="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 cursor-pointer hover:shadow-lg transition-shadow" 
+        style={{ aspectRatio: '1/1' }}
+        onClick={() => onFrameClick?.(currentFrame)}
+      >
         <AnimatePresence mode="wait">
           <motion.img
             key={currentFrame}
             src={frames[currentFrame]}
             alt={`Frame ${currentFrame + 1}`}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
             className="w-full h-full object-cover"
           />
         </AnimatePresence>
@@ -72,6 +80,20 @@ export default function AnimatedFrames({
         <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
           {currentFrame + 1} / {frames.length}
         </div>
+
+        {/* Download button */}
+        {onDownload && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDownload(currentFrame)
+            }}
+            className="absolute bottom-4 right-4 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all"
+            aria-label="Stiahnuť"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Thumbnail navigation */}

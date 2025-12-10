@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Send, User, MessageSquare, Users } from 'lucide-react'
+import { Send, User, MessageSquare, Users, Image as ImageIcon, Film, Smile } from 'lucide-react'
 import type { UserInput } from '@/types'
 
 interface InputFormProps {
@@ -14,11 +14,25 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
   const [self, setSelf] = useState('')
   const [situation, setSituation] = useState('')
   const [friends, setFriends] = useState('')
+  const [generateComic, setGenerateComic] = useState(true)
+  const [generateAnimation, setGenerateAnimation] = useState(true)
+  const [generateMemePack, setGenerateMemePack] = useState(true)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (self.trim() && situation.trim() && friends.trim()) {
-      onSubmit({ self, situation, friends })
+      if (!generateComic && !generateAnimation && !generateMemePack) {
+        alert('Vyberte aspoň jednu možnosť na generovanie!')
+        return
+      }
+      onSubmit({ 
+        self, 
+        situation, 
+        friends,
+        generateComic,
+        generateAnimation,
+        generateMemePack
+      })
     }
   }
 
@@ -81,15 +95,59 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
           />
         </div>
 
+        {/* Výber čo generovať */}
+        <div className="border-t-2 border-gray-200 dark:border-gray-700 pt-6">
+          <label className="block text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+            Vyberte čo chcete vygenerovať:
+          </label>
+          <div className="grid md:grid-cols-3 gap-4">
+            <label className="flex items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <input
+                type="checkbox"
+                checked={generateComic}
+                onChange={(e) => setGenerateComic(e.target.checked)}
+                disabled={isGenerating}
+                className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+              />
+              <ImageIcon className="w-6 h-6 text-blue-600" />
+              <span className="font-semibold text-gray-800 dark:text-white">Komiks</span>
+            </label>
+
+            <label className="flex items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <input
+                type="checkbox"
+                checked={generateAnimation}
+                onChange={(e) => setGenerateAnimation(e.target.checked)}
+                disabled={isGenerating}
+                className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+              />
+              <Film className="w-6 h-6 text-purple-600" />
+              <span className="font-semibold text-gray-800 dark:text-white">Animácia</span>
+            </label>
+
+            <label className="flex items-center gap-3 p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <input
+                type="checkbox"
+                checked={generateMemePack}
+                onChange={(e) => setGenerateMemePack(e.target.checked)}
+                disabled={isGenerating}
+                className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+              />
+              <Smile className="w-6 h-6 text-pink-600" />
+              <span className="font-semibold text-gray-800 dark:text-white">Meme Pack</span>
+            </label>
+          </div>
+        </div>
+
         <motion.button
           type="submit"
-          disabled={isGenerating || !self.trim() || !situation.trim() || !friends.trim()}
+          disabled={isGenerating || !self.trim() || !situation.trim() || !friends.trim() || (!generateComic && !generateAnimation && !generateMemePack)}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-shadow"
         >
           <Send className="w-5 h-5" />
-          {isGenerating ? 'Generujem...' : 'Vytvoriť komiks, animáciu a meme pack'}
+          {isGenerating ? 'Generujem...' : 'Vytvoriť vybrané'}
         </motion.button>
       </form>
     </motion.div>

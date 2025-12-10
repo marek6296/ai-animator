@@ -55,7 +55,8 @@ Popis by mal byť stručný (max 50 slov) a text/dialóg by mal byť vtipný ale
     const imagePrompt = `Komiksový panel v štýle moderného farebného komiksu. Scéna: ${panel.description}. 
     Hlavná postava: ${input.self}. Situácia: ${input.situation}. Ostatné postavy: ${input.friends}.
     Štýl: kreslený komiks, farebné, dynamické, expresívne, profesionálne, detaily, čitateľné. 
-    Panel by mal byť ako z profesionálneho komiksu s dobrým osvetlením a kompozíciou.`
+    Panel by mal byť ako z profesionálneho komiksu s dobrým osvetlením a kompozíciou.
+    Všetky texty a dialógy v komikse musia byť v slovenčine.`
     
     try {
       const imageUrl = await generateImage(imagePrompt)

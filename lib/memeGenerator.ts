@@ -50,7 +50,8 @@ Texty by mali byť vtipné, relevantné k situácii a vhodné pre memy.`
     Situácia: ${input.situation}
     
     Štýl: klasický meme, vtipný, farebný, profesionálny, čitateľný text, známy meme formát.
-    Text musí byť jasne viditeľný a čitateľný.`
+    Text musí byť jasne viditeľný a čitateľný.
+    Všetky texty v meme musia byť v slovenčine.`
     
     try {
       const imageUrl = await generateImage(memePrompt)

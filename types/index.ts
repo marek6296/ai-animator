@@ -2,6 +2,9 @@ export interface UserInput {
   self: string
   situation: string
   friends: string
+  generateComic?: boolean
+  generateAnimation?: boolean
+  generateMemePack?: boolean
 }
 
 export interface ComicPanel {
@@ -31,9 +34,9 @@ export interface MemePack {
 }
 
 export interface GenerationResult {
-  comic: Comic
-  animation: Animation
-  memePack: MemePack
+  comic: Comic | null
+  animation: Animation | null
+  memePack: MemePack | null
 }
 
 export interface ProgressUpdate {
