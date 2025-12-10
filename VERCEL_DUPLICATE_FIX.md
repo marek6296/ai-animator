@@ -11,13 +11,9 @@ Oba sú z toho istého GitHub repozitára `marek6296/ai-animator`.
 
 ### Krok 1: Rozhodnite sa, ktorý projekt chcete zachovať
 
-**Odporúčanie:** Zachovať `ai-animator` (druhý projekt), pretože má lepší názov.
+**✅ ROZHODNUTÉ:** Zachovať `ai-animator` (druhý projekt) - už máte nastavený API kľúč!
 
-### Krok 2: Skontrolujte Environment Variables
-
-Pred zmazaním projektu, skontrolujte:
-1. Ktorý projekt má nastavený `OPENAI_API_KEY`?
-2. Ktorý projekt je aktívne nasadený?
+**❌ ZMAZAŤ:** `ai-animator-9k2b` (prvý projekt)
 
 ### Krok 3: Zmazanie duplicitného projektu
 
@@ -30,14 +26,9 @@ Pred zmazaním projektu, skontrolujte:
 5. Kliknite na **"Delete Project"** alebo **"Remove Project"**
 6. Potvrďte zmazanie (budete musieť napísať názov projektu)
 
-### Krok 4: Uistite sa, že zachovaný projekt má Environment Variables
+### Krok 4: ✅ Hotovo!
 
-Pre projekt **`ai-animator`**:
-
-1. Kliknite na projekt **`ai-animator`**
-2. Choďte na **"Settings"** → **"Environment Variables"**
-3. Skontrolujte, či máte `OPENAI_API_KEY`
-4. Ak nie, pridajte ho (pozri `VERCEL_SETUP.md`)
+Projekt **`ai-animator`** už má nastavený `OPENAI_API_KEY`, takže je pripravený na použitie!
 
 ### Krok 5: (Voliteľné) Zmena názvu projektu
 
