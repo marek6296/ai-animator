@@ -1,40 +1,107 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles, Users, Image as ImageIcon, Film, Smile } from 'lucide-react'
+import { Sparkles, Users, Image as ImageIcon, Film, Smile, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import InputForm from '@/components/InputForm'
 import ResultsDisplay from '@/components/ResultsDisplay'
-import type { UserInput, GenerationResult } from '@/types'
+import ProgressBar from '@/components/ProgressBar'
+import type { UserInput, GenerationResult, ProgressUpdate } from '@/types'
 
 export default function Home() {
   const [userInput, setUserInput] = useState<UserInput | null>(null)
   const [results, setResults] = useState<GenerationResult | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [progress, setProgress] = useState<ProgressUpdate | null>(null)
+  const [requestId, setRequestId] = useState<string | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  const handleCancel = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current)
+    }
+    setIsGenerating(false)
+    setProgress(null)
+    setRequestId(null)
+    toast('Generovanie bolo zrušené', { icon: 'ℹ️' })
+  }
 
   const handleSubmit = async (input: UserInput) => {
     setUserInput(input)
     setIsGenerating(true)
     setResults(null)
+    setProgress(null)
+    
+    abortControllerRef.current = new AbortController()
 
     try {
-      const response = await fetch('/api/generate', {
+      // Spusti generovanie
+      const startResponse = await fetch('/api/generate-stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(input),
+        signal: abortControllerRef.current.signal,
       })
 
-      if (!response.ok) {
-        throw new Error('Chyba pri generovaní')
+      if (!startResponse.ok) {
+        throw new Error('Chyba pri spustení generovania')
       }
 
-      const data = await response.json()
-      setResults(data)
-      toast.success('Komiks, animácia a meme pack boli úspešne vygenerované!')
+      const { requestId: newRequestId } = await startResponse.json()
+      setRequestId(newRequestId)
+
+      // Polling pre progress
+      progressIntervalRef.current = setInterval(async () => {
+        try {
+          const progressResponse = await fetch(`/api/generate-stream?id=${newRequestId}`, {
+            signal: abortControllerRef.current?.signal,
+          })
+
+          if (!progressResponse.ok) {
+            throw new Error('Chyba pri získavaní progressu')
+          }
+
+          const progressData = await progressResponse.json()
+          setProgress(progressData)
+
+          // Ak je hotovo, získaj výsledky
+          if (progressData.step === 'complete') {
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current)
+            }
+            
+            if (progressData.error) {
+              throw new Error(progressData.error)
+            }
+
+            if (progressData.result) {
+              setResults(progressData.result)
+              toast.success('Komiks, animácia a meme pack boli úspešne vygenerované!')
+            }
+            
+            setIsGenerating(false)
+            setProgress(null)
+            setRequestId(null)
+          }
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            return
+          }
+          console.error('Progress polling error:', error)
+        }
+      }, 1000) // Poll každú sekundu
+
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return
+      }
       console.error('Error:', error)
       const errorMessage = error.message || 'Nastala chyba pri generovaní'
       toast.error(
@@ -42,10 +109,21 @@ export default function Home() {
           ? 'Skontrolujte, či máte nastavený OPENAI_API_KEY v .env súbore'
           : errorMessage
       )
-    } finally {
       setIsGenerating(false)
+      setProgress(null)
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -132,11 +210,31 @@ export default function Home() {
             animate={{ opacity: 1 }}
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           >
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-8 shadow-2xl max-w-2xl w-full mx-4">
               <div className="flex flex-col items-center gap-4">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
-                <p className="text-xl font-semibold">Generujem vaše komiksy a animácie...</p>
-                <p className="text-gray-600 dark:text-gray-400">To môže trvať niekoľko minút</p>
+                <button
+                  onClick={handleCancel}
+                  className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  aria-label="Zrušiť"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+                
+                {progress && <ProgressBar progress={progress} />}
+                
+                {!progress && (
+                  <>
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600"></div>
+                    <p className="text-xl font-semibold">Spúšťam generovanie...</p>
+                  </>
+                )}
+                
+                <button
+                  onClick={handleCancel}
+                  className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Zrušiť generovanie
+                </button>
               </div>
             </div>
           </motion.div>

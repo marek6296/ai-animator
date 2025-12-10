@@ -1,8 +1,12 @@
 import { generateImage, generateText } from './aiService'
 import type { UserInput, Comic, ComicPanel } from '@/types'
 
-export async function generateComic(input: UserInput): Promise<Comic> {
+export async function generateComic(
+  input: UserInput,
+  onProgress?: (progress: number, message: string) => void
+): Promise<Comic> {
   // Najprv vygeneruj príbeh komiksu
+  onProgress?.(5, 'Generujem príbeh komiksu...')
   const storyPrompt = `Vytvor krátky komiksový príbeh na základe týchto informácií:
 - Osoba: ${input.self}
 - Situácia: ${input.situation}
@@ -18,6 +22,7 @@ Každý panel musí byť na samostatnom riadku a musí obsahovať "Panel X:" na 
 Popis by mal byť stručný (max 50 slov) a text/dialóg by mal byť vtipný alebo zaujímavý.`
 
   const storyText = await generateText(storyPrompt)
+  onProgress?.(15, 'Parsujem príbeh na panely...')
   
   // Parsuj príbeh na panely
   const panels = parseStoryToPanels(storyText)
@@ -32,6 +37,9 @@ Popis by mal byť stručný (max 50 slov) a text/dialóg by mal byť vtipný ale
   
   for (let i = 0; i < panels.length; i++) {
     const panel = panels[i]
+    const panelProgress = 15 + (i / panels.length) * 70
+    
+    onProgress?.(panelProgress, `Generujem panel ${i + 1} z ${panels.length}...`)
     
     // Validácia panela
     if (!panel.description || panel.description.trim().length === 0) {
@@ -76,11 +84,13 @@ Popis by mal byť stručný (max 50 slov) a text/dialóg by mal byť vtipný ale
   }
 
   // Vygeneruj názov komiksu
+  onProgress?.(90, 'Generujem názov komiksu...')
   const titlePrompt = `Vytvor krátky, vtipný názov komiksu (max 5 slov) na základe tejto situácie: ${input.situation}
   
   Odpovedaj LEN názvom, bez dodatočného textu.`
   const title = await generateText(titlePrompt)
   const cleanTitle = title.replace(/['"]/g, '').trim().split('\n')[0].split('.')[0]
+  onProgress?.(100, 'Komiks hotový!')
 
   return {
     title: cleanTitle || 'Môj komiks',

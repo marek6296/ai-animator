@@ -10,11 +10,15 @@ const memeTemplates = [
   'Success kid meme',
 ]
 
-export async function generateMemePack(input: UserInput): Promise<MemePack> {
+export async function generateMemePack(
+  input: UserInput,
+  onProgress?: (progress: number, message: string) => void
+): Promise<MemePack> {
   const memes: Meme[] = []
   const memeCount = 4
 
   // Vygeneruj meme texty
+  onProgress?.(5, 'Generujem meme texty...')
   const memeTextsPrompt = `Vytvor presne ${memeCount} vtipných meme textov na základe:
 - Osoba: ${input.self}
 - Situácia: ${input.situation}
@@ -30,9 +34,12 @@ Texty by mali byť vtipné, relevantné k situácii a vhodné pre memy.`
 
   const memeTextsResponse = await generateText(memeTextsPrompt)
   const memeTexts = parseMemeTexts(memeTextsResponse)
+  onProgress?.(15, 'Generujem memy...')
 
   // Vygeneruj memy
   for (let i = 0; i < memeCount; i++) {
+    const memeProgress = 15 + (i / memeCount) * 85
+    onProgress?.(memeProgress, `Generujem meme ${i + 1} z ${memeCount}...`)
     const template = memeTemplates[i % memeTemplates.length]
     const text = memeTexts[i] || `Meme ${i + 1} o ${input.situation}`
     
@@ -75,6 +82,8 @@ Texty by mali byť vtipné, relevantné k situácii a vhodné pre memy.`
   if (memes.length === 0) {
     throw new Error('Nepodarilo sa vygenerovať žiadny meme')
   }
+
+  onProgress?.(100, 'Meme pack hotový!')
 
   return { memes }
 }

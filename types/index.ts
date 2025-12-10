@@ -36,3 +36,10 @@ export interface GenerationResult {
   memePack: MemePack
 }
 
+export interface ProgressUpdate {
+  step: 'comic' | 'animation' | 'meme' | 'complete'
+  progress: number // 0-100
+  message: string
+  estimatedTimeRemaining?: number // v sekundách
+}
+

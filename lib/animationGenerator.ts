@@ -1,13 +1,19 @@
 import { generateImage } from './aiService'
 import type { UserInput, Animation } from '@/types'
 
-export async function generateAnimation(input: UserInput): Promise<Animation> {
+export async function generateAnimation(
+  input: UserInput,
+  onProgress?: (progress: number, message: string) => void
+): Promise<Animation> {
   // Vytvor 4-6 rámcov pre animáciu
   const frames: string[] = []
   const frameCount = 5
 
   for (let i = 0; i < frameCount; i++) {
     const progress = i / (frameCount - 1) // 0 až 1
+    const frameProgress = (i / frameCount) * 100
+    
+    onProgress?.(frameProgress, `Generujem rámec ${i + 1} z ${frameCount}...`)
     
     const framePrompt = `Animovaný rámec ${i + 1} z ${frameCount} pre krátku animáciu.
     Hlavná postava: ${input.self}
@@ -45,6 +51,8 @@ export async function generateAnimation(input: UserInput): Promise<Animation> {
   if (frames.length === 0) {
     throw new Error('Nepodarilo sa vygenerovať žiadny rámec animácie')
   }
+
+  onProgress?.(100, 'Animácia hotová!')
 
   return {
     frames,

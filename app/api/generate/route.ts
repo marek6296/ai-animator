@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateComic } from '@/lib/comicGenerator'
 import { generateAnimation } from '@/lib/animationGenerator'
 import { generateMemePack } from '@/lib/memeGenerator'
+import { ProgressTracker } from '@/lib/progressTracker'
 import type { UserInput } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -37,32 +38,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generuj všetko paralelne s timeout
+    // Generuj všetko postupne (pre progress tracking)
     const timeout = 300000 // 5 minút
     
-    const generationPromise = Promise.all([
-      generateComic(input).catch(err => {
-        console.error('Comic generation error:', err)
-        throw new Error(`Chyba pri generovaní komiksu: ${err.message}`)
-      }),
-      generateAnimation(input).catch(err => {
-        console.error('Animation generation error:', err)
-        throw new Error(`Chyba pri generovaní animácie: ${err.message}`)
-      }),
-      generateMemePack(input).catch(err => {
-        console.error('Meme pack generation error:', err)
-        throw new Error(`Chyba pri generovaní meme packu: ${err.message}`)
-      }),
-    ])
-
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Generovanie trvalo príliš dlho. Skúste to znova s kratším popisom.')), timeout)
+    // Generuj komiks
+    const comic = await generateComic(input).catch(err => {
+      console.error('Comic generation error:', err)
+      throw new Error(`Chyba pri generovaní komiksu: ${err.message}`)
     })
 
-    const [comic, animation, memePack] = await Promise.race([
-      generationPromise,
-      timeoutPromise,
-    ]) as [any, any, any]
+    // Generuj animáciu
+    const animation = await generateAnimation(input).catch(err => {
+      console.error('Animation generation error:', err)
+      throw new Error(`Chyba pri generovaní animácie: ${err.message}`)
+    })
+
+    // Generuj meme pack
+    const memePack = await generateMemePack(input).catch(err => {
+      console.error('Meme pack generation error:', err)
+      throw new Error(`Chyba pri generovaní meme packu: ${err.message}`)
+    })
 
     // Validácia výsledkov
     if (!comic || !comic.panels || comic.panels.length === 0) {
