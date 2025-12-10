@@ -10,15 +10,87 @@
  * 4. Pridajte do .env: GOOGLE_API_KEY a GOOGLE_CSE_ID
  */
 
+/**
+ * Získa obrázok z Google Places Photo API
+ * Toto je najpresnejšia metóda - vracia presný obrázok miesta z Google Maps
+ */
+async function getImageFromGooglePlaces(placeName: string, city: string): Promise<string | null> {
+  const googleApiKey = process.env.GOOGLE_API_KEY
+  if (!googleApiKey) {
+    return null
+  }
+
+  try {
+    // Krok 1: Nájdeme miesto pomocou Places API Text Search
+    const searchQuery = `${placeName}, ${city}`
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}`
+    
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    
+    try {
+      const searchResponse = await fetch(searchUrl, {
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json()
+        
+        if (searchData.results && searchData.results.length > 0) {
+          // Vezmeme prvý výsledok (najrelevantnejší)
+          const place = searchData.results[0]
+          
+          // Krok 2: Získame fotky z miesta
+          if (place.photos && place.photos.length > 0) {
+            // Vezmeme prvú fotku (zvyčajne najlepšia)
+            const photoReference = place.photos[0].photo_reference
+            
+            // Získame URL fotky (maxwidth 800 pre dobrú kvalitu)
+            const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoReference}&key=${googleApiKey}`
+            
+            console.log(`✓ Google Places found image for "${placeName}" in "${city}"`)
+            return photoUrl
+          }
+        }
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.warn('Google Places API error:', error.message)
+      }
+    }
+  } catch (error: any) {
+    console.warn('Google Places API error:', error.message)
+  }
+  
+  return null
+}
+
 export async function getImageFromUnsplash(query: string): Promise<string> {
   // Táto funkcia VŽDY vráti URL - nikdy null
   if (!query || query.trim().length === 0) {
     // Ak je query prázdne, vráťme generický obrázok
     console.log(`⚠ Empty query, using generic fallback`)
-    return `https://source.unsplash.com/800x600/?travel,tourism`
+    return `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
   }
 
   try {
+    // Metóda 0: Google Places Photo API (NAJPRESNEJŠIE - presné obrázky z Google Maps)
+    // Skúsime extrahovať názov miesta a mesto z query
+    const quotedParts = query.match(/"([^"]+)"/g) || []
+    if (quotedParts.length >= 2) {
+      const placeName = quotedParts[0].replace(/"/g, '').trim()
+      const city = quotedParts[1].replace(/"/g, '').trim()
+      
+      if (placeName && city) {
+        const placesImage = await getImageFromGooglePlaces(placeName, city)
+        if (placesImage) {
+          return placesImage
+        }
+      }
+    }
+    
     // Metóda 1: Google Custom Search API (najlepšie výsledky - Google Obrázky)
     const googleApiKey = process.env.GOOGLE_API_KEY
     const googleCseId = process.env.GOOGLE_CSE_ID
@@ -165,12 +237,15 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
               }
               
               // Ak sme našli dobrý match, použijeme ho
-              if (bestMatch && bestScore > -50) { // Použijeme aj obrázky s nízkym skóre, ale nie príliš negatívnym
-                if (bestScore > 0) {
-                  console.log(`✓ Google found relevant image for "${query}" (score: ${bestScore})`)
-                } else {
-                  console.log(`⚠ Google found image with low score for "${query}" (score: ${bestScore}), using anyway`)
-                }
+              // Teraz sme prísnejší - neberieme obrázky s negatívnym skóre (okrem Google Maps)
+              if (bestMatch && bestScore > 0) {
+                console.log(`✓ Google found relevant image for "${query}" (score: ${bestScore})`)
+                return bestMatch
+              }
+              
+              // Ak je to Google Maps obrázok, vezmeme ho aj s nízkym skóre
+              if (bestMatch && bestScore > -100 && bestMatch.includes('maps.google.com')) {
+                console.log(`✓ Google Maps image found for "${query}" (score: ${bestScore})`)
                 return bestMatch
               }
               
