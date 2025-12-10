@@ -178,133 +178,134 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
         
         // Pokus 2-6: Alternatívne query (len ak sme nenašli dobrý obrázok)
         if (!imageUrl || imageUrl.includes('via.placeholder.com')) {
-        const alternativeQueries = createAlternativeQuery(input.destination, tip.title, tip.category)
-        
-        for (const altQuery of alternativeQueries) {
-          if (imageUrl || attempts >= maxAttempts) break
+          const alternativeQueries = createAlternativeQuery(input.destination, tip.title, tip.category)
           
-          attempts++
-          console.log(`Attempt ${attempts}/${maxAttempts}: Trying alternative query: "${altQuery}"`)
-          await new Promise(resolve => setTimeout(resolve, 400)) // Oneskorenie medzi requestmi
-          
-          try {
-            const newImageUrl = await getImageFromUnsplash(altQuery)
-            if (newImageUrl && !newImageUrl.includes('via.placeholder.com')) {
-              imageUrl = newImageUrl
-              console.log(`✓ Found image with alternative query for "${tip.title}"`)
-              break
-            } else if (!imageUrl) {
-              // Ak sme ešte nemali žiadny obrázok, použijeme aj placeholder
-              imageUrl = newImageUrl
-            }
-          } catch (error) {
-            console.warn(`Error in attempt ${attempts}:`, error)
-            // Aj pri chybe použijeme placeholder
-            if (!imageUrl) {
-              imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
-            }
-          }
-        }
-      }
-      
-      // Pokus 7: Len názov miesta (bez destinácie) - viac variácií
-      if (!imageUrl && tip.title) {
-        attempts++
-        let cleanTitle = tip.title
-          .replace(/^(v|na|do|z|k|o|s|a|the|a|le|la|les|el|los|las)\s+/gi, '')
-          .replace(/\s+(v|na|do|z|k|o|s|a|the|a)$/gi, '')
-          .replace(/[^\w\s]/g, ' ')
-          .trim()
-        
-        // Skúsime celý názov
-        console.log(`Attempt ${attempts}/${maxAttempts}: Trying full title: "${cleanTitle}"`)
-        await new Promise(resolve => setTimeout(resolve, 400))
-        try {
-          imageUrl = await getImageFromUnsplash(cleanTitle)
-        } catch (error) {
-          console.warn(`Error in attempt ${attempts}:`, error)
-        }
-        
-        // Ak to nefungovalo, skúsime len prvé 2-3 slová
-        if (!imageUrl && attempts < maxAttempts) {
-          attempts++
-          const titleWords = cleanTitle.split(/\s+/)
-          if (titleWords.length > 2) {
-            const shortTitle = titleWords.slice(0, 3).join(' ')
-            console.log(`Attempt ${attempts}/${maxAttempts}: Trying short title: "${shortTitle}"`)
-            await new Promise(resolve => setTimeout(resolve, 400))
+          for (const altQuery of alternativeQueries) {
+            if (imageUrl || attempts >= maxAttempts) break
+            
+            attempts++
+            console.log(`Attempt ${attempts}/${maxAttempts}: Trying alternative query: "${altQuery}"`)
+            await new Promise(resolve => setTimeout(resolve, 400)) // Oneskorenie medzi requestmi
+            
             try {
-              imageUrl = await getImageFromUnsplash(shortTitle)
+              const newImageUrl = await getImageFromUnsplash(altQuery)
+              if (newImageUrl && !newImageUrl.includes('via.placeholder.com')) {
+                imageUrl = newImageUrl
+                console.log(`✓ Found image with alternative query for "${tip.title}"`)
+                break
+              } else if (!imageUrl) {
+                // Ak sme ešte nemali žiadny obrázok, použijeme aj placeholder
+                imageUrl = newImageUrl
+              }
             } catch (error) {
               console.warn(`Error in attempt ${attempts}:`, error)
+              // Aj pri chybe použijeme placeholder
+              if (!imageUrl) {
+                imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
+              }
             }
           }
         }
-      }
       
-      // Pokus 8-9: Destinácia + kategória + názov (rôzne kombinácie)
-      if (!imageUrl && attempts < maxAttempts) {
-        const cityTranslations: Record<string, string> = {
-          'Paríž': 'Paris', 'Londýn': 'London', 'Rím': 'Rome', 'Barcelona': 'Barcelona',
-          'Amsterdam': 'Amsterdam', 'Berlín': 'Berlin', 'Viedeň': 'Vienna', 'Praha': 'Prague',
-          'Budapešť': 'Budapest', 'Krakow': 'Krakow', 'Atény': 'Athens', 'Lisabon': 'Lisbon',
-          'Dublin': 'Dublin', 'Edinburgh': 'Edinburgh', 'Kodaň': 'Copenhagen', 'Štokholm': 'Stockholm',
-          'Oslo': 'Oslo', 'Helsinki': 'Helsinki', 'Reykjavík': 'Reykjavik', 'Zürich': 'Zurich',
-          'Miláno': 'Milan', 'Florencia': 'Florence', 'Venezia': 'Venice', 'Neapol': 'Naples',
-          'Madrid': 'Madrid', 'Sevilla': 'Seville', 'Valencia': 'Valencia', 'Porto': 'Porto',
-          'Brusel': 'Brussels', 'Antverpy': 'Antwerp', 'Bruggy': 'Bruges', 'Bratislava': 'Bratislava',
-          'Ljubljana': 'Ljubljana', 'Záhreb': 'Zagreb',
-        }
-        const categoryKeywords: Record<string, string> = {
-          'attraction': 'landmark',
-          'restaurant': 'restaurant',
-          'activity': 'activity',
-          'accommodation': 'hotel',
-        }
-        const englishCity = cityTranslations[input.destination] || input.destination
-        const categoryKeyword = categoryKeywords[tip.category] || 'travel'
-        
-        // Skúsime: názov + destinácia
-        if (tip.title && attempts < maxAttempts) {
+        // Pokus 7: Len názov miesta (bez destinácie) - viac variácií
+        if (!imageUrl && tip.title) {
           attempts++
           let cleanTitle = tip.title
             .replace(/^(v|na|do|z|k|o|s|a|the|a|le|la|les|el|los|las)\s+/gi, '')
             .replace(/\s+(v|na|do|z|k|o|s|a|the|a)$/gi, '')
             .replace(/[^\w\s]/g, ' ')
             .trim()
-            .split(/\s+/)
-            .slice(0, 3)
-            .join(' ')
-          const query = `${cleanTitle} ${englishCity}`
-          console.log(`Attempt ${attempts}/${maxAttempts}: Trying title + city: "${query}"`)
+          
+          // Skúsime celý názov
+          console.log(`Attempt ${attempts}/${maxAttempts}: Trying full title: "${cleanTitle}"`)
           await new Promise(resolve => setTimeout(resolve, 400))
           try {
-            imageUrl = await getImageFromUnsplash(query)
+            imageUrl = await getImageFromUnsplash(cleanTitle)
           } catch (error) {
             console.warn(`Error in attempt ${attempts}:`, error)
+          }
+          
+          // Ak to nefungovalo, skúsime len prvé 2-3 slová
+          if (!imageUrl && attempts < maxAttempts) {
+            attempts++
+            const titleWords = cleanTitle.split(/\s+/)
+            if (titleWords.length > 2) {
+              const shortTitle = titleWords.slice(0, 3).join(' ')
+              console.log(`Attempt ${attempts}/${maxAttempts}: Trying short title: "${shortTitle}"`)
+              await new Promise(resolve => setTimeout(resolve, 400))
+              try {
+                imageUrl = await getImageFromUnsplash(shortTitle)
+              } catch (error) {
+                console.warn(`Error in attempt ${attempts}:`, error)
+              }
+            }
           }
         }
         
-        // Skúsime: destinácia + kategória
+        // Pokus 8-9: Destinácia + kategória + názov (rôzne kombinácie)
         if (!imageUrl && attempts < maxAttempts) {
-          attempts++
-          const fallbackQuery = `${englishCity} ${categoryKeyword}`
-          console.log(`Attempt ${attempts}/${maxAttempts}: Trying destination + category: "${fallbackQuery}"`)
-          await new Promise(resolve => setTimeout(resolve, 400))
-          try {
-            imageUrl = await getImageFromUnsplash(fallbackQuery)
-          } catch (error) {
-            console.warn(`Error in attempt ${attempts}:`, error)
+          const cityTranslations: Record<string, string> = {
+            'Paríž': 'Paris', 'Londýn': 'London', 'Rím': 'Rome', 'Barcelona': 'Barcelona',
+            'Amsterdam': 'Amsterdam', 'Berlín': 'Berlin', 'Viedeň': 'Vienna', 'Praha': 'Prague',
+            'Budapešť': 'Budapest', 'Krakow': 'Krakow', 'Atény': 'Athens', 'Lisabon': 'Lisbon',
+            'Dublin': 'Dublin', 'Edinburgh': 'Edinburgh', 'Kodaň': 'Copenhagen', 'Štokholm': 'Stockholm',
+            'Oslo': 'Oslo', 'Helsinki': 'Helsinki', 'Reykjavík': 'Reykjavik', 'Zürich': 'Zurich',
+            'Miláno': 'Milan', 'Florencia': 'Florence', 'Venezia': 'Venice', 'Neapol': 'Naples',
+            'Madrid': 'Madrid', 'Sevilla': 'Seville', 'Valencia': 'Valencia', 'Porto': 'Porto',
+            'Brusel': 'Brussels', 'Antverpy': 'Antwerp', 'Bruggy': 'Bruges', 'Bratislava': 'Bratislava',
+            'Ljubljana': 'Ljubljana', 'Záhreb': 'Zagreb',
           }
-        }
+          const categoryKeywords: Record<string, string> = {
+            'attraction': 'landmark',
+            'restaurant': 'restaurant',
+            'activity': 'activity',
+            'accommodation': 'hotel',
+          }
+          const englishCity = cityTranslations[input.destination] || input.destination
+          const categoryKeyword = categoryKeywords[tip.category] || 'travel'
+          
+          // Skúsime: názov + destinácia
+          if (tip.title && attempts < maxAttempts) {
+            attempts++
+            let cleanTitle = tip.title
+              .replace(/^(v|na|do|z|k|o|s|a|the|a|le|la|les|el|los|las)\s+/gi, '')
+              .replace(/\s+(v|na|do|z|k|o|s|a|the|a)$/gi, '')
+              .replace(/[^\w\s]/g, ' ')
+              .trim()
+              .split(/\s+/)
+              .slice(0, 3)
+              .join(' ')
+            const query = `${cleanTitle} ${englishCity}`
+            console.log(`Attempt ${attempts}/${maxAttempts}: Trying title + city: "${query}"`)
+            await new Promise(resolve => setTimeout(resolve, 400))
+            try {
+              imageUrl = await getImageFromUnsplash(query)
+            } catch (error) {
+              console.warn(`Error in attempt ${attempts}:`, error)
+            }
+          }
+          
+          // Skúsime: destinácia + kategória
+          if (!imageUrl && attempts < maxAttempts) {
+            attempts++
+            const fallbackQuery = `${englishCity} ${categoryKeyword}`
+            console.log(`Attempt ${attempts}/${maxAttempts}: Trying destination + category: "${fallbackQuery}"`)
+            await new Promise(resolve => setTimeout(resolve, 400))
+            try {
+              imageUrl = await getImageFromUnsplash(fallbackQuery)
+            } catch (error) {
+              console.warn(`Error in attempt ${attempts}:`, error)
+            }
+          }
         }
         
         // Posledný fallback: Placeholder (Unsplash Source už nefunguje - 503)
         if (!imageUrl) {
-        // Použijeme placeholder.com, ktorý vždy funguje
-        const placeholderUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
-        imageUrl = placeholderUrl
-        console.log(`⚠ Using placeholder fallback for "${tip.title}": ${placeholderUrl}`)
+          // Použijeme placeholder.com, ktorý vždy funguje
+          const placeholderUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+          imageUrl = placeholderUrl
+          console.log(`⚠ Using placeholder fallback for "${tip.title}": ${placeholderUrl}`)
+        }
       }
       
       // VŽDY musíme mať nejaký URL - aj keď je to fallback
