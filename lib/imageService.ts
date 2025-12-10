@@ -103,7 +103,7 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
                 }
                 
                 // Veľká penalizácia za neadekvátne slová
-                const negativeWords = ['beach', 'ocean', 'sea', 'mountain', 'forest', 'nature', 'animal', 'person', 'people', 'portrait', 'face', 'close-up', 'abstract', 'art', 'drawing', 'illustration', 'cartoon', 'sketch']
+                const negativeWords = ['beach', 'ocean', 'sea', 'mountain', 'forest', 'nature', 'animal', 'person', 'people', 'portrait', 'face', 'close-up', 'abstract', 'art', 'drawing', 'illustration', 'cartoon', 'sketch', 'interior', 'inside', 'room']
                 for (const negWord of negativeWords) {
                   if (title.includes(negWord) && !queryWords.some(qw => qw.includes(negWord))) {
                     score -= 20 // Veľká penalizácia za neadekvátne slová
@@ -111,6 +111,23 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
                   if (snippet.includes(negWord) && !queryWords.some(qw => qw.includes(negWord))) {
                     score -= 10
                   }
+                }
+                
+                // Bonus za zdroje, ktoré majú presné obrázky miest
+                const trustedSources = ['google', 'maps', 'streetview', 'wikipedia', 'wikimedia', 'commons', 'tripadvisor', 'getty', 'alamy']
+                for (const source of trustedSources) {
+                  if (link.includes(source) || displayLink.includes(source)) {
+                    score += 15 // Veľký bonus za dôveryhodné zdroje
+                  }
+                }
+                
+                // Bonus ak URL obsahuje názov miesta (často znamená presný obrázok)
+                const hasExactMatch = mainKeywords.some(keyword => {
+                  const keywordLower = keyword.toLowerCase()
+                  return link.includes(keywordLower) || displayLink.includes(keywordLower)
+                })
+                if (hasExactMatch) {
+                  score += 25 // Veľký bonus za presný match v URL
                 }
                 
                 // Bonus za dobrú veľkosť
