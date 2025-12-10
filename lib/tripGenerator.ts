@@ -364,16 +364,23 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
   // Extrahuj krajinu (jednoduchá logika)
   const country = extractCountry(input.destination)
 
-  onProgress?.(100, 'Plán výletu hotový!')
+    onProgress?.(100, 'Plán výletu hotový!')
 
-  return {
-    destination: input.destination,
-    country: country,
-    tips: tipsWithImages,
-    summary: summary.trim(),
-    bestTimeToVisit: undefined, // Môžeme pridať neskôr
-    currency: undefined, // Môžeme pridať neskôr
-    language: undefined, // Môžeme pridať neskôr
+    console.log(`[generateTrip] Completed successfully for: ${input.destination}`)
+    
+    return {
+      destination: input.destination,
+      country: country,
+      tips: tipsWithImages,
+      summary: summary.trim(),
+      bestTimeToVisit: undefined, // Môžeme pridať neskôr
+      currency: undefined, // Môžeme pridať neskôr
+      language: undefined, // Môžeme pridať neskôr
+    }
+  } catch (error: any) {
+    console.error(`[generateTrip] Error for destination ${input.destination}:`, error)
+    console.error(`[generateTrip] Error stack:`, error.stack)
+    throw error // Re-throw aby sa chyba zachytila v route
   }
 }
 
