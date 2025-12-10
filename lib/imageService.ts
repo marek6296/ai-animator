@@ -43,7 +43,7 @@ async function getImageFromGooglePlaces(placeName: string, city: string): Promis
           const place = searchData.results[0]
           
           // Krok 2: Získame fotky z miesta
-          if (place.photos && place.photos.length > 0) {
+          if (place.photos && place.photos.length > 0 && place.photos[0]) {
             // Vezmeme prvú fotku (zvyčajne najlepšia)
             const photoReference = place.photos[0].photo_reference
             
