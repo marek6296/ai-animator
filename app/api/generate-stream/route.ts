@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateTrip } from '@/lib/tripGenerator'
 import type { UserInput } from '@/types'
 
+// Export pre Next.js App Router
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 // Store pre progress (v produkcii by ste použili Redis alebo databázu)
 const progressStore = new Map<string, {
   step: 'trip' | 'complete'
