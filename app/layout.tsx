@@ -6,8 +6,8 @@ import ToasterProvider from '@/components/ToasterProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'AI Animator - Personalizované komiksy a animácie',
-  description: 'Vytvárajte personalizované komiksy, animácie a meme packy pomocou AI',
+  title: 'Trip Planner - Plánovač výletov po Európe',
+  description: 'Inteligentný plánovač výletov po Európe. Získajte personalizované tipy na destinácie, aktivity a miesta na návštevu.',
 }
 
 export default function RootLayout({

@@ -5,20 +5,62 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 })
 
-export async function generateImage(prompt: string, retries = 2): Promise<string> {
+export async function generateImage(
+  prompt: string, 
+  styleId?: string,
+  retries = 2,
+  referenceImage?: string,
+  imageStrength?: number
+): Promise<string> {
   // Použi Stable Diffusion SDXL + LoRA namiesto DALL-E
   const useStableDiffusion = process.env.USE_STABLE_DIFFUSION !== 'false'
   
   if (useStableDiffusion) {
-    // Použi Stable Diffusion SDXL + LoRA
-    return generateImageWithSDXL(prompt, {
-      loraModel: process.env.LORA_MODEL,
-      loraWeight: parseFloat(process.env.LORA_WEIGHT || '0.8'),
-      numInferenceSteps: parseInt(process.env.SDXL_STEPS || '30'),
-      guidanceScale: parseFloat(process.env.SDXL_GUIDANCE || '7.5'),
-      width: 1024,
-      height: 1024,
-    }, retries)
+    try {
+      // Importuj style options
+      const { getLoraModelForStyle, getLoraWeightForStyle, getStylePromptEnhancement } = await import('./loraModels')
+      
+      // Získaj LoRA model a prompt enhancement pre vybraný štýl
+      const style = styleId || 'comic-book'
+      const loraModel = getLoraModelForStyle(style)
+      const loraWeight = getLoraWeightForStyle(style)
+      const styleEnhancement = getStylePromptEnhancement(style)
+      
+      // Vylepši prompt so štýlom
+      const enhancedPrompt = styleEnhancement 
+        ? `${prompt}, ${styleEnhancement}`
+        : prompt
+      
+      // Pre img2img použijeme nižšiu silu vplyvu fotky, aby sa štýl lepšie aplikoval
+      const finalImageStrength = referenceImage 
+        ? (imageStrength || 0.5) // Pre img2img: 0.5 = viac transformácie štýlu
+        : undefined
+      
+      // Použi Stable Diffusion SDXL + LoRA
+      return await generateImageWithSDXL(enhancedPrompt, {
+        loraModel: loraModel,
+        loraWeight: loraWeight,
+        numInferenceSteps: referenceImage 
+          ? 30 // Pre img2img: mierne znížené pre rýchlejšie spracovanie
+          : parseInt(process.env.SDXL_STEPS || '35'), // Pre text-to-image: vyššie pre kvalitu
+        guidanceScale: referenceImage
+          ? 9.0 // Pre img2img: vyššie pre silnejšiu aplikáciu štýlu
+          : parseFloat(process.env.SDXL_GUIDANCE || '7.5'), // Pre text-to-image: štandardné
+        width: 1024,
+        height: 1024,
+        image: referenceImage, // Img2Img - referenčný obrázok
+        imageStrength: finalImageStrength, // Sila vplyvu referenčného obrázka
+      }, retries)
+    } catch (error: any) {
+      // Ak je chyba s kreditom alebo platbou, nefallbackuj na DALL-E
+      // Nech sa zobrazí jasná chybová správa
+      if (error.message?.includes('kredit') || error.message?.includes('credit') || error.message?.includes('billing')) {
+        throw error
+      }
+      // Pre iné chyby môžeme skúsiť fallback na DALL-E (ak je dostupný)
+      console.warn('Stable Diffusion failed, error:', error.message)
+      // Pokračujeme na DALL-E fallback
+    }
   }
 
   // Fallback na DALL-E 3 (ak USE_STABLE_DIFFUSION=false)

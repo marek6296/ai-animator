@@ -5,32 +5,48 @@ export async function generateComic(
   input: UserInput,
   onProgress?: (progress: number, message: string) => void
 ): Promise<Comic> {
-  // Najprv vygeneruj príbeh komiksu
-  onProgress?.(5, 'Generujem príbeh komiksu...')
-  const storyPrompt = `Vytvor krátky komiksový príbeh na základe týchto informácií:
-- Osoba: ${input.self}
-- Situácia: ${input.situation}
-- Kamaráti: ${input.friends}
-
-DÔLEŽITÉ: Vytvor presne 4-6 panelov komiksu. Pre každý panel MUSÍŠ použiť tento presný formát:
-Panel 1: [stručný popis scény] | [dialóg alebo text]
-Panel 2: [stručný popis scény] | [dialóg alebo text]
-Panel 3: [stručný popis scény] | [dialóg alebo text]
-Panel 4: [stručný popis scény] | [dialóg alebo text]
-
-Každý panel musí byť na samostatnom riadku a musí obsahovať "Panel X:" na začiatku a "|" medzi popisom a textom.
-Popis by mal byť stručný (max 50 slov) a text/dialóg by mal byť vtipný alebo zaujímavý.`
-
-  const storyText = await generateText(storyPrompt)
-  onProgress?.(15, 'Parsujem príbeh na panely...')
+  // Vytvor priamo panel z vstupov používateľa - bez generovania príbehu cez GPT
+  onProgress?.(5, 'Vytváram komiksový panel z vašich vstupov...')
   
-  // Parsuj príbeh na panely
-  const panels = parseStoryToPanels(storyText)
+  // Vytvor priamo panel z vstupov
+  let panelDescription = ''
+  let panelText = ''
   
-  // Validácia - musíme mať aspoň 1 panel
-  if (panels.length === 0) {
-    throw new Error('Nepodarilo sa vytvoriť panely komiksu. Skúste to znova s detailnejším popisom.')
+  if (input.simpleDescription) {
+    // Jednoduchý režim - použijeme simpleDescription priamo
+    panelDescription = input.simpleDescription
+    panelText = '...' // Dialóg sa môže pridať neskôr ak bude potreba
+  } else {
+    // Detailný režim - zostavíme popis z vstupov
+    panelDescription = `${input.situation}`
+    if (input.self) {
+      panelDescription += ` Hlavná postava: ${input.self}.`
+    }
+    if (input.friends) {
+      panelDescription += ` Ostatné postavy: ${input.friends}.`
+    }
+    panelText = '...'
   }
+  
+  // Pridaj rozšírené možnosti
+  if (input.emotions) {
+    panelDescription += ` Emócie: ${input.emotions}.`
+  }
+  if (input.action) {
+    panelDescription += ` Akcia: ${input.action}.`
+  }
+  if (input.environment) {
+    panelDescription += ` Prostredie: ${input.environment}.`
+  }
+  if (input.mood) {
+    panelDescription += ` Atmosféra: ${input.mood}.`
+  }
+  
+  // Vytvor panel objekt
+  const panels = [{
+    description: panelDescription,
+    text: panelText
+  }]
   
   // Vygeneruj obrázky pre každý panel
   const comicPanels: ComicPanel[] = []
@@ -52,14 +68,71 @@ Popis by mal byť stručný (max 50 slov) a text/dialóg by mal byť vtipný ale
       panel.text = '...'
     }
     
-    const imagePrompt = `Komiksový panel v štýle moderného farebného komiksu. Scéna: ${panel.description}. 
-    Hlavná postava: ${input.self}. Situácia: ${input.situation}. Ostatné postavy: ${input.friends}.
-    Štýl: kreslený komiks, farebné, dynamické, expresívne, profesionálne, detaily, čitateľné. 
-    Panel by mal byť ako z profesionálneho komiksu s dobrým osvetlením a kompozíciou.
-    Všetky texty a dialógy v komikse musia byť v slovenčine.`
+    // Vylepšený prompt pre profesionálny komiks
+    const { getStylePromptEnhancement } = await import('./loraModels')
+    const styleEnhancement = input.style ? getStylePromptEnhancement(input.style) : 'high quality, professional comic book art, detailed, masterpiece'
+    
+    // Zostav detailný a presný prompt
+    // Používame PRIAMO vstupy používateľa - žiadne náhodné prvky
+    let extendedPrompt = `Professional comic book panel.`
+    
+    // Zostav detailný popis scény z vstupov používateľa
+    let sceneDescription = ''
+    
+    if (input.simpleDescription) {
+      sceneDescription = input.simpleDescription
+    } else {
+      // Detailný režim - zostavíme presný popis
+      if (input.self) {
+        sceneDescription += `Main character: ${input.self}. `
+      }
+      if (input.situation) {
+        sceneDescription += `Situation: ${input.situation}. `
+      }
+      if (input.friends) {
+        sceneDescription += `Other characters: ${input.friends}. `
+      }
+    }
+    
+    // Pridaj rozšírené možnosti
+    if (input.environment) {
+      sceneDescription += `Setting/environment: ${input.environment}. `
+    }
+    if (input.action) {
+      sceneDescription += `Action happening: ${input.action}. `
+    }
+    if (input.emotions) {
+      sceneDescription += `Emotions/expressions: ${input.emotions}. `
+    }
+    if (input.mood) {
+      sceneDescription += `Mood/atmosphere: ${input.mood}. `
+    }
+    
+    // Hlavný popis scény
+    extendedPrompt += ` Scene: ${sceneDescription.trim()}`
+    
+    // Ak je referenčná fotka, pridáme inštrukcie pre tvár
+    if (input.useReferenceImage && input.referenceImage) {
+      extendedPrompt += ` The main character's face should look similar to the reference photo (same eye shape, nose, mouth, hair style and color, skin tone, age, gender, facial structure).`
+    }
+    
+    // Štýl a kvalita
+    extendedPrompt += ` ${styleEnhancement}.`
+    extendedPrompt += ` Professional comic book art style, high quality, detailed, colorful, dynamic composition, proper lighting, expressive characters.`
+    extendedPrompt += ` Draw this scene exactly as described. Do not add random elements. Follow the description precisely.`
+    extendedPrompt += ` All texts and dialogues must be in Slovak.`
     
     try {
-      const imageUrl = await generateImage(imagePrompt)
+      // Pre komiks NEPOUŽÍVAME img2img - generujeme úplne nový panel podľa príbehu
+      // Fotka sa použila len v prompte ako textová referencia pre tvár
+      // Toto zabezpečí, že sa generuje nový panel podľa príbehu, nie transformácia fotky
+      const imageUrl = await generateImage(
+        extendedPrompt, 
+        input.style,
+        2,
+        undefined, // NEPOUŽÍVAME img2img pre komiks - len textový popis tváre v prompte
+        undefined
+      )
       
       if (!imageUrl) {
         throw new Error(`Nepodarilo sa vygenerovať obrázok pre panel ${i + 1}`)
@@ -108,7 +181,7 @@ function parseStoryToPanels(storyText: string): Array<{ description: string; tex
   
   // Skús nájsť panely v rôznych formátoch
   // Formát 1: Panel 1: [popis] | [text]
-  const panelRegex1 = /Panel\s+(\d+):\s*(.+?)\s*\|\s*(.+?)(?=Panel|\n\n|$)/gis
+  const panelRegex1 = /Panel\s+(\d+):\s*(.+?)\s*\|\s*(.+?)(?=Panel|[\n\n]|$)/gi
   const matches1 = Array.from(storyText.matchAll(panelRegex1))
   
   if (matches1.length > 0) {
@@ -125,7 +198,7 @@ function parseStoryToPanels(storyText: string): Array<{ description: string; tex
   // Ak sa nepodarilo parsovať, skús alternatívny formát
   if (panels.length === 0) {
     // Formát 2: Panel 1: [text bez |]
-    const panelRegex2 = /Panel\s+(\d+):\s*(.+?)(?=Panel|\n\n|$)/gis
+    const panelRegex2 = /Panel\s+(\d+):\s*(.+?)(?=Panel|[\n\n]|$)/gi
     const matches2 = Array.from(storyText.matchAll(panelRegex2))
     
     if (matches2.length > 0) {
@@ -152,9 +225,9 @@ function parseStoryToPanels(storyText: string): Array<{ description: string; tex
     const sentences = storyText.split(/[.!?]+/).filter(s => s.trim().length > 10)
     
     if (sentences.length > 0) {
-      const chunkSize = Math.max(1, Math.ceil(sentences.length / 4))
+      const chunkSize = Math.max(1, Math.ceil(sentences.length / 2))
       
-      for (let i = 0; i < 4 && i * chunkSize < sentences.length; i++) {
+      for (let i = 0; i < 2 && i * chunkSize < sentences.length; i++) {
         const chunk = sentences.slice(i * chunkSize, (i + 1) * chunkSize)
         const description = chunk.join('. ').trim().substring(0, 200)
         const text = chunk[chunk.length - 1]?.trim() || '...'
@@ -162,9 +235,9 @@ function parseStoryToPanels(storyText: string): Array<{ description: string; tex
         panels.push({ description, text })
       }
     } else if (lines.length > 0) {
-      const chunkSize = Math.max(1, Math.ceil(lines.length / 4))
+      const chunkSize = Math.max(1, Math.ceil(lines.length / 2))
       
-      for (let i = 0; i < 4 && i * chunkSize < lines.length; i++) {
+      for (let i = 0; i < 2 && i * chunkSize < lines.length; i++) {
         const chunk = lines.slice(i * chunkSize, (i + 1) * chunkSize)
         panels.push({
           description: chunk.join(' ').trim().substring(0, 200),
@@ -177,11 +250,10 @@ function parseStoryToPanels(storyText: string): Array<{ description: string; tex
   // Validácia a očistenie panelov
   const validPanels = panels
     .filter(panel => panel.description.trim().length > 0 || panel.text.trim().length > 0)
-    .slice(0, 6) // Max 6 panelov
+    .slice(0, 1) // Len 1 panel pre rýchle generovanie
   
   return validPanels.length > 0 ? validPanels : [
     { description: 'Začiatok príbehu', text: '...' },
-    { description: 'Stred príbehu', text: '...' },
     { description: 'Koniec príbehu', text: '...' },
   ]
 }

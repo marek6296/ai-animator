@@ -1,12 +1,10 @@
 import { NextRequest } from 'next/server'
-import { generateComic } from '@/lib/comicGenerator'
-import { generateAnimation } from '@/lib/animationGenerator'
-import { generateMemePack } from '@/lib/memeGenerator'
+import { generateTrip } from '@/lib/tripGenerator'
 import type { UserInput } from '@/types'
 
 // Store pre progress (v produkcii by ste použili Redis alebo databázu)
 const progressStore = new Map<string, {
-  step: 'comic' | 'animation' | 'meme' | 'complete'
+  step: 'trip' | 'complete'
   progress: number
   message: string
   estimatedTimeRemaining?: number
@@ -19,8 +17,8 @@ export async function POST(request: NextRequest) {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
   // Validácia
-  if (!input.self || !input.situation || !input.friends) {
-    return new Response(JSON.stringify({ error: 'Všetky polia sú povinné' }), {
+  if (!input.destination) {
+    return new Response(JSON.stringify({ error: 'Destinácia je povinná' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     })
@@ -44,22 +42,10 @@ export async function POST(request: NextRequest) {
 
 async function generateWithProgress(requestId: string, input: UserInput) {
   try {
-    // Komiks
-    updateProgress(requestId, 'comic', 0, 'Začínam generovať komiks...')
-    const comic = await generateComic(input, (progress, message) => {
-      updateProgress(requestId, 'comic', progress, message)
-    })
-
-    // Animácia
-    updateProgress(requestId, 'animation', 0, 'Začínam generovať animáciu...')
-    const animation = await generateAnimation(input, (progress, message) => {
-      updateProgress(requestId, 'animation', progress, message)
-    })
-
-    // Meme pack
-    updateProgress(requestId, 'meme', 0, 'Začínam generovať meme pack...')
-    const memePack = await generateMemePack(input, (progress, message) => {
-      updateProgress(requestId, 'meme', progress, message)
+    // Generuj trip plan
+    updateProgress(requestId, 'trip', 0, 'Začínam generovať plán výletu...')
+    const trip = await generateTrip(input, (progress, message) => {
+      updateProgress(requestId, 'trip', progress, message)
     })
 
     // Hotovo
@@ -67,7 +53,7 @@ async function generateWithProgress(requestId: string, input: UserInput) {
       step: 'complete',
       progress: 100,
       message: 'Hotovo!',
-      result: { comic, animation, memePack },
+      result: { trip },
     })
   } catch (error: any) {
     progressStore.set(requestId, {
@@ -81,7 +67,7 @@ async function generateWithProgress(requestId: string, input: UserInput) {
 
 function updateProgress(
   requestId: string,
-  step: 'comic' | 'animation' | 'meme',
+  step: 'trip',
   progress: number,
   message: string
 ) {
