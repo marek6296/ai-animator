@@ -79,7 +79,7 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
     // Metóda 0: Google Places Photo API (NAJPRESNEJŠIE - presné obrázky z Google Maps)
     // Skúsime extrahovať názov miesta a mesto z query
     const quotedParts = query.match(/"([^"]+)"/g) || []
-    if (quotedParts.length >= 2) {
+    if (quotedParts.length >= 2 && quotedParts[0] && quotedParts[1]) {
       const placeName = quotedParts[0].replace(/"/g, '').trim()
       const city = quotedParts[1].replace(/"/g, '').trim()
       
