@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { generateTrip } from '@/lib/tripGenerator'
 import type { UserInput } from '@/types'
 
@@ -18,10 +18,10 @@ export async function POST(request: NextRequest) {
 
   // Validácia
   if (!input.destination) {
-    return new Response(JSON.stringify({ error: 'Destinácia je povinná' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return NextResponse.json(
+      { error: 'Destinácia je povinná' },
+      { status: 400 }
+    )
   }
 
   // Spusti generovanie asynchrónne
@@ -34,10 +34,7 @@ export async function POST(request: NextRequest) {
     })
   })
 
-  return new Response(JSON.stringify({ requestId }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return NextResponse.json({ requestId })
 }
 
 async function generateWithProgress(requestId: string, input: UserInput) {
@@ -89,24 +86,21 @@ export async function GET(request: NextRequest) {
   const requestId = searchParams.get('id')
 
   if (!requestId) {
-    return new Response(JSON.stringify({ error: 'Chýba requestId' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return NextResponse.json(
+      { error: 'Chýba requestId' },
+      { status: 400 }
+    )
   }
 
   const progress = progressStore.get(requestId)
   
   if (!progress) {
-    return new Response(JSON.stringify({ error: 'Progress nebol nájdený' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return NextResponse.json(
+      { error: 'Progress nebol nájdený' },
+      { status: 404 }
+    )
   }
 
-  return new Response(JSON.stringify(progress), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return NextResponse.json(progress)
 }
 
