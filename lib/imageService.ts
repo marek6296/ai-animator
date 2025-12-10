@@ -47,9 +47,12 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
             const data = await response.json()
             if (data.items && data.items.length > 0) {
               // Extrahujme kľúčové slová z query pre matching
-              // Odstránime úvodzovky a rozdělíme na slová
-              const queryWords = query.toLowerCase()
+              // Odstránime úvodzovky, site: a OR a rozdělíme na slová
+              const cleanQuery = query.toLowerCase()
                 .replace(/"/g, '') // Odstránime úvodzovky
+                .replace(/site:[\w.]+/g, '') // Odstránime site:maps.google.com
+                .replace(/\s+OR\s+/g, ' ') // Odstránime OR
+              const queryWords = cleanQuery
                 .split(/\s+/)
                 .filter(w => w.length > 2 && !['the', 'a', 'an', 'and', 'or', 'of', 'to', 'for', 'in', 'landmark', 'monument', 'restaurant', 'hotel', 'activity', 'accommodation'].includes(w))
               
