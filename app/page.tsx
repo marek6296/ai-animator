@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Sparkles, X, Rocket } from 'lucide-react'
+import { MapPin, Sparkles, X, Rocket, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import InputForm from '@/components/InputForm'
 import ResultsDisplay from '@/components/ResultsDisplay'
@@ -59,6 +59,16 @@ export default function Home() {
     setProgress(null)
     setRequestId(null)
     toast('Generovanie bolo zrušené', { icon: 'ℹ️' })
+  }
+
+  const handleBackToForm = () => {
+    setResults(null)
+    setUserInput(null)
+    setIsGenerating(false)
+    setProgress(null)
+    setRequestId(null)
+    // Scroll na začiatok stránky
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSubmit = async (input: UserInput) => {
@@ -270,88 +280,108 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-4 py-12 relative z-10">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <motion.div
-            className="flex items-center justify-center gap-4 mb-6"
-            whileHover={{ scale: 1.05 }}
-          >
-            <div className="relative">
-              <Sparkles className="w-16 h-16 text-cyan-400 neon-cyan" />
+        {/* Ak sú výsledky, zobraz len výsledky s tlačidlom Späť */}
+        {results && results.trip ? (
+          <div>
+            {/* Tlačidlo Späť */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mb-8"
+            >
+              <button
+                onClick={handleBackToForm}
+                className="flex items-center gap-2 px-6 py-3 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-bold hover:bg-cyan-400/10 transition-all"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Späť na vytvorenie nového výletu
+              </button>
+            </motion.div>
+
+            {/* Results */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <ResultsDisplay results={results} userInput={userInput} />
+            </motion.div>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: -30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-16"
+            >
               <motion.div
-                className="absolute inset-0 bg-cyan-400/20 rounded-full blur-xl"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.5, 0.8, 0.5],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            </div>
-            <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              TRIP PLANNER
-            </h1>
-          </motion.div>
-          
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
-          >
-            Objavte <span className="text-cyan-400 font-semibold">najlepšie destinácie</span> v Európe s{' '}
-            <span className="text-purple-400 font-semibold">inteligentným plánovačom</span>. Získajte{' '}
-            <span className="text-pink-400 font-semibold">personalizované tipy</span> na nezabudnuteľné zážitky.
-          </motion.p>
+                className="flex items-center justify-center gap-4 mb-6"
+                whileHover={{ scale: 1.05 }}
+              >
+                <div className="relative">
+                  <Sparkles className="w-16 h-16 text-cyan-400 neon-cyan" />
+                  <motion.div
+                    className="absolute inset-0 bg-cyan-400/20 rounded-full blur-xl"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 0.8, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </div>
+                <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  TRIP PLANNER
+                </h1>
+              </motion.div>
+              
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
+              >
+                Objavte <span className="text-cyan-400 font-semibold">najlepšie destinácie</span> v Európe s{' '}
+                <span className="text-purple-400 font-semibold">inteligentným plánovačom</span>. Získajte{' '}
+                <span className="text-pink-400 font-semibold">personalizované tipy</span> na nezabudnuteľné zážitky.
+              </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex items-center justify-center gap-8 mt-8"
-          >
-            <div className="flex items-center gap-2 text-cyan-400">
-              <MapPin className="w-5 h-5" />
-              <span className="text-sm font-medium">50+ Destinácií</span>
-            </div>
-            <div className="flex items-center gap-2 text-purple-400">
-              <Sparkles className="w-5 h-5" />
-              <span className="text-sm font-medium">Inteligentný Systém</span>
-            </div>
-            <div className="flex items-center gap-2 text-pink-400">
-              <Rocket className="w-5 h-5" />
-              <span className="text-sm font-medium">Okamžité Výsledky</span>
-            </div>
-          </motion.div>
-        </motion.div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                className="flex items-center justify-center gap-8 mt-8"
+              >
+                <div className="flex items-center gap-2 text-cyan-400">
+                  <MapPin className="w-5 h-5" />
+                  <span className="text-sm font-medium">50+ Destinácií</span>
+                </div>
+                <div className="flex items-center gap-2 text-purple-400">
+                  <Sparkles className="w-5 h-5" />
+                  <span className="text-sm font-medium">Inteligentný Systém</span>
+                </div>
+                <div className="flex items-center gap-2 text-pink-400">
+                  <Rocket className="w-5 h-5" />
+                  <span className="text-sm font-medium">Okamžité Výsledky</span>
+                </div>
+              </motion.div>
+            </motion.div>
 
-        {/* Input Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.6 }}
-        >
-          <InputForm onSubmit={handleSubmit} isGenerating={isGenerating} />
-        </motion.div>
-
-        {/* Results */}
-        {results && results.trip && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mt-16"
-          >
-            <ResultsDisplay results={results} userInput={userInput} />
-          </motion.div>
+            {/* Input Form */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+            >
+              <InputForm onSubmit={handleSubmit} isGenerating={isGenerating} />
+            </motion.div>
+          </>
         )}
 
         {/* Loading Modal */}
