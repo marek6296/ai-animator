@@ -316,19 +316,22 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
               } else {
                 // Ak stále nič, použijeme placeholder - NIE fallback na Unsplash
                 console.warn(`⚠ No Google Places match found for "${tip.title}", using placeholder`)
-                imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+                const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
+                imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
               }
             } else {
               // Ak nemáme čo čistiť, použijeme placeholder
               console.warn(`⚠ No Google Places match found for "${tip.title}", using placeholder`)
-              imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+              const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
+              imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
             }
           }
         }
         
         // Ak sme stále nemáme obrázok, použijeme placeholder
         if (!imageUrl) {
-          imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+          const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
+          imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
           console.log(`⚠ Using placeholder fallback for "${tip.title}"`)
         }
         
@@ -350,10 +353,11 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
         }
       } catch (error) {
         console.error(`Chyba pri získavaní obrázka pre tip ${i + 1} (${tip.title}):`, error)
-        // Pokračujeme bez obrázka
+        // Pokračujeme bez obrázka - použijeme placeholder
+        const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
         tipsWithImages.push({
           ...tip,
-          imageUrl: '',
+          imageUrl: `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`,
         })
       }
     }

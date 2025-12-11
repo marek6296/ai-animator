@@ -84,7 +84,7 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
   if (!query || query.trim().length === 0) {
     // Ak je query prázdne, vráťme generický obrázok
     console.log(`⚠ Empty query, using generic fallback`)
-    return `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=Travel`
+    return `https://placehold.co/800x600/1a1a2e/00ffff?text=Travel`
   }
 
   // Metóda 0: Google Places Photo API (NAJPRESNEJŠIE - presné obrázky z Google Maps)
@@ -431,7 +431,7 @@ export async function getImageFromUnsplash(query: string): Promise<string> {
       // Placeholder.com - vždy funguje, ale je to len placeholder
       // Lepšie je použiť Pexels API, ktoré sme už skúsili vyššie
       // Ale ak všetko zlyhalo, použijeme placeholder
-      const placeholderUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(query.substring(0, 30))}`
+      const placeholderUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${encodeURIComponent(query.substring(0, 30))}`
       console.log(`⚠ Using placeholder (all sources failed) for "${query}"`)
       return placeholderUrl
     } catch (error) {
