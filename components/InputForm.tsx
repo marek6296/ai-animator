@@ -239,7 +239,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
           console.log('[Autocomplete] Miesto uložené:', place.name)
           
           // Automaticky urči režim podľa typu miesta
-          if (place.types && place.types.some(t => ['point_of_interest', 'tourist_attraction', 'museum', 'park', 'restaurant'].includes(t))) {
+          if (place.types && place.types.some((t: string) => ['point_of_interest', 'tourist_attraction', 'museum', 'park', 'restaurant'].includes(t))) {
             // Ak je to POI, nastav default na 'around', ale používateľ môže zmeniť
             if (mode === 'city') {
               setMode('around')
