@@ -391,25 +391,31 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    <div className="pt-4 pb-4 px-5 flex flex-col h-full">
-                      {/* Title with Star */}
-                      <div className="flex items-start gap-2 mb-1.5 flex-shrink-0 min-h-[2.5rem]">
-                        <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
-                        <h4 className="text-xl font-black text-white leading-tight line-clamp-2">{tip.title}</h4>
+                    {/* NOVÉ ROZLOŽENIE - Čistý dizajn s fixnými výškami */}
+                    <div className="flex flex-col h-full bg-gradient-to-b from-gray-900/95 to-gray-950/95">
+                      {/* Názov */}
+                      <div className="px-5 pt-4 pb-2 flex-shrink-0">
+                        <div className="flex items-start gap-2">
+                          <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-0.5`} />
+                          <h4 className="text-xl font-black text-white leading-tight line-clamp-2">{tip.title}</h4>
+                        </div>
                       </div>
 
-                      {/* Text Content Container - fixná výška pre zarovnanie */}
-                      <div className="flex-grow flex flex-col" style={{ minHeight: '10rem' }}>
-                        {/* Description */}
-                        <p className="text-gray-300 text-sm leading-normal mb-0 pb-0 line-clamp-7 flex-grow">{tip.description}</p>
+                      {/* Popis - fixná výška */}
+                      <div className="px-5 pb-3 flex-shrink-0" style={{ minHeight: '8rem', maxHeight: '8rem' }}>
+                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">{tip.description}</p>
+                      </div>
 
-                        {/* Meta Info - čiara hneď za textom */}
-                        <div className="flex flex-col gap-2 pt-1 border-t border-white/10 mt-auto flex-shrink-0">
+                      {/* Čiara */}
+                      <div className="px-5 border-t border-white/10 flex-shrink-0"></div>
+
+                      {/* Badges - fixné zarovnanie dole */}
+                      <div className="px-5 py-3 flex flex-col gap-2 flex-shrink-0">
                         {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
-                        <div className="flex justify-between items-center gap-2 min-h-[2rem]">
+                        <div className="flex justify-between items-center gap-2">
                           {/* Hodnotenie - vľavo */}
                           {tip.rating && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 min-h-[2rem]">
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
                               <Star className="w-4 h-4 text-cyan-400 flex-shrink-0" />
                               <span className="text-xs font-bold text-cyan-200">{tip.rating.toFixed(1)}</span>
                               {tip.user_ratings_total !== undefined && (
@@ -420,7 +426,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                           {/* Ostatné info - vpravo */}
                           <div className="flex items-center gap-2 flex-wrap justify-end">
                             {(tip.price || tip.price_level !== undefined) && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30 min-h-[2rem]">
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30">
                                 <DollarSign className="w-4 h-4 text-pink-400 flex-shrink-0" />
                                 <span className="text-xs font-bold text-pink-200">
                                   {tip.price ? tip.price : priceLevelLabel(tip.price_level)}
@@ -428,7 +434,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                               </div>
                             )}
                             {tip.open_now !== undefined && (
-                              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border min-h-[2rem] ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
+                              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
                                 <Clock className={`w-4 h-4 flex-shrink-0 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
                                 <span className="text-xs font-bold">
                                   {tip.open_now ? 'Otvorené teraz' : 'Zatvorené'}
@@ -436,13 +442,13 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                               </div>
                             )}
                             {tip.business_status && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30 min-h-[2rem]">
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30">
                                 <Info className="w-4 h-4 text-purple-300 flex-shrink-0" />
                                 <span className="text-xs font-bold text-purple-100 truncate">{tip.business_status}</span>
                               </div>
                             )}
                             {tip.duration && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 min-h-[2rem]">
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
                                 <Clock className="w-4 h-4 text-cyan-300 flex-shrink-0" />
                                 <span className="text-xs font-bold text-cyan-100">{tip.duration}</span>
                               </div>
@@ -451,12 +457,11 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         </div>
                         {/* Druhý riadok: Adresa - vľavo */}
                         {tip.location && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 min-h-[2rem]">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
                             <MapPin className="w-4 h-4 text-cyan-300 flex-shrink-0" />
                             <span className="text-xs font-bold text-cyan-100 truncate">{tip.location}</span>
                           </div>
                         )}
-                      </div>
                       </div>
                     </div>
                     </motion.div>
