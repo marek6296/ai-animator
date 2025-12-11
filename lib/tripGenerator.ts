@@ -786,6 +786,8 @@ async function generateTripWithoutPlaces(
     let place_id = tip.place_id
     let coordinates: { lat: number; lng: number } | undefined
     
+    console.log(`[generateTripWithoutPlaces] Searching for place: "${title}" in "${input.destination}"`)
+    
     // Skús nájsť skutočné miesto pomocou findPlaceByName
     try {
       const foundPlace = await findPlaceByName(title, input.destination || '')
