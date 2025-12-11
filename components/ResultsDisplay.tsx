@@ -247,7 +247,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
               </div>
 
               {/* Tips Grid */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tips.map((tip, index) => {
                   // Použij unique key kombinujúci category a index pre globálny identifikátor
                   const globalIndex = `${category}-${index}`
@@ -298,7 +298,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         return newState
                       })
                     }}
-                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] flex flex-col h-full`}
+                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] flex flex-col`}
                   >
                     {/* Image */}
                     {displayImageUrl && displayImageUrl.trim() !== '' ? (
@@ -391,7 +391,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    <div className="pt-4 pb-4 px-5 flex flex-col h-full">
+                    <div className="pt-4 pb-4 px-5 flex flex-col min-h-[180px]">
                       {/* Title with Star */}
                       <div className="flex items-start gap-2 mb-1.5 flex-shrink-0 min-h-[2.5rem]">
                         <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
