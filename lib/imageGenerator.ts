@@ -13,13 +13,14 @@ export async function generateSingleImage(
   onProgress?.(10, 'Transformujem fotku do vybraného štýlu...')
   
   // Vytvor prompt pre transformáciu štýlu
-  let styleTransform = input.style === 'manga' 
+  const style = (input as any).style || 'comic-book'
+  let styleTransform = style === 'manga' 
     ? 'Transform this photo into manga/anime style. Convert realistic photo to Japanese manga art style. Anime character design, manga illustration style, cel-shaded, vibrant colors, expressive eyes, stylized features, anime art, manga drawing. The face should look similar but in anime/manga style, not photorealistic.'
-    : input.style === 'comic-book'
+    : style === 'comic-book'
     ? 'Transform this photo into comic book style. Convert realistic photo to comic book art. Bold lines, vibrant colors, comic book illustration, stylized features, comic art style. The face should look similar but in comic book style, not photorealistic.'
-    : input.style === 'cartoon-comic'
+    : style === 'cartoon-comic'
     ? 'Transform this photo into cartoon style. Convert realistic photo to Disney/Pixar cartoon style. Stylized, colorful, animated movie style, cartoon art. The face should look similar but in cartoon style, not photorealistic.'
-    : input.style === 'realistic-comic'
+    : style === 'realistic-comic'
     ? 'Transform this photo into realistic comic book style. Convert photo to photorealistic comic art. Highly detailed, cinematic, professional comic art style.'
     : 'Transform this photo into the selected art style. Convert realistic photo to artistic illustration style. The face should look similar but in the selected art style, not photorealistic.'
   
@@ -47,10 +48,10 @@ export async function generateSingleImage(
   onProgress?.(100, 'Obrázok hotový!')
   
   // Názov podľa štýlu
-  const styleName = input.style === 'manga' ? 'Manga' 
-    : input.style === 'comic-book' ? 'Komiks'
-    : input.style === 'cartoon-comic' ? 'Kreslený'
-    : input.style === 'realistic-comic' ? 'Realistický komiks'
+  const styleName = style === 'manga' ? 'Manga' 
+    : style === 'comic-book' ? 'Komiks'
+    : style === 'cartoon-comic' ? 'Kreslený'
+    : style === 'realistic-comic' ? 'Realistický komiks'
     : 'Transformovaný obrázok'
   
   return {
