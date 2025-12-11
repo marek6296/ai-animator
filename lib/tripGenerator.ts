@@ -177,93 +177,94 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       
       onProgress?.(progress, `Spárujem: ${tip.title}...`)
       
-      // Nájdeme zodpovedajúce miesto z Google Places
-      const matchingPlace = places.find(place => 
-        place.name.toLowerCase().includes(tip.title.toLowerCase()) ||
-        tip.title.toLowerCase().includes(place.name.toLowerCase())
-      )
-      
-      let imageUrl: string = ''
-      let place_id: string | undefined
-      let photo_reference: string | undefined
-      let coordinates: { lat: number; lng: number } | undefined
-      
-      if (matchingPlace && matchingPlace.photos && matchingPlace.photos.length > 0) {
-        // Použijeme photo_reference z Google Places
-        photo_reference = matchingPlace.photos[0].photo_reference
-        place_id = matchingPlace.place_id
-        imageUrl = getPlacePhotoUrl(photo_reference, 800)
+      try {
+        // Nájdeme zodpovedajúce miesto z Google Places
+        const matchingPlace = places.find(place => 
+          place.name.toLowerCase().includes(tip.title.toLowerCase()) ||
+          tip.title.toLowerCase().includes(place.name.toLowerCase())
+        )
         
-        if (matchingPlace.geometry?.location) {
-          coordinates = {
-            lat: matchingPlace.geometry.location.lat,
-            lng: matchingPlace.geometry.location.lng,
-          }
-        }
+        let imageUrl: string = ''
+        let place_id: string | undefined
+        let photo_reference: string | undefined
+        let coordinates: { lat: number; lng: number } | undefined
         
-        console.log(`✓ Found matching place for "${tip.title}": ${matchingPlace.name}`)
-      } else {
-        // Fallback: Skúsime nájsť miesto podľa názvu
-        console.log(`⚠ No exact match for "${tip.title}", trying to find by name...`)
-        const foundPlace = await findPlaceByName(tip.title, englishCity)
-        
-        if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
-          photo_reference = foundPlace.photos[0].photo_reference
-          place_id = foundPlace.place_id
+        if (matchingPlace && matchingPlace.photos && matchingPlace.photos.length > 0) {
+          // Použijeme photo_reference z Google Places
+          photo_reference = matchingPlace.photos[0].photo_reference
+          place_id = matchingPlace.place_id
           imageUrl = getPlacePhotoUrl(photo_reference, 800)
           
-          if (foundPlace.geometry?.location) {
+          if (matchingPlace.geometry?.location) {
             coordinates = {
-              lat: foundPlace.geometry.location.lat,
-              lng: foundPlace.geometry.location.lng,
+              lat: matchingPlace.geometry.location.lat,
+              lng: matchingPlace.geometry.location.lng,
             }
           }
           
-          console.log(`✓ Found place by name for "${tip.title}": ${foundPlace.name}`)
+          console.log(`✓ Found matching place for "${tip.title}": ${matchingPlace.name}`)
         } else {
-          // Posledný fallback: Použijeme starý systém
-          console.warn(`⚠ No Google Places match for "${tip.title}", using fallback image search`)
-          try {
-            const imageQuery = createImageQuery(input.destination, tip.title, tip.category)
-            imageUrl = await getImageFromUnsplash(imageQuery)
-          } catch (error) {
-            console.warn(`Error getting fallback image for "${tip.title}":`, error)
-            imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+          // Fallback: Skúsime nájsť miesto podľa názvu
+          console.log(`⚠ No exact match for "${tip.title}", trying to find by name...`)
+          const foundPlace = await findPlaceByName(tip.title, englishCity)
+          
+          if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
+            photo_reference = foundPlace.photos[0].photo_reference
+            place_id = foundPlace.place_id
+            imageUrl = getPlacePhotoUrl(photo_reference, 800)
+            
+            if (foundPlace.geometry?.location) {
+              coordinates = {
+                lat: foundPlace.geometry.location.lat,
+                lng: foundPlace.geometry.location.lng,
+              }
+            }
+            
+            console.log(`✓ Found place by name for "${tip.title}": ${foundPlace.name}`)
+          } else {
+            // Posledný fallback: Použijeme starý systém
+            console.warn(`⚠ No Google Places match for "${tip.title}", using fallback image search`)
+            try {
+              const imageQuery = createImageQuery(input.destination, tip.title, tip.category)
+              imageUrl = await getImageFromUnsplash(imageQuery)
+            } catch (error) {
+              console.warn(`Error getting fallback image for "${tip.title}":`, error)
+              imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+            }
           }
         }
+        
+        // Ak sme stále nemáme obrázok, použijeme placeholder
+        if (!imageUrl) {
+          imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+          console.log(`⚠ Using placeholder fallback for "${tip.title}"`)
+        }
+        
+        // VŽDY pridáme tip s imageUrl a place_id/photo_reference
+        tipsWithImages.push({
+          ...tip,
+          imageUrl: imageUrl,
+          place_id: place_id,
+          photo_reference: photo_reference,
+          coordinates: coordinates,
+        })
+        
+        console.log(`✓ Added tip "${tip.title}" with imageUrl: ${imageUrl ? 'YES' : 'NO'}`)
+        
+        // Väčšie oneskorenie medzi requestmi, aby sme neprekročili rate limit
+        // Google API má limit 100 req/deň, takže potrebujeme byť opatrní
+        if (i < tips.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500)) // 500ms delay medzi tipmi
+        }
+      } catch (error) {
+        console.error(`Chyba pri získavaní obrázka pre tip ${i + 1} (${tip.title}):`, error)
+        // Pokračujeme bez obrázka
+        tipsWithImages.push({
+          ...tip,
+          imageUrl: '',
+        })
       }
-      
-      // Ak sme stále nemáme obrázok, použijeme placeholder
-      if (!imageUrl) {
-        imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
-        console.log(`⚠ Using placeholder fallback for "${tip.title}"`)
-      }
-      
-      // VŽDY pridáme tip s imageUrl a place_id/photo_reference
-      tipsWithImages.push({
-        ...tip,
-        imageUrl: imageUrl,
-        place_id: place_id,
-        photo_reference: photo_reference,
-        coordinates: coordinates,
-      })
-      
-      console.log(`✓ Added tip "${tip.title}" with imageUrl: ${imageUrl ? 'YES' : 'NO'}`)
-      
-      // Väčšie oneskorenie medzi requestmi, aby sme neprekročili rate limit
-      // Google API má limit 100 req/deň, takže potrebujeme byť opatrní
-      if (i < tips.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500)) // 500ms delay medzi tipmi
-      }
-    } catch (error) {
-      console.error(`Chyba pri získavaní obrázka pre tip ${i + 1} (${tip.title}):`, error)
-      // Pokračujeme bez obrázka
-      tipsWithImages.push({
-        ...tip,
-        imageUrl: '',
-      })
     }
-  }
 
   onProgress?.(80, 'Vytváram súhrn...')
   
