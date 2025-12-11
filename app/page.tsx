@@ -35,6 +35,19 @@ export default function Home() {
     }
   }, [])
 
+  // Bezpečnostný watchdog: vždy po zmene výsledkov/komponentu uvoľni scroll,
+  // aby sa predišlo prípadnému zablokovaniu scrollovania (napr. po modale).
+  useEffect(() => {
+    const resetBodyScroll = () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+    }
+    resetBodyScroll()
+    return () => resetBodyScroll()
+  }, [results])
+
   const handleCancel = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
