@@ -96,6 +96,11 @@ export interface TripTip {
   location?: string
   duration?: string // Napr. "2-3 hodiny"
   price?: string // Napr. "Zdarma" alebo "€10-20"
+  rating?: number
+  user_ratings_total?: number
+  price_level?: number // 0-4
+  business_status?: string
+  open_now?: boolean
   coordinates?: {
     lat: number
     lng: number

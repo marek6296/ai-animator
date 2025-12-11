@@ -356,7 +356,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
         return
       }
     }
-    if (currentStep < 6) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -1118,7 +1118,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
             Späť
           </button>
 
-          {currentStep < 6 ? (
+          {currentStep < 4 ? (
             <button
               type="button"
               onClick={nextStep}
