@@ -14,15 +14,6 @@ declare global {
   interface Window {
     google: any
   }
-  
-  // Typy pre nový PlaceAutocompleteElement
-  namespace JSX {
-    interface IntrinsicElements {
-      'gmp-place-autocomplete': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        ongmp-placechanged?: (e: CustomEvent<{ place: any }>) => void
-      }
-    }
-  }
 }
 
 interface InputFormProps {
