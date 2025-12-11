@@ -391,7 +391,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    <div className="pb-5 px-5 flex flex-col h-full -mt-8 md:-mt-8">
+                    <div className="pb-5 px-5 flex flex-col h-full -mt-12 md:-mt-12">
                       {/* Title with Star */}
                       <div className="flex items-start gap-2 mb-1.5 flex-shrink-0 min-h-[2.5rem]">
                         <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
