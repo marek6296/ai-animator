@@ -50,7 +50,7 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
     }
   }, [isOpen, tip.place_id])
 
-  // Zablokuj scrollovanie body keď je modal otvorený
+  // Zablokuj scrollovanie body keď je modal otvorený (bez globálnych wheel/touch listenerov)
   useEffect(() => {
     if (isOpen) {
       // Ulož aktuálnu scroll pozíciu
@@ -62,53 +62,6 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
       document.body.style.top = `-${scrollY}px`
       document.body.style.width = '100%'
       
-      // Zabráň scrollovaniu pomocou touchmove (pre mobilné zariadenia)
-      const preventScroll = (e: TouchEvent) => {
-        const target = e.target as HTMLElement
-        const modalContent = target.closest('[data-modal-content]')
-        const modalContainer = target.closest('[data-modal-container]')
-        
-        // Povol scrollovanie len vnútri modalu
-        if (!modalContent && !modalContainer) {
-          e.preventDefault()
-        }
-      }
-      
-      // Zabráň scrollovaniu pomocou wheel mimo modalu
-      const preventWheel = (e: WheelEvent) => {
-        const target = e.target as HTMLElement
-        // Skontroluj, či je event vnútri modalu
-        const modalContent = target.closest('[data-modal-content]')
-        const modalContainer = target.closest('[data-modal-container]')
-        
-        // Ak nie je vnútri modalu, úplne zablokuj
-        if (!modalContent && !modalContainer) {
-          e.preventDefault()
-          e.stopPropagation()
-          return false
-        }
-        
-        // Ak je v content area, skontroluj scroll pozíciu
-        if (modalContent) {
-          const scrollableElement = modalContent as HTMLElement
-          const { scrollTop, scrollHeight, clientHeight } = scrollableElement
-          const isAtTop = scrollTop <= 1 // Malá tolerancia pre zaokrúhľovanie
-          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
-          
-          // Ak sme na vrchu a scrollujeme hore, alebo na spodku a scrollujeme dole, zablokuj
-          if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
-            e.preventDefault()
-            e.stopPropagation()
-            return false
-          }
-          // Inak povol scrollovanie len vnútri - zastav propagáciu
-          e.stopPropagation()
-        }
-      }
-      
-      document.addEventListener('touchmove', preventScroll, { passive: false })
-      document.addEventListener('wheel', preventWheel, { passive: false, capture: true })
-      
       return () => {
         // Vždy obnov scrollovanie
         document.body.style.overflow = ''
@@ -118,10 +71,6 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
         
         // Obnov scroll pozíciu
         window.scrollTo(0, scrollY)
-        
-        // Odstráň event listenery
-        document.removeEventListener('touchmove', preventScroll)
-        document.removeEventListener('wheel', preventWheel)
       }
     } else {
       // Ak modal nie je otvorený, uisti sa, že scrollovanie je povolené
@@ -210,17 +159,6 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
                 onClose()
               }
             }}
-            onWheel={(e) => {
-              // Zabráň scrollovaniu backdropu - úplne zablokuj
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-            onTouchMove={(e) => {
-              // Zabráň touch scrollovaniu backdropu
-              if (e.target === e.currentTarget) {
-                e.preventDefault()
-              }
-            }}
           >
             <div 
               data-modal-container
@@ -234,12 +172,6 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
                 borderRadius: '1.5rem'
               }}
               onClick={(e) => e.stopPropagation()}
-              onWheel={(e) => {
-                // Zablokuj propagáciu wheel eventu mimo content area
-                if (e.target !== e.currentTarget) {
-                  e.stopPropagation()
-                }
-              }}
             >
               {/* Header - Fixed */}
               <div className="relative p-6 border-b border-cyan-400/30 flex-shrink-0 overflow-hidden bg-gray-900/95">
@@ -274,27 +206,8 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
                   maxHeight: 'calc(90vh - 120px)',
                   wordWrap: 'break-word',
                   overflowWrap: 'break-word',
-                  minHeight: 0 // Dôležité pre flex-1
-                }}
-                onWheel={(e) => {
-                  // Povol scrollovanie len tu a zabráň propagácii
-                  const element = e.currentTarget
-                  const { scrollTop, scrollHeight, clientHeight } = element
-                  const isAtTop = scrollTop <= 0
-                  const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
-                  
-                  // Ak sme na vrchu a scrollujeme hore, alebo na spodku a scrollujeme dole, zablokuj propagáciu
-                  if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
-                    e.preventDefault()
-                    e.stopPropagation()
-                  } else {
-                    // Inak len zastav propagáciu, ale povol scrollovanie
-                    e.stopPropagation()
-                  }
-                }}
-                onTouchMove={(e) => {
-                  // Povol touch scrollovanie len tu
-                  e.stopPropagation()
+                  minHeight: 0, // Dôležité pre flex-1
+                  overscrollBehavior: 'contain'
                 }}
               >
                 {loading && (
