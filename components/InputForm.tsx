@@ -78,7 +78,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
   const [hasSpecificDates, setHasSpecificDates] = useState(false)
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [duration, setDuration] = useState<number>(3)
+  const [duration, setDuration] = useState<number | undefined>(undefined)
   const [adults, setAdults] = useState<number>(2)
   const [children, setChildren] = useState<number>(0)
   const [travelType, setTravelType] = useState<'solo' | 'couple' | 'family' | 'group'>('couple')
@@ -88,10 +88,12 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
   const [interests, setInterests] = useState<string[]>([])
   const [preferredInterests, setPreferredInterests] = useState<string[]>([])
   const [transportation, setTransportation] = useState<'walk_public' | 'walk_only' | 'car' | 'taxi'>('walk_public')
-  const [maxWalkingMinutes, setMaxWalkingMinutes] = useState<number>(15)
+  // Max walking removed for now
+  const [maxWalkingMinutes, setMaxWalkingMinutes] = useState<number | undefined>(undefined)
   const [accessibilityNeeds, setAccessibilityNeeds] = useState(false)
   const [avoidStairs, setAvoidStairs] = useState(false)
   const [travelingWithPet, setTravelingWithPet] = useState(false)
+  const [specialRequirements, setSpecialRequirements] = useState<string[]>([])
   const [dietaryRestrictions, setDietaryRestrictions] = useState<'none' | 'vegetarian' | 'vegan' | 'gluten_free' | 'lactose_free' | 'other'>('none')
   const [dietaryOther, setDietaryOther] = useState('')
   const [foodPreferences, setFoodPreferences] = useState<string[]>([])
@@ -328,10 +330,11 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       interests: interests.length > 0 ? interests : undefined,
       preferredInterests: preferredInterests.length > 0 ? preferredInterests : undefined,
       transportation,
-      maxWalkingMinutes,
+      maxWalkingMinutes: undefined, // dočasne vypnuté
       accessibilityNeeds,
       avoidStairs,
       travelingWithPet,
+      specialRequirements: specialRequirements.length > 0 ? specialRequirements : undefined,
       dietaryRestrictions: dietaryRestrictions !== 'none' ? dietaryRestrictions : undefined,
       dietaryOther: dietaryRestrictions === 'other' ? dietaryOther : undefined,
       foodPreferences: foodPreferences.length > 0 ? foodPreferences : undefined,
@@ -594,85 +597,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 )}
               </div>
 
-              {/* Termín / dĺžka */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Calendar className="w-6 h-6" />
-                  Termín / dĺžka
-                </label>
-                <div className="space-y-4">
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-3 cursor-pointer group flex-1">
-                      <input
-                        type="radio"
-                        name="dateType"
-                        checked={hasSpecificDates}
-                        onChange={() => setHasSpecificDates(true)}
-                        disabled={isGenerating}
-                        className="w-5 h-5 accent-cyan-400"
-                      />
-                      <span className="text-gray-300 group-hover:text-cyan-400">Mám konkrétne dátumy</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer group flex-1">
-                      <input
-                        type="radio"
-                        name="dateType"
-                        checked={!hasSpecificDates}
-                        onChange={() => setHasSpecificDates(false)}
-                        disabled={isGenerating}
-                        className="w-5 h-5 accent-cyan-400"
-                      />
-                      <span className="text-gray-300 group-hover:text-cyan-400">Neviem dátumy, len dĺžku</span>
-                    </label>
-                  </div>
-                  
-                  {hasSpecificDates ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-2">Od</label>
-                        <input
-                          type="date"
-                          value={dateFrom}
-                          onChange={(e) => setDateFrom(e.target.value)}
-                          disabled={isGenerating}
-                          className="w-full px-4 py-3 glass border border-cyan-500/30 rounded-lg text-white focus:border-cyan-400"
-                          required={hasSpecificDates}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-2">Do</label>
-                        <input
-                          type="date"
-                          value={dateTo}
-                          onChange={(e) => setDateTo(e.target.value)}
-                          disabled={isGenerating}
-                          className="w-full px-4 py-3 glass border border-cyan-500/30 rounded-lg text-white focus:border-cyan-400"
-                          required={hasSpecificDates}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex items-center gap-6">
-                        <input
-                          type="range"
-                          min="1"
-                          max="14"
-                          value={duration}
-                          onChange={(e) => setDuration(parseInt(e.target.value))}
-                          className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                          disabled={isGenerating}
-                        />
-                        <div className="glass border border-cyan-400/30 rounded-lg px-6 py-3 min-w-[120px] text-center">
-                          <span className="text-2xl font-black text-cyan-400">
-                            {duration} {duration === 1 ? 'deň' : duration < 5 ? 'dni' : 'dní'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Termín / dĺžka - odstránené podľa požiadavky */}
 
               {/* Počet ľudí */}
               <div>
@@ -979,57 +904,82 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 </div>
               </div>
 
-              {/* Max chodenie pešo */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Clock className="w-6 h-6" />
-                  Max. chodenie pešo medzi miestami
-                </label>
-                <div className="flex items-center gap-6">
-                  <input
-                    type="range"
-                    min="10"
-                    max="30"
-                    step="5"
-                    value={maxWalkingMinutes}
-                    onChange={(e) => setMaxWalkingMinutes(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                    disabled={isGenerating}
-                  />
-                  <div className="glass border border-cyan-400/30 rounded-lg px-6 py-3 min-w-[100px] text-center">
-                    <span className="text-xl font-black text-cyan-400">
-                      {maxWalkingMinutes} min
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Špeciálne požiadavky */}
+              {/* Špeciálne požiadavky (Google Maps friendly) */}
               <div>
                 <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
                   <Heart className="w-6 h-6" />
                   Špeciálne požiadavky
                 </label>
                 <div className="space-y-3">
-                  {[
-                    { id: 'accessibility', label: 'Potrebujem bezbariérový prístup', state: accessibilityNeeds, setter: setAccessibilityNeeds },
-                    { id: 'stairs', label: 'Nechcem veľa schodov / náročné túry', state: avoidStairs, setter: setAvoidStairs },
-                    { id: 'pet', label: 'Cestujem so psom', state: travelingWithPet, setter: setTravelingWithPet },
-                  ].map((option) => (
-                    <label
-                      key={option.id}
-                      className="flex items-center gap-3 p-4 border-2 border-gray-600 rounded-lg cursor-pointer transition-all glass hover:border-cyan-400/50"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={option.state}
-                        onChange={(e) => option.setter(e.target.checked)}
-                        disabled={isGenerating}
-                        className="w-5 h-5 accent-cyan-400"
-                      />
-                      <span className="text-gray-300">{option.label}</span>
-                    </label>
-                  ))}
+                  {/* Pôvodné prepínače */}
+                  <label className="flex items-center gap-3 p-4 border-2 border-gray-600 rounded-lg cursor-pointer transition-all glass hover:border-cyan-400/50">
+                    <input
+                      type="checkbox"
+                      checked={accessibilityNeeds}
+                      onChange={(e) => setAccessibilityNeeds(e.target.checked)}
+                      disabled={isGenerating}
+                      className="w-5 h-5 accent-cyan-400"
+                    />
+                    <span className="text-gray-300">Potrebujem bezbariérový prístup</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-4 border-2 border-gray-600 rounded-lg cursor-pointer transition-all glass hover:border-cyan-400/50">
+                    <input
+                      type="checkbox"
+                      checked={avoidStairs}
+                      onChange={(e) => setAvoidStairs(e.target.checked)}
+                      disabled={isGenerating}
+                      className="w-5 h-5 accent-cyan-400"
+                    />
+                    <span className="text-gray-300">Nechcem veľa schodov / náročné túry</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-4 border-2 border-gray-600 rounded-lg cursor-pointer transition-all glass hover:border-cyan-400/50">
+                    <input
+                      type="checkbox"
+                      checked={travelingWithPet}
+                      onChange={(e) => setTravelingWithPet(e.target.checked)}
+                      disabled={isGenerating}
+                      className="w-5 h-5 accent-cyan-400"
+                    />
+                    <span className="text-gray-300">Cestujem so psom</span>
+                  </label>
+
+                  {/* Nové Google Maps filtre */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { id: 'wheelchair_accessible', label: 'Bezbariérový vstup (Google)' },
+                      { id: 'kid_friendly', label: 'Vhodné pre deti' },
+                      { id: 'pet_friendly', label: 'Vhodné pre zvieratá' },
+                      { id: 'parking', label: 'Parkovanie k dispozícii' },
+                      { id: 'outdoor_seating', label: 'Vonkajšie sedenie' },
+                    ].map((option) => {
+                      const isSelected = specialRequirements.includes(option.id)
+                      return (
+                        <label
+                          key={option.id}
+                          className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
+                            isSelected
+                              ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
+                              : 'border-gray-600 text-gray-300 hover:border-cyan-400/50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSpecialRequirements([...specialRequirements, option.id])
+                              } else {
+                                setSpecialRequirements(specialRequirements.filter(r => r !== option.id))
+                              }
+                            }}
+                            disabled={isGenerating}
+                            className="w-5 h-5 accent-cyan-400"
+                          />
+                          <span className="text-gray-300">{option.label}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </motion.div>

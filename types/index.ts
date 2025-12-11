@@ -38,10 +38,10 @@ export interface UserInput {
   
   // KROK 4 - DOPRAVA A LIMITY
   transportation?: 'walk_public' | 'walk_only' | 'car' | 'taxi' // Ako sa pohybuje po meste
-  maxWalkingMinutes?: number // Max. minút pešo medzi miestami (10-30)
   accessibilityNeeds?: boolean // Bezbarérový prístup
   avoidStairs?: boolean // Nechce veľa schodov
   travelingWithPet?: boolean // Cestuje so psom
+  specialRequirements?: string[] // Google Maps filtre: napr. wheelchair_accessible, kid_friendly, pet_friendly, parking, outdoor_seating
   
   // KROK 5 - JEDLO A OBMEDZENIA
   dietaryRestrictions?: 'none' | 'vegetarian' | 'vegan' | 'gluten_free' | 'lactose_free' | 'other'
