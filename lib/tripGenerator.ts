@@ -181,11 +181,76 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       onProgress?.(progress, `Spárujem: ${tip.title}...`)
       
       try {
-        // Nájdeme zodpovedajúce miesto z Google Places
-        const matchingPlace = places.find(place => 
-          place.name.toLowerCase().includes(tip.title.toLowerCase()) ||
-          tip.title.toLowerCase().includes(place.name.toLowerCase())
-        )
+        // Nájdeme zodpovedajúce miesto z Google Places - vylepšené matching
+        const tipTitleLower = tip.title.toLowerCase().trim()
+        const matchingPlace = places.find(place => {
+          const placeNameLower = place.name.toLowerCase().trim()
+          
+          // Presná zhoda
+          if (placeNameLower === tipTitleLower) {
+            return true
+          }
+          
+          // Jeden názov obsahuje druhý
+          if (placeNameLower.includes(tipTitleLower) || tipTitleLower.includes(placeNameLower)) {
+            // Ale skontroluj, či to nie je príliš všeobecné (napr. "Hotel" vs "Eiffel Tower Hotel")
+            // Ak je tip názov kratší ako 10 znakov, potrebujeme presnejšiu zhodu
+            if (tipTitleLower.length < 10) {
+              // Pre krátke názvy potrebujeme, aby sa zhodovali aspoň na začiatku
+              return placeNameLower.startsWith(tipTitleLower) || tipTitleLower.startsWith(placeNameLower)
+            }
+            return true
+          }
+          
+          // Fuzzy match - podobnosť aspoň 70%
+          const similarity = calculateSimilarity(tipTitleLower, placeNameLower)
+          if (similarity > 0.7) {
+            return true
+          }
+          
+          return false
+        })
+        
+        // Pomocná funkcia pre výpočet podobnosti
+        function calculateSimilarity(str1: string, str2: string): number {
+          const longer = str1.length > str2.length ? str1 : str2
+          const shorter = str1.length > str2.length ? str2 : str1
+          
+          if (longer.length === 0) {
+            return 1.0
+          }
+          
+          const distance = levenshteinDistance(longer, shorter)
+          return (longer.length - distance) / longer.length
+        }
+        
+        function levenshteinDistance(str1: string, str2: string): number {
+          const matrix: number[][] = []
+          
+          for (let i = 0; i <= str2.length; i++) {
+            matrix[i] = [i]
+          }
+          
+          for (let j = 0; j <= str1.length; j++) {
+            matrix[0][j] = j
+          }
+          
+          for (let i = 1; i <= str2.length; i++) {
+            for (let j = 1; j <= str1.length; j++) {
+              if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1]
+              } else {
+                matrix[i][j] = Math.min(
+                  matrix[i - 1][j - 1] + 1,
+                  matrix[i][j - 1] + 1,
+                  matrix[i - 1][j] + 1
+                )
+              }
+            }
+          }
+          
+          return matrix[str2.length][str1.length]
+        }
         
         let imageUrl: string = ''
         let place_id: string | undefined
@@ -225,13 +290,37 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
             
             console.log(`✓ Found place by name for "${tip.title}": ${foundPlace.name}`)
           } else {
-            // Posledný fallback: Použijeme starý systém
-            console.warn(`⚠ No Google Places match for "${tip.title}", using fallback image search`)
-            try {
-              const imageQuery = createImageQuery(input.destination, tip.title, tip.category)
-              imageUrl = await getImageFromUnsplash(imageQuery)
-            } catch (error) {
-              console.warn(`Error getting fallback image for "${tip.title}":`, error)
+            // Posledný pokus: Skúsime ešte raz s rôznymi variantmi názvu
+            console.warn(`⚠ No Google Places match for "${tip.title}", trying alternative search...`)
+            
+            // Skúsime odstrániť bežné slová, ktoré môžu kaziť vyhľadávanie
+            const cleanTitle = tip.title
+              .replace(/\b(múzeum|museum|galéria|gallery|kostol|church|katedrála|cathedral|palác|palace|hrad|castle)\b/gi, '')
+              .trim()
+            
+            if (cleanTitle && cleanTitle !== tip.title) {
+              const foundPlaceAlt = await findPlaceByName(cleanTitle, englishCity)
+              if (foundPlaceAlt && foundPlaceAlt.photos && foundPlaceAlt.photos.length > 0) {
+                photo_reference = foundPlaceAlt.photos[0].photo_reference
+                place_id = foundPlaceAlt.place_id
+                imageUrl = getPlacePhotoUrl(photo_reference, 800)
+                
+                if (foundPlaceAlt.geometry?.location) {
+                  coordinates = {
+                    lat: foundPlaceAlt.geometry.location.lat,
+                    lng: foundPlaceAlt.geometry.location.lng,
+                  }
+                }
+                
+                console.log(`✓ Found place by alternative search for "${tip.title}": ${foundPlaceAlt.name}`)
+              } else {
+                // Ak stále nič, použijeme placeholder - NIE fallback na Unsplash
+                console.warn(`⚠ No Google Places match found for "${tip.title}", using placeholder`)
+                imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+              }
+            } else {
+              // Ak nemáme čo čistiť, použijeme placeholder
+              console.warn(`⚠ No Google Places match found for "${tip.title}", using placeholder`)
               imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
             }
           }
