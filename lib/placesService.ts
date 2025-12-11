@@ -330,83 +330,8 @@ export async function findPlaceByName(
     }
   }
   
-  // Fallback na legacy API (ak nové API zlyhalo)
-  console.warn(`New Places API failed, trying legacy API for "${placeName}"`)
-  for (const searchQuery of uniqueQueries) {
-    try {
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}`
-      
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000)
-      
-      try {
-        const response = await fetch(searchUrl, {
-          signal: controller.signal
-        })
-        
-        clearTimeout(timeoutId)
-        
-        if (response.ok) {
-          const data = await response.json()
-          
-          if (data.status === 'OK' && data.results && data.results.length > 0) {
-            // Skús nájsť najlepšie zhoda
-            for (const place of data.results) {
-              // Skontroluj, či má fotky
-              if (place.photos && place.photos.length > 0) {
-                // Skontroluj, či sa názvy zhodujú (fuzzy match)
-                const placeNameLower = placeName.toLowerCase().trim()
-                const foundNameLower = place.name.toLowerCase().trim()
-                
-                // Presná zhoda alebo názov obsahuje hľadaný názov
-                if (
-                  foundNameLower === placeNameLower ||
-                  foundNameLower.includes(placeNameLower) ||
-                  placeNameLower.includes(foundNameLower) ||
-                  // Alebo aspoň 70% podobnosť (jednoduchý fuzzy match)
-                  calculateSimilarity(placeNameLower, foundNameLower) > 0.7
-                ) {
-                  console.log(`✓ Found place "${place.name}" for query "${placeName}" (Legacy API, matched: ${searchQuery})`)
-                  return {
-                    place_id: place.place_id,
-                    name: place.name,
-                    formatted_address: place.formatted_address,
-                    rating: place.rating,
-                    photos: place.photos,
-                    types: place.types,
-                    geometry: place.geometry,
-                  }
-                }
-              }
-            }
-            
-            // Ak sme nenašli presnú zhodu, vezmeme prvý výsledok s fotkami
-            const firstWithPhoto = data.results.find((p: any) => p.photos && p.photos.length > 0)
-            if (firstWithPhoto) {
-              console.log(`⚠ Using first result "${firstWithPhoto.name}" for query "${placeName}" (Legacy API, not exact match)`)
-              return {
-                place_id: firstWithPhoto.place_id,
-                name: firstWithPhoto.name,
-                formatted_address: firstWithPhoto.formatted_address,
-                rating: firstWithPhoto.rating,
-                photos: firstWithPhoto.photos,
-                types: firstWithPhoto.types,
-                geometry: firstWithPhoto.geometry,
-              }
-            }
-          }
-        }
-      } catch (error: any) {
-        clearTimeout(timeoutId)
-        if (error.name !== 'AbortError') {
-          console.warn(`Error finding place with query "${searchQuery}" (Legacy):`, error.message)
-        }
-      }
-    } catch (error: any) {
-      console.warn(`Error finding place with query "${searchQuery}":`, error.message)
-    }
-  }
-  
+  // NEPOUŽÍVAJME legacy API - vráť null
+  console.warn(`⚠ New Places API failed for "${placeName}", returning null (legacy API is disabled)`)
   return null
 }
 
