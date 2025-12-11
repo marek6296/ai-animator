@@ -247,7 +247,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
               </div>
 
               {/* Tips Grid */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 {tips.map((tip, index) => {
                   // Použij unique key kombinujúci category a index pre globálny identifikátor
                   const globalIndex = `${category}-${index}`
@@ -298,7 +298,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         return newState
                       })
                     }}
-                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] flex flex-col`}
+                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] flex flex-col h-full`}
                   >
                     {/* Image */}
                     {displayImageUrl && displayImageUrl.trim() !== '' ? (
@@ -391,18 +391,18 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    <div className="p-6 flex flex-col min-h-[200px]">
+                    <div className="p-6 flex flex-col h-full">
                       {/* Title with Star */}
-                      <div className="flex items-start gap-3 mb-4">
+                      <div className="flex items-start gap-3 mb-4 flex-shrink-0">
                         <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
                         <h4 className="text-xl font-black text-white leading-tight">{tip.title}</h4>
                       </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm leading-relaxed mb-0">{tip.description}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-0 flex-grow min-h-0">{tip.description}</p>
 
                       {/* Meta Info */}
-                      <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-auto">
+                      <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-auto flex-shrink-0">
                         {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
                         <div className="flex justify-between items-center gap-2">
                           {/* Hodnotenie - vľavo */}
