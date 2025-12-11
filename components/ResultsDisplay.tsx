@@ -77,7 +77,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
       const photoUrlsMap: Record<string, string[]> = {}
       
       // Zoskupte tipy podľa kategórie (rovnaká logika ako v render)
-      const tipsByCategory = results.trip.tips.reduce((acc, tip) => {
+      const tipsByCategory = results.trip!.tips.reduce((acc, tip) => {
         if (!acc[tip.category]) {
           acc[tip.category] = []
         }
