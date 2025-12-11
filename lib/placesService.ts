@@ -108,7 +108,15 @@ export function getPlacePhotoUrl(
     throw new Error('GOOGLE_API_KEY nie je nastavený')
   }
 
-  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${googleApiKey}`
+  // Nové Places API používa iný formát pre fotky
+  // photoReference môže byť buď photo_reference (legacy) alebo name (new API)
+  if (photoReference.startsWith('places/')) {
+    // Nové API - photoReference je name
+    return `https://places.googleapis.com/v1/${photoReference}/media?maxWidthPx=${maxWidth}&key=${googleApiKey}`
+  } else {
+    // Legacy API - photoReference je photo_reference
+    return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photoreference=${photoReference}&key=${googleApiKey}`
+  }
 }
 
 /**
