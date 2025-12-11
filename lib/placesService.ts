@@ -231,7 +231,7 @@ export async function searchPlacesInCity(
           const data = await response.json()
           
           if (data.places && data.places.length > 0) {
-            const placesWithPhotos = data.places
+            const placesWithPhotos: Place[] = data.places
               .filter((place: any) => place.photos && place.photos.length > 0)
               .slice(0, maxResults)
               .map((place: any) => ({
