@@ -548,7 +548,14 @@ async function generateTripWithTips(
       
       if (place && place.photos && place.photos.length > 0) {
         // Použijeme photo_reference z Google Places - VŽDY cez Place Photos API
-        photo_reference = place.photos[0].photo_reference
+        const firstPhoto = place.photos[0]
+        photo_reference = firstPhoto.photo_reference || firstPhoto.name || ''
+        
+        if (!photo_reference) {
+          console.error(`⚠ Place "${place.name}" has photos array but no photo_reference or name!`, firstPhoto)
+          throw new Error('Photo reference missing')
+        }
+        
         imageUrl = getPlacePhotoUrl(photo_reference, 800)
         
         if (place.geometry?.location) {
@@ -558,7 +565,9 @@ async function generateTripWithTips(
           }
         }
         
-        console.log(`✓ Found place for place_id "${tip.place_id}": ${place.name}, imageUrl: ${imageUrl.substring(0, 100)}...`)
+        console.log(`✓ Found place for place_id "${tip.place_id}": ${place.name}`)
+        console.log(`  Photo reference: ${photo_reference.substring(0, 50)}...`)
+        console.log(`  Image URL: ${imageUrl.substring(0, 100)}...`)
       } else {
         // Ak miesto nemá fotku, skúsime nájsť miesto podľa názvu pomocou Places API
         console.warn(`⚠ Place "${tip.place_id}" not found or has no photo, trying to search by name...`)
@@ -569,10 +578,18 @@ async function generateTripWithTips(
         try {
           const foundPlace = await findPlaceByName(placeName, input.destination || '')
           if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
-            photo_reference = foundPlace.photos[0].photo_reference
+            const firstPhoto = foundPlace.photos[0]
+            photo_reference = firstPhoto.photo_reference || firstPhoto.name || ''
+            
+            if (!photo_reference) {
+              throw new Error('Photo reference missing from found place')
+            }
+            
             imageUrl = getPlacePhotoUrl(photo_reference, 800)
             place = foundPlace
-            console.log(`✓ Found place by name search: ${foundPlace.name}, imageUrl: ${imageUrl.substring(0, 100)}...`)
+            console.log(`✓ Found place by name search: ${foundPlace.name}`)
+            console.log(`  Photo reference: ${photo_reference.substring(0, 50)}...`)
+            console.log(`  Image URL: ${imageUrl.substring(0, 100)}...`)
           } else {
             throw new Error('Place not found or has no photos')
           }
