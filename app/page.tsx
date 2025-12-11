@@ -40,7 +40,7 @@ export default function Home() {
     abortControllerRef.current = new AbortController()
 
     try {
-      const startResponse = await fetch('/api/generate-stream', {
+      const response = await fetch('/api/generate-stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,63 +49,76 @@ export default function Home() {
         signal: abortControllerRef.current.signal,
       })
 
-      if (!startResponse.ok) {
+      if (!response.ok) {
         throw new Error('Chyba pri spustení generovania')
       }
 
-      const { requestId: newRequestId } = await startResponse.json()
-      setRequestId(newRequestId)
+      if (!response.body) {
+        throw new Error('Response body is null')
+      }
 
-      progressIntervalRef.current = setInterval(async () => {
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+
+      const readStream = async () => {
         try {
-          const progressResponse = await fetch(`/api/generate-stream?id=${newRequestId}`, {
-            signal: abortControllerRef.current?.signal,
-          })
-
-          if (!progressResponse.ok) {
-            const errorText = await progressResponse.text()
-            console.error(`Progress fetch failed: ${progressResponse.status} - ${errorText}`)
-            throw new Error(`Chyba pri získavaní progressu: ${progressResponse.status}`)
-          }
-
-          const progressData = await progressResponse.json()
-          console.log(`[Frontend] Progress update:`, progressData)
-          setProgress(progressData)
-
-          if (progressData.step === 'complete') {
-            if (progressIntervalRef.current) {
-              clearInterval(progressIntervalRef.current)
-            }
+          while (true) {
+            const { done, value } = await reader.read()
             
-            if (progressData.error) {
-              console.error('Generation error:', progressData.error)
-              toast.error(progressData.error || 'Nastala chyba pri generovaní')
-              setIsGenerating(false)
-              setProgress(null)
-              setRequestId(null)
-              return
+            if (done) {
+              console.log('[Frontend] Stream ended')
+              break
             }
 
-            if (progressData.result) {
-              setResults(progressData.result)
-              toast.success('Plán výletu bol úspešne vygenerovaný!')
-            } else {
-              console.error('No result in progress data:', progressData)
-              toast.error('Nepodarilo sa vygenerovať obsah. Skúste to znova.')
+            const chunk = decoder.decode(value, { stream: true })
+            const lines = chunk.split('\n')
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6))
+                  console.log(`[Frontend] Progress update:`, data)
+                  setProgress(data)
+
+                  if (data.step === 'complete') {
+                    if (data.error) {
+                      console.error('Generation error:', data.error)
+                      toast.error(data.error || 'Nastala chyba pri generovaní')
+                      setIsGenerating(false)
+                      setProgress(null)
+                      return
+                    }
+
+                    if (data.result) {
+                      setResults(data.result)
+                      toast.success('Plán výletu bol úspešne vygenerovaný!')
+                    } else {
+                      console.error('No result in progress data:', data)
+                      toast.error('Nepodarilo sa vygenerovať obsah. Skúste to znova.')
+                    }
+                    
+                    setIsGenerating(false)
+                    setProgress(null)
+                    return
+                  }
+                } catch (parseError) {
+                  console.error('Error parsing progress data:', parseError, line)
+                }
+              }
             }
-            
-            setIsGenerating(false)
-            setProgress(null)
-            setRequestId(null)
           }
         } catch (error: any) {
           if (error.name === 'AbortError') {
             return
           }
-          console.error('Error fetching progress:', error)
-          console.error('Progress polling error:', error)
+          console.error('Error reading stream:', error)
+          toast.error('Chyba pri čítaní progressu')
+          setIsGenerating(false)
+          setProgress(null)
         }
-      }, 1000)
+      }
+
+      readStream()
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
