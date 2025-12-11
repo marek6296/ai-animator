@@ -20,9 +20,9 @@ export async function generateMemePack(
   // Vygeneruj meme texty
   onProgress?.(5, 'Generujem meme texty...')
   const memeTextsPrompt = `Vytvor presne ${memeCount} vtipných meme textov na základe:
-- Osoba: ${input.self}
-- Situácia: ${input.situation}
-- Kamaráti: ${input.friends}
+- Osoba: ${(input as any).self || 'osoba'}
+- Situácia: ${(input as any).situation || 'situácia'}
+- Kamaráti: ${(input as any).friends || ''}
 
 DÔLEŽITÉ: Použi presne tento formát, každý text na samostatnom riadku:
 1. [krátky vtipný text max 50 znakov]
