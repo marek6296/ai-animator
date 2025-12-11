@@ -113,6 +113,69 @@ export async function searchPlacesInCity(
 }
 
 /**
+ * Fallback na legacy Text Search API
+ */
+async function searchPlacesLegacy(
+  cityName: string,
+  query: string | undefined,
+  maxResults: number,
+  googleApiKey: string
+): Promise<Place[]> {
+  const searchQuery = query 
+    ? `${query} in ${cityName}`
+    : `tourist attractions in ${cityName}`
+  
+  const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}`
+  
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
+  
+  try {
+    const response = await fetch(searchUrl, {
+      signal: controller.signal
+    })
+    
+    clearTimeout(timeoutId)
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(`Google Places API error: ${errorData.error?.message || response.statusText}`)
+    }
+    
+    const data = await response.json()
+    
+    if (data.status === 'OK' && data.results) {
+      const placesWithPhotos = data.results
+        .filter((place: any) => place.photos && place.photos.length > 0)
+        .slice(0, maxResults)
+        .map((place: any) => ({
+          place_id: place.place_id,
+          name: place.name,
+          formatted_address: place.formatted_address,
+          rating: place.rating,
+          photos: place.photos,
+          types: place.types,
+          geometry: place.geometry,
+        }))
+      
+      console.log(`✓ Found ${placesWithPhotos.length} places with photos (legacy API) in ${cityName}`)
+      return placesWithPhotos
+    } else if (data.status === 'ZERO_RESULTS') {
+      console.warn(`No places found for "${searchQuery}"`)
+      return []
+    } else {
+      throw new Error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`)
+    }
+  } catch (error: any) {
+    clearTimeout(timeoutId)
+    if (error.name === 'AbortError') {
+      throw new Error('Google Places API timeout')
+    }
+    throw error
+  }
+}
+
+/**
  * Získa fotku z Google Place Photos API pomocou photo_reference
  */
 export function getPlacePhotoUrl(
