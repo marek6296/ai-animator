@@ -9,9 +9,10 @@ export interface Place {
   formatted_address: string
   rating?: number
   photos?: Array<{
-    photo_reference: string
-    height: number
-    width: number
+    photo_reference?: string  // Legacy API
+    name?: string  // New API
+    height?: number
+    width?: number
   }>
   types?: string[]
   geometry?: {

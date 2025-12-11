@@ -549,7 +549,8 @@ async function generateTripWithTips(
       if (place && place.photos && place.photos.length > 0) {
         // Použijeme photo_reference z Google Places - VŽDY cez Place Photos API
         const firstPhoto = place.photos[0]
-        photo_reference = firstPhoto.photo_reference || firstPhoto.name || ''
+        // Podporujeme oba formáty: photo_reference (legacy) a name (new API)
+        photo_reference = (firstPhoto.photo_reference || firstPhoto.name || '') as string
         
         if (!photo_reference) {
           console.error(`⚠ Place "${place.name}" has photos array but no photo_reference or name!`, firstPhoto)
