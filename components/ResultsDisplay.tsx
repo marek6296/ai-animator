@@ -386,26 +386,51 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm leading-relaxed mb-4 min-h-[50px] line-clamp-4">{tip.description}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-3">{tip.description}</p>
 
                       {/* Meta Info */}
-                      <div className="flex flex-wrap gap-3 pt-4 border-t border-white/10 mt-auto">
-                        {tip.duration && (
-                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${colors.bg} ${colors.border} border`}>
-                            <Clock className={`w-4 h-4 ${colors.text}`} />
-                            <span className={`text-xs font-bold ${colors.text}`}>{tip.duration}</span>
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-white/10">
+                        {tip.rating && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
+                            <Star className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs font-bold text-cyan-200">{tip.rating.toFixed(1)}</span>
+                            {tip.user_ratings_total !== undefined && (
+                              <span className="text-[11px] text-gray-400">({tip.user_ratings_total})</span>
+                            )}
                           </div>
                         )}
-                        {tip.price && (
-                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${colors.bg} ${colors.border} border`}>
-                            <DollarSign className={`w-4 h-4 ${colors.text}`} />
-                            <span className={`text-xs font-bold ${colors.text}`}>{tip.price}</span>
+                        {(tip.price || tip.price_level !== undefined) && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30">
+                            <DollarSign className="w-4 h-4 text-pink-400" />
+                            <span className="text-xs font-bold text-pink-200">
+                              {tip.price ? tip.price : priceLevelLabel(tip.price_level)}
+                            </span>
+                          </div>
+                        )}
+                        {tip.open_now !== undefined && (
+                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
+                            <Clock className={`w-4 h-4 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
+                            <span className="text-xs font-bold">
+                              {tip.open_now ? 'Otvorené teraz' : 'Zatvorené'}
+                            </span>
                           </div>
                         )}
                         {tip.location && (
-                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${colors.bg} ${colors.border} border`}>
-                            <MapPin className={`w-4 h-4 ${colors.text}`} />
-                            <span className={`text-xs font-bold ${colors.text}`}>{tip.location}</span>
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
+                            <MapPin className="w-4 h-4 text-cyan-300" />
+                            <span className="text-xs font-bold text-cyan-100">{tip.location}</span>
+                          </div>
+                        )}
+                        {tip.business_status && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30">
+                            <Info className="w-4 h-4 text-purple-300" />
+                            <span className="text-xs font-bold text-purple-100">{tip.business_status}</span>
+                          </div>
+                        )}
+                        {tip.duration && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
+                            <Clock className="w-4 h-4 text-cyan-300" />
+                            <span className="text-xs font-bold text-cyan-100">{tip.duration}</span>
                           </div>
                         )}
                       </div>
