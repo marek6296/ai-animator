@@ -36,60 +36,76 @@ export async function searchPlacesInCity(
   }
 
   try {
-    // Text Search API - hľadá miesta v meste
+    // Skús najprv nové Places API (New)
     const searchQuery = query 
       ? `${query} in ${cityName}`
       : `tourist attractions in ${cityName}`
     
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${googleApiKey}`
-    
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000)
-    
     try {
-      const response = await fetch(searchUrl, {
-        signal: controller.signal
-      })
+      const searchUrl = `https://places.googleapis.com/v1/places:searchText`
       
-      clearTimeout(timeoutId)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(`Google Places API error: ${errorData.error?.message || response.statusText}`)
-      }
-      
-      const data = await response.json()
-      
-      if (data.status === 'OK' && data.results) {
-        // Vráť len miesta s fotkami
-        const placesWithPhotos = data.results
-          .filter((place: any) => place.photos && place.photos.length > 0)
-          .slice(0, maxResults)
-          .map((place: any) => ({
-            place_id: place.place_id,
-            name: place.name,
-            formatted_address: place.formatted_address,
-            rating: place.rating,
-            photos: place.photos,
-            types: place.types,
-            geometry: place.geometry,
-          }))
+      try {
+        const response = await fetch(searchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': googleApiKey,
+            'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.rating,places.photos,places.types,places.location',
+          },
+          body: JSON.stringify({
+            textQuery: searchQuery,
+            maxResultCount: maxResults,
+          }),
+          signal: controller.signal
+        })
         
-        console.log(`✓ Found ${placesWithPhotos.length} places with photos in ${cityName}`)
-        return placesWithPhotos
-      } else if (data.status === 'ZERO_RESULTS') {
-        console.warn(`No places found for "${searchQuery}"`)
-        return []
-      } else {
-        throw new Error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`)
+        clearTimeout(timeoutId)
+        
+        if (response.ok) {
+          const data = await response.json()
+          
+          if (data.places && data.places.length > 0) {
+            const placesWithPhotos = data.places
+              .filter((place: any) => place.photos && place.photos.length > 0)
+              .slice(0, maxResults)
+              .map((place: any) => ({
+                place_id: place.id,
+                name: place.displayName?.text || place.displayName || 'Unknown',
+                formatted_address: place.formattedAddress || '',
+                rating: place.rating,
+                photos: place.photos.map((photo: any) => ({
+                  photo_reference: photo.name, // V novom API je to name
+                  height: photo.heightPx || 800,
+                  width: photo.widthPx || 800,
+                })),
+                types: place.types || [],
+                geometry: place.location ? {
+                  location: {
+                    lat: place.location.latitude,
+                    lng: place.location.longitude,
+                  }
+                } : undefined,
+              }))
+            
+            console.log(`✓ Found ${placesWithPhotos.length} places with photos (New API) in ${cityName}`)
+            return placesWithPhotos
+          }
+        }
+      } catch (error: any) {
+        clearTimeout(timeoutId)
+        if (error.name !== 'AbortError') {
+          console.warn('Places API (New) failed, falling back to legacy:', error.message)
+        }
       }
     } catch (error: any) {
-      clearTimeout(timeoutId)
-      if (error.name === 'AbortError') {
-        throw new Error('Google Places API timeout')
-      }
-      throw error
+      console.warn('Places API (New) not available, using legacy API')
     }
+    
+    // Fallback na legacy API
+    return await searchPlacesLegacy(cityName, query, maxResults, googleApiKey)
   } catch (error: any) {
     console.error('Error searching places:', error)
     throw error
