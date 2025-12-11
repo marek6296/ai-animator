@@ -847,6 +847,9 @@ export async function getPlaceDetails(placeId: string, formattedAddress?: string
               time: review.publishTime ? new Date(review.publishTime).getTime() / 1000 : Date.now() / 1000,
             })) || [],
           }
+          
+          console.log(`✓ Places API (New) details fetched successfully for: ${placeDetails.name}`)
+          return placeDetails
         } else {
           const errorText = await response.text().catch(() => 'Could not read error response')
           let errorData: any = {}

@@ -94,15 +94,24 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
     setError(null)
 
     try {
-      const response = await fetch(`/api/place-details?place_id=${encodeURIComponent(tip.place_id)}`)
+      const params = new URLSearchParams({
+        place_id: tip.place_id
+      })
+      if (tip.location) {
+        params.append('formatted_address', tip.location)
+      }
+      
+      const response = await fetch(`/api/place-details?${params.toString()}`)
       const data = await response.json()
 
       if (response.ok && data.details) {
         setDetails(data.details)
       } else {
+        console.error('[TipDetailModal] Failed to fetch place details:', data.error)
         setError(data.error || 'Nepodarilo sa načítať detaily')
       }
     } catch (err: any) {
+      console.error('[TipDetailModal] Error fetching place details:', err)
       setError(err.message || 'Chyba pri načítaní detailov')
     } finally {
       setLoading(false)
