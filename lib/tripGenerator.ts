@@ -26,7 +26,10 @@ export async function generateTrip(
     }
 
     console.log(`[generateTrip] Starting for destination: ${input.destination}`)
+    
+    // Hneď na začiatku zavolaj onProgress, aby frontend vedel, že sa niečo deje
     onProgress?.(5, 'Hľadám zaujímavé miesta v meste...')
+    await new Promise(resolve => setTimeout(resolve, 50)) // Malé oneskorenie pre istotu
 
     // KROK 1: Získaj miesta z Google Places API
     const cityTranslations: Record<string, string> = {

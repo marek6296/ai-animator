@@ -64,8 +64,11 @@ async function generateWithProgress(requestId: string, input: UserInput) {
   try {
     console.log(`[${requestId}] Starting trip generation for: ${input.destination}`)
     
-    // Generuj trip plan
-    updateProgress(requestId, 'trip', 0, 'Začínam generovať plán výletu...')
+    // Generuj trip plan - hneď aktualizuj progress
+    updateProgress(requestId, 'trip', 1, 'Začínam generovať plán výletu...')
+    
+    // Pridaj malé oneskorenie, aby sa progress stihol aktualizovať
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     const trip = await generateTrip(input, (progress, message) => {
       console.log(`[${requestId}] Progress: ${progress}% - ${message}`)
@@ -84,6 +87,8 @@ async function generateWithProgress(requestId: string, input: UserInput) {
   } catch (error: any) {
     console.error(`[${requestId}] Error in generateWithProgress:`, error)
     console.error(`[${requestId}] Error stack:`, error.stack)
+    console.error(`[${requestId}] Error name:`, error.name)
+    console.error(`[${requestId}] Error message:`, error.message)
     
     const errorMessage = error.message || 'Neznáma chyba'
     progressStore.set(requestId, {
