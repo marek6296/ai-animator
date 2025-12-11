@@ -619,6 +619,20 @@ async function generateTripWithTips(
         } else {
           // Ak stále nemáme, skúsime nájsť pomocou findPlaceByName
           console.warn(`⚠ Still no place found, trying findPlaceByName...`)
+          
+          // Extrahuj názov z description alebo place_id
+          const placeNameFromDescription = tip.description.split(' ').slice(0, 3).join(' ')
+          const placeName = placeNameFromDescription || tip.place_id.replace(/^AI_/, '').replace(/_\d+$/, '').replace(/_/g, ' ')
+          
+          try {
+            const foundPlace = await findPlaceByName(placeName, input.destination || '')
+            if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
+              place = foundPlace
+              console.log(`✓ Found place by findPlaceByName: ${foundPlace.name}`)
+            }
+          } catch (searchError) {
+            console.warn(`⚠ findPlaceByName failed for "${placeName}":`, searchError)
+          }
         }
       }
       
