@@ -1,20 +1,14 @@
 import { generateText } from './aiService'
-import { getImageFromUnsplash, createImageQuery, createAlternativeQuery } from './imageService'
-import { getMultipleCoordinates } from './geocodingService'
-import { searchPlacesInCity, findPlaceByName, getPlacePhotoUrl, type Place } from './placesService'
+import { searchPlacesInCity, getPlacePhotoUrl, type Place } from './placesService'
 import type { UserInput, Trip, TripTip } from '@/types'
 
-// Zoznam európskych miest a krajín
-const EUROPEAN_DESTINATIONS = [
-  'Paríž', 'Londýn', 'Rím', 'Barcelona', 'Amsterdam', 'Berlín', 'Viedeň', 'Praha',
-  'Budapešť', 'Krakow', 'Atény', 'Lisabon', 'Dublin', 'Edinburgh', 'Kodaň', 'Štokholm',
-  'Oslo', 'Helsinki', 'Reykjavík', 'Zürich', 'Miláno', 'Florencia', 'Venezia', 'Neapol',
-  'Madrid', 'Sevilla', 'Valencia', 'Porto', 'Brusel', 'Antverpy', 'Bruggy', 'Luxemburg',
-  'Varšava', 'Gdańsk', 'Wrocław', 'Bratislava', 'Ljubljana', 'Záhreb', 'Sarajevo', 'Belehrad',
-  'Bukurešť', 'Sofia', 'Tirana', 'Skopje', 'Podgorica', 'Pristina', 'Tallinn', 'Riga', 'Vilnius',
-  'Kyjev', 'Minsk', 'Moskva', 'Istanbul', 'Ankara', 'Nicosia', 'Valletta', 'Monaco', 'San Marino',
-  'Vatican', 'Andorra la Vella', 'Lichtenštajnsko'
-]
+/**
+ * Nová logika podľa požiadaviek:
+ * 1. Google Places API - len na miesta a fotky (cez photo_reference)
+ * 2. OpenAI - len na itinerár a texty
+ * 3. Všetko sa spája cez place_id, nie cez textové matching
+ * 4. Nikdy sa nevyhľadávajú fotky podľa textu
+ */
 
 export async function generateTrip(
   input: UserInput,
@@ -27,9 +21,8 @@ export async function generateTrip(
 
     console.log(`[generateTrip] Starting for destination: ${input.destination}`)
     
-    // Hneď na začiatku zavolaj onProgress, aby frontend vedel, že sa niečo deje
     onProgress?.(5, 'Hľadám zaujímavé miesta v meste...')
-    await new Promise(resolve => setTimeout(resolve, 50)) // Malé oneskorenie pre istotu
+    await new Promise(resolve => setTimeout(resolve, 50))
 
     // KROK 1: Získaj miesta z Google Places API
     const cityTranslations: Record<string, string> = {
@@ -45,13 +38,23 @@ export async function generateTrip(
     }
     const englishCity = cityTranslations[input.destination] || input.destination
 
-    // Získaj rôzne typy miest
+    // Získaj rôzne typy miest - len miesta s fotkami
     const places: Place[] = []
     
+    // Mapovanie preferencií na Google Places typy
+    const preferenceToTypes: Record<string, string[]> = {
+      'múzeá': ['museum', 'art_gallery'],
+      'história': ['tourist_attraction', 'point_of_interest'],
+      'príroda': ['park', 'natural_feature'],
+      'nočný život': ['bar', 'night_club', 'restaurant'],
+      'jedlo': ['restaurant', 'cafe', 'food'],
+      'architektúra': ['tourist_attraction', 'point_of_interest'],
+    }
+
     // Turistické atrakcie
     onProgress?.(10, 'Hľadám turistické atrakcie...')
     try {
-      const attractions = await searchPlacesInCity(englishCity, 'tourist attractions', 15)
+      const attractions = await searchPlacesInCity(englishCity, 'tourist attractions', 20)
       places.push(...attractions)
     } catch (error) {
       console.warn('Error searching attractions:', error)
@@ -60,7 +63,7 @@ export async function generateTrip(
     // Reštaurácie
     onProgress?.(15, 'Hľadám reštaurácie...')
     try {
-      const restaurants = await searchPlacesInCity(englishCity, 'restaurants', 10)
+      const restaurants = await searchPlacesInCity(englishCity, 'restaurants', 15)
       places.push(...restaurants)
     } catch (error) {
       console.warn('Error searching restaurants:', error)
@@ -69,64 +72,52 @@ export async function generateTrip(
     // Aktivity
     onProgress?.(20, 'Hľadám aktivity...')
     try {
-      const activities = await searchPlacesInCity(englishCity, 'activities', 10)
+      const activities = await searchPlacesInCity(englishCity, 'activities', 15)
       places.push(...activities)
     } catch (error) {
       console.warn('Error searching activities:', error)
     }
 
-    console.log(`[generateTrip] Found ${places.length} places from Google Places API`)
+    // Odstráň duplikáty podľa place_id
+    const uniquePlaces = new Map<string, Place>()
+    for (const place of places) {
+      if (!uniquePlaces.has(place.place_id)) {
+        uniquePlaces.set(place.place_id, place)
+      }
+    }
+    const finalPlaces = Array.from(uniquePlaces.values())
 
-    // KROK 2: Vytvor prompt pre OpenAI s miestami z Google Places
-    onProgress?.(25, 'Generujem plán výletu...')
+    console.log(`[generateTrip] Found ${finalPlaces.length} unique places from Google Places API`)
+
+    // KROK 2: Priprav JSON pre OpenAI s miestami (iba place_id, name, rating, types)
+    onProgress?.(25, 'Pripravujem dáta pre AI...')
     
-    // Formátuj miesta pre OpenAI
-    const placesList = places.map((place, index) => {
-      const types = place.types?.join(', ') || 'attraction'
-      const rating = place.rating ? ` (Hodnotenie: ${place.rating}/5)` : ''
-      return `${index + 1}. ${place.name} - ${place.formatted_address}${rating} (Typ: ${types})`
-    }).join('\n')
+    const placesForAI = finalPlaces.map(place => ({
+      place_id: place.place_id,
+      name: place.name,
+      rating: place.rating,
+      user_ratings_total: 0, // Google Places API neposkytuje toto v Text Search
+      types: place.types || [],
+      formatted_address: place.formatted_address,
+    }))
 
-    let tripPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.
+    // KROK 3: Zavolaj OpenAI na vytvorenie itinerára
+    onProgress?.(30, 'Generujem itinerár pomocou AI...')
+    
+    const aiPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.
 
-Mám zoznam skutočných miest z Google Maps:
-${placesList}
+Mám zoznam skutočných miest z Google Maps s place_id:
+${JSON.stringify(placesForAI.slice(0, 50), null, 2)}
 
-Z týchto miest vyber a zoraď 10-12 najzaujímavejších pre výlet.`
-  
-  if (input.tripType) {
-    const tripTypeNames: Record<string, string> = {
-      'city': 'mestský',
-      'nature': 'prírodný',
-      'culture': 'kultúrny'
-    }
-    tripPrompt += ` Typ výletu: ${tripTypeNames[input.tripType] || input.tripType}.`
-  }
-  
-  if (input.duration) {
-    tripPrompt += ` Dĺžka výletu: ${input.duration} dní.`
-  }
-  
-  if (input.interests) {
-    tripPrompt += ` Záujmy: ${input.interests}.`
-  }
-  
-  if (input.budget) {
-    const budgetNames: Record<string, string> = {
-      'low': 'nízky',
-      'medium': 'stredný',
-      'high': 'vysoký'
-    }
-    tripPrompt += ` Rozpočet: ${budgetNames[input.budget] || input.budget}.`
-  }
+${input.tripType ? `Typ výletu: ${input.tripType === 'city' ? 'mestský' : input.tripType === 'nature' ? 'prírodný' : 'kultúrny'}.` : ''}
+${input.duration ? `Dĺžka výletu: ${input.duration} dní.` : ''}
+${input.interests ? `Záujmy: ${input.interests}.` : ''}
+${input.budget ? `Rozpočet: ${input.budget === 'low' ? 'nízky' : input.budget === 'medium' ? 'stredný' : 'vysoký'}.` : ''}
 
-  tripPrompt += `
-
-Vytvor 10-12 tipov na výlet do ${input.destination}. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
-Tip 1: [Názov miesta/aktivity] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
-Tip 2: [Názov] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-Tip 3: [Názov] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-... (pokračuj až do Tip 12)
+Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
+Tip 1: [place_id] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
+Tip 2: [place_id] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+...
 
 Kategórie (použi presne tieto hodnoty):
 - attraction (pre pamiatky, múzeá, historické miesta)
@@ -137,250 +128,107 @@ Kategórie (použi presne tieto hodnoty):
 
 DÔLEŽITÉ PRAVIDLÁ:
 1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
-2. Všetky polia MUSIA byť oddelené znakom | (pipe)
-3. Všetky texty MUSIA byť v slovenčine
-4. Vytvor MINIMÁLNE 10 tipov, ideálne 12
-5. Zahrň rôzne kategórie - aspoň 3-4 attraction, 2-3 activity, 2 restaurant, 1-2 accommodation, 1-2 tip
-6. NÁZOV MIESTA MUSÍ BYŤ PRESNE TAKÝ, AKO JE V ZOZNAME MIEST VYŠŠIE - použij PRESNÝ názov z Google Maps (napr. ak v zozname je "Eiffel Tower", použij "Eiffel Tower", nie "Eiffelova veža")
-7. Ak chceš použiť slovenský názov, urob to, ale MUSÍŠ zachovať hlavný názov z Google Maps (napr. "Eiffel Tower (Eiffelova veža)")
-8. Popis musí byť detailný a zaujímavý (50-100 slov)
-
-Príklady správnych názvov (podľa zoznamu miest vyššie):
-- Ak v zozname je "Louvre Museum", použij "Louvre Museum" alebo "Louvre Museum (Louvre)"
-- Ak v zozname je "Notre-Dame de Paris", použij "Notre-Dame de Paris" alebo "Notre-Dame de Paris (Katedrála Notre-Dame)"
-- Ak v zozname je "Eiffel Tower", použij "Eiffel Tower" alebo "Eiffel Tower (Eiffelova veža)"
+2. Prvé pole MUSÍ byť place_id z vyššie uvedeného zoznamu (presne taký, ako je v JSON)
+3. Všetky polia MUSIA byť oddelené znakom | (pipe)
+4. Všetky texty MUSIA byť v slovenčine
+5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
+6. Zahrň rôzne kategórie
+7. Popis musí byť detailný a zaujímavý (50-100 slov)
+8. Použi len place_id z poskytnutého zoznamu - NIKDY nevymýšľaj nové miesta
 
 Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
-  const tipsText = await generateText(tripPrompt)
-  onProgress?.(50, 'Spracovávam tipy...')
-  
-  // Loguj odpoveď z AI pre debugging
-  console.log('AI Response:', tipsText.substring(0, 500))
-  
-  // Parsuj tipy
-  const tips = parseTips(tipsText)
-  
-  console.log(`Parsed ${tips.length} tips`)
-  
-  if (tips.length === 0) {
-    console.error('Failed to parse tips. Raw text:', tipsText)
-    throw new Error('Nepodarilo sa vytvoriť tipy. Skúste to znova.')
-  }
-  
-  if (tips.length < 3) {
-    console.warn(`Only ${tips.length} tips parsed. This might be a parsing issue.`)
-  }
+    const tipsText = await generateText(aiPrompt)
+    onProgress?.(50, 'Spracovávam tipy...')
+    
+    console.log('AI Response:', tipsText.substring(0, 500))
+    
+    // Parsuj tipy - teraz očakávame place_id ako prvé pole
+    const tips = parseTipsWithPlaceId(tipsText)
+    
+    console.log(`Parsed ${tips.length} tips`)
+    
+    if (tips.length === 0) {
+      console.error('Failed to parse tips. Raw text:', tipsText)
+      throw new Error('Nepodarilo sa vytvoriť tipy. Skúste to znova.')
+    }
 
-    // KROK 3: Spáruj tipy s miestami z Google Places a získaj fotky
+    // KROK 4: Spoj place_id s miestami z Google Places a získaj fotky
     onProgress?.(60, 'Spárujem miesta s fotkami...')
     const tipsWithImages: TripTip[] = []
+    
+    // Vytvor mapu place_id -> Place pre rýchle vyhľadávanie
+    const placesMap = new Map<string, Place>()
+    for (const place of finalPlaces) {
+      placesMap.set(place.place_id, place)
+    }
     
     for (let i = 0; i < tips.length; i++) {
       const tip = tips[i]
       const progress = 60 + (i / tips.length) * 20
       
-      onProgress?.(progress, `Spárujem: ${tip.title}...`)
+      onProgress?.(progress, `Spárujem: ${tip.place_id}...`)
       
       try {
-        // Nájdeme zodpovedajúce miesto z Google Places - vylepšené matching
-        const tipTitleLower = tip.title.toLowerCase().trim()
-        
-        // Najprv skúsime nájsť presnú zhodu alebo zhodu s hlavným názvom
-        let matchingPlace = places.find(place => {
-          const placeNameLower = place.name.toLowerCase().trim()
-          
-          // Presná zhoda
-          if (placeNameLower === tipTitleLower) {
-            return true
-          }
-          
-          // Odstráň zátvorky a všetko v nich (napr. "Eiffel Tower (Eiffelova veža)" -> "Eiffel Tower")
-          const tipTitleClean = tipTitleLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
-          const placeNameClean = placeNameLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
-          
-          if (placeNameClean === tipTitleClean || tipTitleClean === placeNameClean) {
-            return true
-          }
-          
-          // Jeden názov obsahuje druhý (po očistení)
-          if (placeNameClean.includes(tipTitleClean) || tipTitleClean.includes(placeNameClean)) {
-            // Ale skontroluj, či to nie je príliš všeobecné (napr. "Hotel" vs "Eiffel Tower Hotel")
-            // Ak je tip názov kratší ako 10 znakov, potrebujeme presnejšiu zhodu
-            if (tipTitleClean.length < 10) {
-              // Pre krátke názvy potrebujeme, aby sa zhodovali aspoň na začiatku
-              return placeNameClean.startsWith(tipTitleClean) || tipTitleClean.startsWith(placeNameClean)
-            }
-            return true
-          }
-          
-          return false
-        })
-        
-        // Ak sme nenašli presnú zhodu, skúsime fuzzy match
-        if (!matchingPlace) {
-          matchingPlace = places.find(place => {
-            const placeNameLower = place.name.toLowerCase().trim()
-            const tipTitleClean = tipTitleLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
-            const placeNameClean = placeNameLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
-            
-            // Fuzzy match - podobnosť aspoň 60% (znížené z 70% pre lepšie výsledky)
-            const similarity = calculateSimilarity(tipTitleClean, placeNameClean)
-            if (similarity > 0.6) {
-              return true
-            }
-            
-            return false
-          })
-        }
-        
-        // Pomocná funkcia pre výpočet podobnosti
-        function calculateSimilarity(str1: string, str2: string): number {
-          const longer = str1.length > str2.length ? str1 : str2
-          const shorter = str1.length > str2.length ? str2 : str1
-          
-          if (longer.length === 0) {
-            return 1.0
-          }
-          
-          const distance = levenshteinDistance(longer, shorter)
-          return (longer.length - distance) / longer.length
-        }
-        
-        function levenshteinDistance(str1: string, str2: string): number {
-          const matrix: number[][] = []
-          
-          for (let i = 0; i <= str2.length; i++) {
-            matrix[i] = [i]
-          }
-          
-          for (let j = 0; j <= str1.length; j++) {
-            matrix[0][j] = j
-          }
-          
-          for (let i = 1; i <= str2.length; i++) {
-            for (let j = 1; j <= str1.length; j++) {
-              if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-                matrix[i][j] = matrix[i - 1][j - 1]
-              } else {
-                matrix[i][j] = Math.min(
-                  matrix[i - 1][j - 1] + 1,
-                  matrix[i][j - 1] + 1,
-                  matrix[i - 1][j] + 1
-                )
-              }
-            }
-          }
-          
-          return matrix[str2.length][str1.length]
-        }
+        // Nájdeme miesto podľa place_id - žiadne textové matching!
+        const place = placesMap.get(tip.place_id)
         
         let imageUrl: string = ''
-        let place_id: string | undefined
         let photo_reference: string | undefined
         let coordinates: { lat: number; lng: number } | undefined
         
-        if (matchingPlace && matchingPlace.photos && matchingPlace.photos.length > 0) {
-          // Použijeme photo_reference z Google Places
-          photo_reference = matchingPlace.photos[0].photo_reference
-          place_id = matchingPlace.place_id
+        if (place && place.photos && place.photos.length > 0) {
+          // Použijeme photo_reference z Google Places - VŽDY cez Place Photos API
+          photo_reference = place.photos[0].photo_reference
           imageUrl = getPlacePhotoUrl(photo_reference, 800)
           
-          if (matchingPlace.geometry?.location) {
+          if (place.geometry?.location) {
             coordinates = {
-              lat: matchingPlace.geometry.location.lat,
-              lng: matchingPlace.geometry.location.lng,
+              lat: place.geometry.location.lat,
+              lng: place.geometry.location.lng,
             }
           }
           
-          console.log(`✓ Found matching place for "${tip.title}": ${matchingPlace.name}`)
+          console.log(`✓ Found place for place_id "${tip.place_id}": ${place.name}`)
         } else {
-          // Fallback: Skúsime nájsť miesto podľa názvu
-          console.log(`⚠ No exact match for "${tip.title}", trying to find by name...`)
-          const foundPlace = await findPlaceByName(tip.title, englishCity)
-          
-          if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
-            photo_reference = foundPlace.photos[0].photo_reference
-            place_id = foundPlace.place_id
-            imageUrl = getPlacePhotoUrl(photo_reference, 800)
-            
-            if (foundPlace.geometry?.location) {
-              coordinates = {
-                lat: foundPlace.geometry.location.lat,
-                lng: foundPlace.geometry.location.lng,
-              }
-            }
-            
-            console.log(`✓ Found place by name for "${tip.title}": ${foundPlace.name}`)
-          } else {
-            // Posledný pokus: Skúsime ešte raz s rôznymi variantmi názvu
-            console.warn(`⚠ No Google Places match for "${tip.title}", trying alternative search...`)
-            
-            // Skúsime odstrániť bežné slová, ktoré môžu kaziť vyhľadávanie
-            const cleanTitle = tip.title
-              .replace(/\b(múzeum|museum|galéria|gallery|kostol|church|katedrála|cathedral|palác|palace|hrad|castle)\b/gi, '')
-              .trim()
-            
-            if (cleanTitle && cleanTitle !== tip.title) {
-              const foundPlaceAlt = await findPlaceByName(cleanTitle, englishCity)
-              if (foundPlaceAlt && foundPlaceAlt.photos && foundPlaceAlt.photos.length > 0) {
-                photo_reference = foundPlaceAlt.photos[0].photo_reference
-                place_id = foundPlaceAlt.place_id
-                imageUrl = getPlacePhotoUrl(photo_reference, 800)
-                
-                if (foundPlaceAlt.geometry?.location) {
-                  coordinates = {
-                    lat: foundPlaceAlt.geometry.location.lat,
-                    lng: foundPlaceAlt.geometry.location.lng,
-                  }
-                }
-                
-                console.log(`✓ Found place by alternative search for "${tip.title}": ${foundPlaceAlt.name}`)
-              } else {
-                // Ak stále nič, použijeme placeholder - NIE fallback na Unsplash
-                console.warn(`⚠ No Google Places match found for "${tip.title}", using placeholder`)
-                const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
-                imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
-              }
-            } else {
-              // Ak nemáme čo čistiť, použijeme placeholder
-              console.warn(`⚠ No Google Places match found for "${tip.title}", using placeholder`)
-              const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
-              imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
-            }
-          }
-        }
-        
-        // Ak sme stále nemáme obrázok, použijeme placeholder
-        if (!imageUrl) {
-          const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
+          // Ak miesto nemá fotku, použijeme placeholder
+          console.warn(`⚠ Place "${tip.place_id}" has no photo, using placeholder`)
+          const placeholderText = encodeURIComponent(place?.name || tip.place_id.substring(0, 30))
           imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
-          console.log(`⚠ Using placeholder fallback for "${tip.title}"`)
         }
         
         // VŽDY pridáme tip s imageUrl a place_id/photo_reference
         tipsWithImages.push({
-          ...tip,
+          title: place?.name || tip.place_id,
+          description: tip.description,
+          category: tip.category,
+          duration: tip.duration,
+          price: tip.price,
+          location: place?.formatted_address,
           imageUrl: imageUrl,
-          place_id: place_id,
+          place_id: tip.place_id,
           photo_reference: photo_reference,
           coordinates: coordinates,
         })
         
-        console.log(`✓ Added tip "${tip.title}" with imageUrl: ${imageUrl ? 'YES' : 'NO'}`)
+        console.log(`✓ Added tip "${place?.name || tip.place_id}" with imageUrl: ${imageUrl ? 'YES' : 'NO'}`)
         
-        // Väčšie oneskorenie medzi requestmi, aby sme neprekročili rate limit
-        // Google API má limit 100 req/deň, takže potrebujeme byť opatrní
+        // Malé oneskorenie medzi requestmi
         if (i < tips.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500)) // 500ms delay medzi tipmi
+          await new Promise(resolve => setTimeout(resolve, 200))
         }
       } catch (error) {
-        console.error(`Chyba pri získavaní obrázka pre tip ${i + 1} (${tip.title}):`, error)
+        console.error(`Chyba pri získavaní obrázka pre tip ${i + 1} (place_id: ${tip.place_id}):`, error)
         // Pokračujeme bez obrázka - použijeme placeholder
-        const placeholderText = encodeURIComponent(tip.title.substring(0, 30))
+        const placeholderText = encodeURIComponent(tip.place_id.substring(0, 30))
         tipsWithImages.push({
-          ...tip,
+          title: tip.place_id,
+          description: tip.description,
+          category: tip.category,
+          duration: tip.duration,
+          price: tip.price,
           imageUrl: `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`,
+          place_id: tip.place_id,
         })
       }
     }
@@ -391,7 +239,7 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
     const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v slovenčine. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
     const summary = await generateText(summaryPrompt)
     
-    // Extrahuj krajinu (jednoduchá logika)
+    // Extrahuj krajinu
     const country = extractCountry(input.destination)
 
     onProgress?.(100, 'Plán výletu hotový!')
@@ -403,28 +251,35 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       country: country,
       tips: tipsWithImages,
       summary: summary.trim(),
-      bestTimeToVisit: undefined, // Môžeme pridať neskôr
-      currency: undefined, // Môžeme pridať neskôr
-      language: undefined, // Môžeme pridať neskôr
+      bestTimeToVisit: undefined,
+      currency: undefined,
+      language: undefined,
     }
   } catch (error: any) {
     console.error(`[generateTrip] Error for destination ${input.destination}:`, error)
     console.error(`[generateTrip] Error stack:`, error.stack)
-    throw error // Re-throw aby sa chyba zachytila v route
+    throw error
   }
 }
 
-function parseTips(tipsText: string): Omit<TripTip, 'imageUrl'>[] {
-  const tips: Omit<TripTip, 'imageUrl'>[] = []
+interface ParsedTip {
+  place_id: string
+  category: TripTip['category']
+  description: string
+  duration?: string
+  price?: string
+}
+
+function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
+  const tips: ParsedTip[] = []
   
   if (!tipsText || tipsText.trim().length === 0) {
     console.warn('Empty tips text')
     return tips
   }
   
-  // Vylepšený regex - flexibilnejší na formátovanie
-  // Podporuje rôzne formáty: "Tip 1:", "Tip1:", "1.", atď.
-  const tipRegex = /(?:Tip\s*)?\d+[.:]\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*(?:\|\s*(.+?)\s*(?:\|\s*(.+?))?)?(?=\s*(?:Tip\s*)?\d+[.:]|$)/gis
+  // Regex pre formát: Tip X: place_id | category | description | duration | price
+  const tipRegex = /(?:Tip\s*)?\d+[.:]\s*([A-Za-z0-9_-]+)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*(?:\|\s*(.+?)\s*(?:\|\s*(.+?))?)?(?=\s*(?:Tip\s*)?\d+[.:]|$)/gis
   
   const matches = Array.from(tipsText.matchAll(tipRegex))
   
@@ -432,7 +287,7 @@ function parseTips(tipsText: string): Omit<TripTip, 'imageUrl'>[] {
   
   if (matches.length > 0) {
     for (const match of matches) {
-      const title = match[1]?.trim() || ''
+      const place_id = match[1]?.trim() || ''
       const category = (match[2]?.trim().toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
       const description = match[3]?.trim() || ''
       const duration = match[4]?.trim() || ''
@@ -444,23 +299,23 @@ function parseTips(tipsText: string): Omit<TripTip, 'imageUrl'>[] {
         ? (category as TripTip['category'])
         : 'attraction'
       
-      if (title && description && title.length > 2 && description.length > 20) {
+      if (place_id && description && place_id.length > 5 && description.length > 20) {
         tips.push({
-          title,
-          description,
+          place_id,
           category: finalCategory,
+          description,
           duration: duration || undefined,
           price: price || undefined,
         })
       } else {
-        console.warn(`Skipping invalid tip: title="${title}", desc="${description.substring(0, 30)}"`)
+        console.warn(`Skipping invalid tip: place_id="${place_id}", desc="${description.substring(0, 30)}"`)
       }
     }
   }
   
-  // Fallback 1: Skús rozdeliť podľa riadkov s "|"
+  // Fallback: Skús rozdeliť podľa riadkov s "|"
   if (tips.length === 0) {
-    console.log('Trying fallback parsing method 1')
+    console.log('Trying fallback parsing method')
     const lines = tipsText.split('\n').filter(line => {
       const trimmed = line.trim()
       return trimmed.length > 10 && trimmed.includes('|')
@@ -471,10 +326,10 @@ function parseTips(tipsText: string): Omit<TripTip, 'imageUrl'>[] {
       const parts = line.split('|').map(p => p.trim()).filter(p => p.length > 0)
       
       // Odstráň číslo na začiatku ak existuje
-      let titlePart = parts[0] || ''
-      titlePart = titlePart.replace(/^(?:Tip\s*)?\d+[.:]\s*/, '').trim()
+      let placeIdPart = parts[0] || ''
+      placeIdPart = placeIdPart.replace(/^(?:Tip\s*)?\d+[.:]\s*/, '').trim()
       
-      if (parts.length >= 3 && titlePart) {
+      if (parts.length >= 3 && placeIdPart) {
         const category = (parts[1]?.toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
         const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
         const finalCategory = validCategories.includes(category as TripTip['category']) 
@@ -482,33 +337,12 @@ function parseTips(tipsText: string): Omit<TripTip, 'imageUrl'>[] {
           : 'attraction'
         
         tips.push({
-          title: titlePart,
-          description: parts[2] || parts[1] || line,
+          place_id: placeIdPart,
           category: finalCategory,
+          description: parts[2] || parts[1] || line,
           duration: parts[3] || undefined,
           price: parts[4] || undefined,
         })
-      }
-    }
-  }
-  
-  // Fallback 2: Ak stále nič, skús rozdeliť podľa čísel
-  if (tips.length === 0) {
-    console.log('Trying fallback parsing method 2')
-    const numberedLines = tipsText.split(/\d+[.:]/).filter(line => line.trim().length > 10)
-    for (let i = 0; i < Math.min(numberedLines.length, 12); i++) {
-      const line = numberedLines[i].trim()
-      if (line.includes('|')) {
-        const parts = line.split('|').map(p => p.trim())
-        if (parts.length >= 2) {
-          tips.push({
-            title: parts[0] || `Tip ${i + 1}`,
-            description: parts[1] || line,
-            category: 'attraction',
-            duration: parts[2] || undefined,
-            price: parts[3] || undefined,
-          })
-        }
       }
     }
   }
@@ -518,7 +352,6 @@ function parseTips(tipsText: string): Omit<TripTip, 'imageUrl'>[] {
 }
 
 function extractCountry(destination: string): string {
-  // Jednoduchá logika na extrakciu krajiny
   const countryMap: Record<string, string> = {
     'Paríž': 'Francúzsko',
     'Londýn': 'Veľká Británia',
@@ -561,4 +394,3 @@ function extractCountry(destination: string): string {
   
   return countryMap[destination] || 'Európa'
 }
-
