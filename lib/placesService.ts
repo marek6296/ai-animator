@@ -93,7 +93,21 @@ export async function searchPlacesInCity(
             
             console.log(`✓ Found ${placesWithPhotos.length} places with photos (New API) in ${cityName}`)
             return placesWithPhotos
+          } else {
+            console.warn(`⚠ Places API (New) returned no places for query: "${searchQuery}"`)
           }
+        } else {
+          // Response nie je OK - loguj presnú chybu
+          const errorText = await response.text().catch(() => 'Could not read error response')
+          let errorData: any = {}
+          try {
+            errorData = JSON.parse(errorText)
+          } catch {
+            errorData = { error: { message: errorText } }
+          }
+          console.error(`❌ Places API (New) error [${response.status}]:`, errorData.error?.message || errorData.message || response.statusText)
+          console.error(`   Query: "${searchQuery}"`)
+          console.error(`   Full error:`, errorData)
         }
       } catch (error: any) {
         clearTimeout(timeoutId)
@@ -317,7 +331,20 @@ export async function findPlaceByName(
                 } : undefined,
               }
             }
+          } else {
+            console.warn(`⚠ Places API (New) returned no places for query: "${searchQuery}"`)
           }
+        } else {
+          // Response nie je OK - loguj presnú chybu
+          const errorText = await response.text().catch(() => 'Could not read error response')
+          let errorData: any = {}
+          try {
+            errorData = JSON.parse(errorText)
+          } catch {
+            errorData = { error: { message: errorText } }
+          }
+          console.error(`❌ Places API (New) error [${response.status}] for "${searchQuery}":`, errorData.error?.message || errorData.message || response.statusText)
+          console.error(`   Full error:`, errorData)
         }
       } catch (error: any) {
         clearTimeout(timeoutId)
