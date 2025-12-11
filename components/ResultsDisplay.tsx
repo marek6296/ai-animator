@@ -391,8 +391,8 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    {/* NOVÉ ROZLOŽENIE - Čistý dizajn s fixnými výškami */}
-                    <div className="flex flex-col h-full bg-gradient-to-b from-gray-900/95 to-gray-950/95">
+                    {/* NOVÉ ROZLOŽENIE - Čistý dizajn bez prázdnych miest */}
+                    <div className="flex flex-col bg-gradient-to-b from-gray-900/95 to-gray-950/95">
                       {/* Názov */}
                       <div className="px-5 pt-4 pb-2 flex-shrink-0">
                         <div className="flex items-start gap-2">
@@ -401,15 +401,15 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         </div>
                       </div>
 
-                      {/* Popis - fixná výška */}
-                      <div className="px-5 pb-3 flex-shrink-0" style={{ minHeight: '8rem', maxHeight: '8rem' }}>
+                      {/* Popis - bez fixnej výšky, prispôsobí sa obsahu */}
+                      <div className="px-5 pb-2 flex-shrink-0">
                         <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">{tip.description}</p>
                       </div>
 
-                      {/* Čiara */}
-                      <div className="px-5 border-t border-white/10 flex-shrink-0"></div>
+                      {/* Čiara - hneď za popisom */}
+                      <div className="px-5 pt-2 border-t border-white/10 flex-shrink-0"></div>
 
-                      {/* Badges - fixné zarovnanie dole */}
+                      {/* Badges - bez prázdneho miesta */}
                       <div className="px-5 py-3 flex flex-col gap-2 flex-shrink-0">
                         {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
                         <div className="flex justify-between items-center gap-2">
