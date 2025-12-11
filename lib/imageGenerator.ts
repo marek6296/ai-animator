@@ -36,8 +36,8 @@ export async function generateSingleImage(
     imagePrompt, 
     input.style,
     2,
-    input.referenceImage,
-    input.imageStrength || 0.7
+    (input as any).referenceImage,
+    (input as any).imageStrength || 0.7
   )
   
   if (!imageUrl) {
