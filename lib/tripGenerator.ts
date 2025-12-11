@@ -1,6 +1,39 @@
 import { generateText } from './aiService'
-import { searchPlacesInCity, getPlacePhotoUrl, type Place } from './placesService'
+import { searchPlacesInCity, getPlacePhotoUrl, findPlaceByName, type Place } from './placesService'
 import type { UserInput, Trip, TripTip } from '@/types'
+
+// Jednoduchá funkcia pre fuzzy matching názvov
+function calculateSimilarity(str1: string, str2: string): number {
+  const longer = str1.length > str2.length ? str1 : str2
+  const shorter = str1.length > str2.length ? str2 : str1
+  if (longer.length === 0) return 1.0
+  const distance = levenshteinDistance(longer, shorter)
+  return (longer.length - distance) / longer.length
+}
+
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix: number[][] = []
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i]
+  }
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j
+  }
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1]
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        )
+      }
+    }
+  }
+  return matrix[str2.length][str1.length]
+}
 
 /**
  * Nová logika podľa požiadaviek:
@@ -490,7 +523,24 @@ async function generateTripWithTips(
     
     try {
       // Nájdeme miesto podľa place_id - žiadne textové matching!
-      const place = placesMap.get(tip.place_id)
+      let place = placesMap.get(tip.place_id)
+      
+      // Ak sme nenašli miesto podľa place_id, skúsime nájsť podľa názvu (fallback)
+      if (!place) {
+        console.warn(`⚠ Place not found by place_id "${tip.place_id}", trying to find by name...`)
+        // Skúsime nájsť miesto podľa názvu v tips (ak máme title)
+        for (const p of finalPlaces) {
+          // Použijeme fuzzy matching na názvy
+          const tipTitle = tip.place_id.toLowerCase().replace(/^ai_/, '').replace(/_\d+$/, '').replace(/_/g, ' ')
+          const placeName = p.name.toLowerCase()
+          if (placeName.includes(tipTitle) || tipTitle.includes(placeName) || 
+              calculateSimilarity(placeName, tipTitle) > 0.7) {
+            place = p
+            console.log(`✓ Found place by name match: "${p.name}" for "${tip.place_id}"`)
+            break
+          }
+        }
+      }
       
       let imageUrl: string = ''
       let photo_reference: string | undefined
@@ -508,12 +558,30 @@ async function generateTripWithTips(
           }
         }
         
-        console.log(`✓ Found place for place_id "${tip.place_id}": ${place.name}`)
+        console.log(`✓ Found place for place_id "${tip.place_id}": ${place.name}, imageUrl: ${imageUrl.substring(0, 100)}...`)
       } else {
-        // Ak miesto nemá fotku, použijeme placeholder
-        console.warn(`⚠ Place "${tip.place_id}" has no photo, using placeholder`)
-        const placeholderText = encodeURIComponent(place?.name || tip.place_id.substring(0, 30))
-        imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
+        // Ak miesto nemá fotku, skúsime nájsť miesto podľa názvu pomocou Places API
+        console.warn(`⚠ Place "${tip.place_id}" not found or has no photo, trying to search by name...`)
+        
+        // Extrahuj názov z place_id (ak je to fake AI_ place_id)
+        const placeName = tip.place_id.replace(/^AI_/, '').replace(/_\d+$/, '').replace(/_/g, ' ')
+        
+        try {
+          const foundPlace = await findPlaceByName(placeName, input.destination || '')
+          if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
+            photo_reference = foundPlace.photos[0].photo_reference
+            imageUrl = getPlacePhotoUrl(photo_reference, 800)
+            place = foundPlace
+            console.log(`✓ Found place by name search: ${foundPlace.name}, imageUrl: ${imageUrl.substring(0, 100)}...`)
+          } else {
+            throw new Error('Place not found or has no photos')
+          }
+        } catch (searchError) {
+          console.error(`Failed to find place by name "${placeName}":`, searchError)
+          // Použijeme placeholder ako posledný fallback
+          const placeholderText = encodeURIComponent(placeName.substring(0, 30))
+          imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
+        }
       }
       
       // VŽDY pridáme tip s imageUrl a place_id/photo_reference
