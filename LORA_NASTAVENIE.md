@@ -268,3 +268,4 @@ loraModel: 'username/your-model-name', // ← VÁŠ MODEL
 
 **Poznámka:** Ak nemáte čas hľadať modely teraz, aplikácia funguje výborne aj bez LoRA modelov. Môžete ich pridať neskôr, keď nájdete vhodné modely.
 
+

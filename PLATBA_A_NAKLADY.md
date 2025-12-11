@@ -236,3 +236,4 @@ Replicate **nemá free tier** pre SDXL modely. Musíte mať kredit.
 
 **Odporúčanie:** Začnite s $10 kreditom a otestujte aplikáciu. Potom môžete pridať viac podľa potreby.
 
+

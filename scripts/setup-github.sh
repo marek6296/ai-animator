@@ -66,3 +66,4 @@ else
     echo "3. Či je váš GitHub účet prihlásený v git"
 fi
 
+

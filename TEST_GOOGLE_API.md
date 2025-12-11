@@ -65,3 +65,4 @@ Ak to funguje, uvidíte JSON s výsledkami obrázkov.
    - Vyberte váš search engine
    - Setup → Advanced → Image search settings → Enable image search
 
+

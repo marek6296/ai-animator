@@ -230,3 +230,4 @@
 
 **Poznámka:** Aplikácia funguje výborne aj bez LoRA modelov. LoRA modely sú voliteľné a slúžia na vylepšenie kvality a konzistencie štýlu.
 
+

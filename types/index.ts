@@ -1,22 +1,59 @@
 export interface UserInput {
-  // Trip planning
-  destination?: string // Destinácia (mesto alebo krajina v Európe)
-  tripType?: 'city' | 'nature' | 'culture' // Typ výletu
-  duration?: number // Počet dní
-  interests?: string // Záujmy (napr. "múzeá, architektúra, jedlo")
+  // KROK 1 - ZÁKLAD
+  destination?: string // Destinácia (mesto, región, alebo konkrétny point) - DEPRECATED, použite root_place_id
+  destinationPlaceId?: string // Google Places place_id pre presnú identifikáciu - DEPRECATED, použite root_place_id
+  root_place_id?: string // Google Places place_id pre vybraté miesto (povinné)
+  selectedPlace?: {
+    place_id: string
+    name: string
+    formatted_address?: string
+    types?: string[]
+    geometry?: {
+      location: {
+        lat: number
+        lng: number
+      }
+    }
+  } // Kompletná informácia o vybratom mieste
+  mode?: 'city' | 'around' | 'single' // Režim plánovania: city = mesto/oblasť, around = trip okolo POI, single = detail jedného miesta
+  hasSpecificDates?: boolean // true = má konkrétne dátumy, false = len dĺžka
+  dateFrom?: string // ISO dátum
+  dateTo?: string // ISO dátum
+  duration?: number // Počet dní (1-14)
+  adults?: number // Počet dospelých
+  children?: number // Počet detí (voliteľné)
+  travelType?: 'solo' | 'couple' | 'family' | 'group' // Typ cestovania (voliteľné)
   budget?: 'low' | 'medium' | 'high' // Rozpočet
   
-  // Legacy fields (pre kompatibilitu, môžeme odstrániť neskôr)
-  self?: string
-  situation?: string
-  friends?: string
-  simpleDescription?: string
-  style?: string
+  // KROK 2 - ŠTÝL VÝLETU
+  tripGoals?: string[] // Multi-select: relax, city_tourism, party, gastronomy, nature, culture, shopping, romance, family
+  programPace?: 'relaxed' | 'balanced' | 'intensive' // Tempo programu
+  
+  // KROK 3 - ZÁUJMY (pre filtrovanie Google Places)
+  interests?: string[] // Multi-select: landmarks, museums, parks, viewpoints, cafes, restaurants, street_food, bars, clubs, markets, kids_activities, wellness
+  preferredInterests?: string[] // Hviezdičkou označené preferované záujmy
+  
+  // VÝBER KATEGÓRIÍ (čo sa má hľadať)
+  selectedCategories?: ('attraction' | 'activity' | 'restaurant' | 'accommodation' | 'tip')[] // Kategórie, ktoré sa majú hľadať
+  
+  // KROK 4 - DOPRAVA A LIMITY
+  transportation?: 'walk_public' | 'walk_only' | 'car' | 'taxi' // Ako sa pohybuje po meste
+  maxWalkingMinutes?: number // Max. minút pešo medzi miestami (10-30)
+  accessibilityNeeds?: boolean // Bezbarérový prístup
+  avoidStairs?: boolean // Nechce veľa schodov
+  travelingWithPet?: boolean // Cestuje so psom
+  
+  // KROK 5 - JEDLO A OBMEDZENIA
+  dietaryRestrictions?: 'none' | 'vegetarian' | 'vegan' | 'gluten_free' | 'lactose_free' | 'other'
+  dietaryOther?: string // Iné obmedzenia (text)
+  foodPreferences?: string[] // Multi-select: local, european, asian, street_food, fine_dining
+  
+  // KROK 6 - DETAIL ITINERÁRA
+  itineraryDetail?: 'list' | 'basic' | 'detailed' // Úroveň detailu plánu
+  
+  // Legacy fields (pre kompatibilitu)
+  tripType?: 'city' | 'nature' | 'culture' // Starý typ výletu
   contentType?: 'trip' // Typ obsahu: trip
-  referenceImage?: string
-  useReferenceImage?: boolean
-  imageStrength?: number
-  customPrompt?: string
 }
 
 export interface ComicPanel {
@@ -63,8 +100,12 @@ export interface TripTip {
     lat: number
     lng: number
   }
-  place_id?: string // Google Places place_id
-  photo_reference?: string // Google Places photo_reference
+  place_id?: string // Google Places place_id (môže byť v tvare "places/ChIJ..." pre nové API alebo klasický ID pre legacy)
+  photo_reference?: string // Google Places photo reference - môže byť:
+  // - Legacy API: photo_reference (dlhý string)
+  // - New API: name (v tvare "places/ChIJ.../photos/...")
+  // Funkcia getPlacePhotoUrl() automaticky rozpozná formát
+  photoReferences?: string[] // Prvé 3 photo references pre animáciu pri hover (voliteľné)
 }
 
 export interface Trip {

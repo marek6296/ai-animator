@@ -43,3 +43,4 @@ if (!fs.existsSync(nodeModulesPath)) {
 
 console.log('✨ Kontrola dokončená!')
 
+

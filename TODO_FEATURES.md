@@ -90,3 +90,4 @@
 - Užívateľské účty a cloud storage
 - API pre integráciu s inými aplikáciami
 
+

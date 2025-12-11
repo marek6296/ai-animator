@@ -83,3 +83,4 @@ Ak stále neviete nájsť, pozrite sa na:
 - Skontrolujte, či máte vybraný projekt
 - Skontrolujte, či máte oprávnenia v Google Cloud Console
 
+

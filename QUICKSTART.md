@@ -61,3 +61,4 @@ Aplikácia bude dostupná na: http://localhost:3000
 - Skontrolujte, či máte dostatočný kredit na OpenAI účte
 - Skontrolujte, či je API kľúč platný
 
+

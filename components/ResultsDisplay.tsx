@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Clock, DollarSign, Camera, Utensils, Hotel, Mountain, Info, Calendar, Globe, Star } from 'lucide-react'
 import type { GenerationResult, UserInput, TripTip } from '@/types'
 import TripMap from './TripMap'
+import TipDetailModal from './TipDetailModal'
 
 interface ResultsDisplayProps {
   results: GenerationResult
@@ -12,11 +13,11 @@ interface ResultsDisplayProps {
 }
 
 const categoryIcons: Record<TripTip['category'], React.ReactNode> = {
-  attraction: <Camera className="w-6 h-6" />,
-  activity: <Mountain className="w-6 h-6" />,
-  restaurant: <Utensils className="w-6 h-6" />,
-  accommodation: <Hotel className="w-6 h-6" />,
-  tip: <Info className="w-6 h-6" />,
+  attraction: <Camera className="w-4 h-4" />,
+  activity: <Mountain className="w-4 h-4" />,
+  restaurant: <Utensils className="w-4 h-4" />,
+  accommodation: <Hotel className="w-4 h-4" />,
+  tip: <Info className="w-4 h-4" />,
 }
 
 const categoryLabels: Record<TripTip['category'], string> = {
@@ -61,6 +62,69 @@ const categoryColors: Record<TripTip['category'], { bg: string; border: string; 
 }
 
 export default function ResultsDisplay({ results, userInput }: ResultsDisplayProps) {
+  const [selectedTip, setSelectedTip] = useState<TripTip | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [hoveredTipIndex, setHoveredTipIndex] = useState<string | null>(null)
+  const [hoverPhotoUrls, setHoverPhotoUrls] = useState<Record<string, string[]>>({})
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState<Record<string, number>>({})
+  const intervalRefs = useRef<Record<string, NodeJS.Timeout>>({})
+  
+  // Načítaj obrázky pre všetky tipy, ktoré majú photoReferences (už pri načítaní komponentu)
+  useEffect(() => {
+    if (!results.trip) return
+    
+    const loadAllPhotos = async () => {
+      const photoUrlsMap: Record<string, string[]> = {}
+      
+      // Zoskupte tipy podľa kategórie (rovnaká logika ako v render)
+      const tipsByCategory = results.trip.tips.reduce((acc, tip) => {
+        if (!acc[tip.category]) {
+          acc[tip.category] = []
+        }
+        acc[tip.category].push(tip)
+        return acc
+      }, {} as Record<TripTip['category'], TripTip[]>)
+      
+      // Prejdeme všetky kategórie a tipy v nich
+      for (const [category, tips] of Object.entries(tipsByCategory)) {
+        for (let index = 0; index < tips.length; index++) {
+          const tip = tips[index]
+          if (tip.photoReferences && tip.photoReferences.length > 0) {
+            const globalIndex = `${category}-${index}`
+            const urls: string[] = []
+            
+            await Promise.all(
+              tip.photoReferences.slice(0, 3).map(async (photoRef) => {
+                try {
+                  const response = await fetch(`/api/place-photo?photo_reference=${encodeURIComponent(photoRef)}&maxWidth=800`)
+                  const data = await response.json()
+                  if (response.ok && data.photoUrl) {
+                    urls.push(data.photoUrl)
+                  }
+                } catch (error) {
+                  console.error(`Error fetching photo URL for ${tip.title}:`, error)
+                }
+              })
+            )
+            
+            if (urls.length > 0) {
+              photoUrlsMap[globalIndex] = urls
+            }
+          }
+        }
+      }
+      
+      setHoverPhotoUrls(photoUrlsMap)
+    }
+    
+    loadAllPhotos()
+    
+    // Cleanup - vyčisti intervaly pri odstránení komponentu
+    return () => {
+      Object.values(intervalRefs.current).forEach(interval => clearInterval(interval))
+    }
+  }, [results.trip])
+
   if (!results.trip) return null
 
   const { trip } = results
@@ -73,6 +137,16 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
     acc[tip.category].push(tip)
     return acc
   }, {} as Record<TripTip['category'], TripTip[]>)
+
+  const handleTipClick = (tip: TripTip) => {
+    setSelectedTip(tip)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedTip(null)
+  }
 
   return (
     <div className="space-y-12">
@@ -161,21 +235,70 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
 
               {/* Tips Grid */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tips.map((tip, index) => (
-                  <motion.div
+                {tips.map((tip, index) => {
+                  // Použij unique key kombinujúci category a index pre globálny identifikátor
+                  const globalIndex = `${category}-${index}`
+                  const isHovered = hoveredTipIndex === globalIndex
+                  const photoUrls = hoverPhotoUrls[globalIndex] || []
+                  const currentIndex = currentPhotoIndex[globalIndex] || 0
+                  
+                  // Ak máme načítané obrázky, použijeme ich (aj bez hover), inak použijeme imageUrl
+                  const displayImageUrl = photoUrls.length > 0
+                    ? photoUrls[currentIndex % photoUrls.length]
+                    : tip.imageUrl
+                  
+                  return (
+                    <motion.div
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all`}
+                    onClick={() => handleTipClick(tip)}
+                    onMouseEnter={() => {
+                      setHoveredTipIndex(globalIndex)
+                      // Spusti animáciu zmeny fotiek ak máme načítané obrázky
+                      if (photoUrls.length > 1) {
+                        // Vyčisti existujúci interval ak existuje
+                        if (intervalRefs.current[globalIndex]) {
+                          clearInterval(intervalRefs.current[globalIndex])
+                        }
+                        const interval = setInterval(() => {
+                          setCurrentPhotoIndex(prev => {
+                            const current = prev[globalIndex] || 0
+                            const next = (current + 1) % photoUrls.length
+                            return { ...prev, [globalIndex]: next }
+                          })
+                        }, 2000) // Zmeň fotku každé 2 sekundy
+                        intervalRefs.current[globalIndex] = interval
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredTipIndex(null)
+                      // Vyčisti interval
+                      if (intervalRefs.current[globalIndex]) {
+                        clearInterval(intervalRefs.current[globalIndex])
+                        delete intervalRefs.current[globalIndex]
+                      }
+                      setCurrentPhotoIndex(prev => {
+                        const newState = { ...prev }
+                        delete newState[globalIndex]
+                        return newState
+                      })
+                    }}
+                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]`}
                   >
                     {/* Image */}
-                    {tip.imageUrl && tip.imageUrl.trim() !== '' ? (
-                      <div className="relative w-full h-48 overflow-hidden bg-gray-800">
-                        <img
-                          src={tip.imageUrl}
+                    {displayImageUrl && displayImageUrl.trim() !== '' ? (
+                      <div className="relative w-full h-96 md:h-[28rem] overflow-hidden bg-gray-800">
+                        <motion.img
+                          key={displayImageUrl}
+                          src={displayImageUrl}
                           alt={`${tip.title} in ${trip.destination}`}
-                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                          className="w-full h-full object-cover"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.5 }}
                           loading="lazy"
                           referrerPolicy="no-referrer"
                           onError={async (e) => {
@@ -232,20 +355,22 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                           }}
                           onLoad={() => {
                             console.log(`✓ Image loaded successfully for "${tip.title}"`)
-                            console.log(`  Image URL: ${tip.imageUrl}`)
+                            console.log(`  Image URL: ${displayImageUrl}`)
                           }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                        <div className={`absolute top-3 left-3 px-3 py-1.5 rounded-lg ${colors.bg} ${colors.border} border backdrop-blur-sm`}>
-                          <div className={`flex items-center gap-2 ${colors.text}`}>
-                            {categoryIcons[categoryKey]}
-                            <span className="text-xs font-bold">{categoryLabels[categoryKey]}</span>
+                        <div className={`absolute top-2 left-2 px-2.5 py-1.5 rounded-lg bg-black/90 ${colors.border} border backdrop-blur-md shadow-xl ${colors.glow} z-10`}>
+                          <div className={`flex items-center gap-1.5 ${colors.text}`}>
+                            <div className="flex-shrink-0 flex items-center justify-center" style={{ width: '16px', height: '16px' }}>
+                              {categoryIcons[categoryKey]}
+                            </div>
+                            <span className="text-xs font-bold uppercase tracking-wide drop-shadow-lg leading-none">{categoryLabels[categoryKey]}</span>
                           </div>
                         </div>
                       </div>
                     ) : (
                       // Placeholder ak nie je obrázok
-                      <div className="relative w-full h-48 overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <div className="relative w-full h-96 md:h-[28rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                         <div className="text-center">
                           <Camera className={`w-12 h-12 ${colors.text} mx-auto mb-2 opacity-50`} />
                           <p className={`text-xs ${colors.text} opacity-50`}>Obrázok sa načítava...</p>
@@ -285,8 +410,9 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         )}
                       </div>
                     </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  )
+                })}
               </div>
             </motion.section>
           )
@@ -308,6 +434,15 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
           Máte celkom <span className="text-cyan-400 font-bold">{trip.tips.length}</span> odporúčaní na nezabudnuteľný výlet do {trip.destination}
         </p>
       </motion.div>
+
+      {/* Detail Modal */}
+      {selectedTip && (
+        <TipDetailModal
+          tip={selectedTip}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   )
 }

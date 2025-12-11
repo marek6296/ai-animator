@@ -75,3 +75,4 @@ Ak sa vám nepodarí povoliť API, aplikácia stále bude fungovať, len použij
 
 Ale Google Obrázky nebudú fungovať bez povoleného Custom Search API.
 
+

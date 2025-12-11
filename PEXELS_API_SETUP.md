@@ -78,3 +78,4 @@ Po nastavení skúste vygenerovať nový plán výletu. V konzole (F12 → Conso
 - Aplikácia automaticky použije Pexels, ak je API key nastavený
 - Ak Pexels nenašiel obrázok, aplikácia skúsi Google API alebo použije placeholder
 
+

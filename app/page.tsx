@@ -18,6 +18,23 @@ export default function Home() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Uisti sa, že scrollovanie je vždy povolené pri načítaní komponentu
+  useEffect(() => {
+    // Obnov scrollovanie pri načítaní
+    document.body.style.overflow = ''
+    document.body.style.position = ''
+    document.body.style.top = ''
+    document.body.style.width = ''
+    
+    return () => {
+      // Cleanup - uisti sa, že scrollovanie je povolené pri odstránení
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+    }
+  }, [])
+
   const handleCancel = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()

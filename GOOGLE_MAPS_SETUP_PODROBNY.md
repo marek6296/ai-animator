@@ -95,3 +95,4 @@ Po povolení oboch API:
 
 Podrobné inštrukcie sú v `GOOGLE_MAPS_SETUP.md`.
 
+

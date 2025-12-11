@@ -184,3 +184,4 @@ Rozšírené možnosti sa pridávajú do promptu, ktorý sa posiela AI:
 
 **Poznámka:** Všetky nové možnosti sú voliteľné. Aplikácia funguje výborne aj bez nich!
 
+

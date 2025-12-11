@@ -119,3 +119,4 @@ export async function getMultipleCoordinates(
   return results
 }
 
+

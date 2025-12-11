@@ -109,3 +109,4 @@ Ak nechcete použiť Replicate, môžete:
 - Použiť inú službu (Stability AI, Hugging Face, atď.)
 - Upraviť `stableDiffusionService.ts` pre iný API
 
+

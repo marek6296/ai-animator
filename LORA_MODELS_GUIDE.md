@@ -197,3 +197,4 @@ Upravte `lib/loraModels.ts` a pridajte `loraModel` pre každý štýl.
 - **Testujte rôzne váhy** (0.6 - 0.9) pre najlepšie výsledky
 - **Kombinujte LoRA s prompt enhancement** pre najlepšiu kvalitu
 
+

@@ -112,3 +112,4 @@ LORA_WEIGHT=0.8
 
 **Záver:** Pre teraz **NEPOTREBUJETE** LoRA model. Aplikácia funguje výborne aj bez neho!
 
+

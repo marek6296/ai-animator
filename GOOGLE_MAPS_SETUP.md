@@ -100,3 +100,4 @@ Po nastavení skúste vygenerovať nový plán výletu. Mala by sa zobraziť:
 - Kliknutie na marker zobrazí detailné informácie
 - Mapa má tmavý štýl, ktorý sa hodí k futuristickému dizajnu aplikácie
 
+

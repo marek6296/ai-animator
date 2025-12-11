@@ -117,3 +117,4 @@ Môžete skúsiť iný, lacnejší model na Replicate, ale kvalita môže byť n
 
 **Poznámka:** Replicate je pay-as-you-go služba. Platíte len za to, čo použijete. SDXL je relatívne lacný model, takže náklady by mali byť nízke.
 
+
