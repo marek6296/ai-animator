@@ -399,10 +399,10 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm leading-relaxed mb-0">{tip.description}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-0 flex-grow">{tip.description}</p>
 
                       {/* Meta Info */}
-                      <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                      <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-auto">
                         {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
                         <div className="flex justify-between items-center gap-2">
                           {/* Hodnotenie - vľavo */}
