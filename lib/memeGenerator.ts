@@ -41,13 +41,13 @@ Texty by mali byť vtipné, relevantné k situácii a vhodné pre memy.`
     const memeProgress = 15 + (i / memeCount) * 85
     onProgress?.(memeProgress, `Generujem meme ${i + 1} z ${memeCount}...`)
     const template = memeTemplates[i % memeTemplates.length]
-    const text = memeTexts[i] || `Meme ${i + 1} o ${input.situation}`
+    const text = memeTexts[i] || `Meme ${i + 1} o ${(input as any).situation || 'situácii'}`
     
     const memePrompt = `Vytvor meme v štýle "${template}".
     Text memu: "${text}"
-    Hlavná postava: ${input.self}
-    Ostatné postavy: ${input.friends}
-    Situácia: ${input.situation}
+    Hlavná postava: ${(input as any).self || 'osoba'}
+    Ostatné postavy: ${(input as any).friends || ''}
+    Situácia: ${(input as any).situation || 'situácia'}
     
     Štýl: klasický meme, vtipný, farebný, profesionálny, čitateľný text, známy meme formát.
     Text musí byť jasne viditeľný a čitateľný.
