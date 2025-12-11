@@ -76,6 +76,7 @@ export default function Home() {
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
 
       const readStream = async () => {
         try {
@@ -84,51 +85,56 @@ export default function Home() {
             
             if (done) {
               console.log('[Frontend] Stream ended')
+              // Skús parsovať zvyšok bufferu
+              if (buffer.trim()) {
+                // SSE eventy sú oddelené `\n\n`
+                const events = buffer.split('\n\n')
+                for (const event of events) {
+                  if (event.trim()) {
+                    const lines = event.split('\n')
+                    for (const line of lines) {
+                      if (line.startsWith('data: ')) {
+                        try {
+                          const jsonStr = line.slice(6).trim()
+                          if (jsonStr) {
+                            const data = JSON.parse(jsonStr)
+                            handleProgressData(data)
+                          }
+                        } catch (parseError) {
+                          console.warn('Error parsing final buffer:', parseError)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
               break
             }
 
-            const chunk = decoder.decode(value, { stream: true })
-            const lines = chunk.split('\n')
+            // Pridaj chunk do bufferu
+            buffer += decoder.decode(value, { stream: true })
+            
+            // SSE eventy sú oddelené `\n\n` - rozdel buffer na eventy
+            const events = buffer.split('\n\n')
+            // Posledný event môže byť neúplný, tak ho necháme v bufferi
+            buffer = events.pop() || ''
 
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6))
-                  console.log(`[Frontend] Progress update:`, data)
-                  setProgress(data)
-
-                  if (data.step === 'complete') {
-                    if (data.error) {
-                      console.error('Generation error:', data.error)
-                      toast.error(data.error || 'Nastala chyba pri generovaní')
-                      setIsGenerating(false)
-                      setProgress(null)
-                      return
-                    }
-
-                    if (data.result) {
-                      console.log('[Frontend] Received result:', data.result)
-                      if (data.result.trip && data.result.trip.tips) {
-                        console.log('[Frontend] Tips with imageUrls:')
-                        data.result.trip.tips.forEach((tip: any, index: number) => {
-                          console.log(`  Tip ${index + 1}: "${tip.title}"`)
-                          console.log(`    imageUrl: ${tip.imageUrl || 'MISSING'}`)
-                          console.log(`    place_id: ${tip.place_id || 'MISSING'}`)
-                        })
+            // Spracuj kompletné eventy
+            for (const event of events) {
+              if (event.trim()) {
+                const lines = event.split('\n')
+                for (const line of lines) {
+                  if (line.startsWith('data: ')) {
+                    try {
+                      const jsonStr = line.slice(6).trim()
+                      if (jsonStr) {
+                        const data = JSON.parse(jsonStr)
+                        handleProgressData(data)
                       }
-                      setResults(data.result)
-                      toast.success('Plán výletu bol úspešne vygenerovaný!')
-                    } else {
-                      console.error('No result in progress data:', data)
-                      toast.error('Nepodarilo sa vygenerovať obsah. Skúste to znova.')
+                    } catch (parseError) {
+                      console.error('Error parsing progress data:', parseError, 'Event length:', event.length, 'First 200 chars:', event.substring(0, 200))
                     }
-                    
-                    setIsGenerating(false)
-                    setProgress(null)
-                    return
                   }
-                } catch (parseError) {
-                  console.error('Error parsing progress data:', parseError, line)
                 }
               }
             }
@@ -139,6 +145,41 @@ export default function Home() {
           }
           console.error('Error reading stream:', error)
           toast.error('Chyba pri čítaní progressu')
+          setIsGenerating(false)
+          setProgress(null)
+        }
+      }
+
+      const handleProgressData = (data: any) => {
+        console.log(`[Frontend] Progress update:`, data)
+        setProgress(data)
+
+        if (data.step === 'complete') {
+          if (data.error) {
+            console.error('Generation error:', data.error)
+            toast.error(data.error || 'Nastala chyba pri generovaní')
+            setIsGenerating(false)
+            setProgress(null)
+            return
+          }
+
+          if (data.result) {
+            console.log('[Frontend] Received result:', data.result)
+            if (data.result.trip && data.result.trip.tips) {
+              console.log('[Frontend] Tips with imageUrls:')
+              data.result.trip.tips.forEach((tip: any, index: number) => {
+                console.log(`  Tip ${index + 1}: "${tip.title}"`)
+                console.log(`    imageUrl: ${tip.imageUrl || 'MISSING'}`)
+                console.log(`    place_id: ${tip.place_id || 'MISSING'}`)
+              })
+            }
+            setResults(data.result)
+            toast.success('Plán výletu bol úspešne vygenerovaný!')
+          } else {
+            console.error('No result in progress data:', data)
+            toast.error('Nepodarilo sa vygenerovať obsah. Skúste to znova.')
+          }
+          
           setIsGenerating(false)
           setProgress(null)
         }

@@ -36,14 +36,31 @@ export async function POST(request: NextRequest) {
         }
 
         const sendComplete = (result: any) => {
-          const data = JSON.stringify({
-            step: 'complete',
-            progress: 100,
-            message: 'Hotovo!',
-            result,
-          }) + '\n\n'
-          controller.enqueue(encoder.encode(`data: ${data}`))
-          controller.close()
+          try {
+            const data = JSON.stringify({
+              step: 'complete',
+              progress: 100,
+              message: 'Hotovo!',
+              result,
+            })
+            
+            console.log(`[Stream] Sending complete result (${data.length} bytes)`)
+            
+            // Pošli kompletný JSON naraz - SSE formát vyžaduje `data: ` prefix a `\n\n` na konci
+            const sseData = `data: ${data}\n\n`
+            controller.enqueue(encoder.encode(sseData))
+            controller.close()
+          } catch (error: any) {
+            console.error('[Stream] Error in sendComplete:', error)
+            const errorData = JSON.stringify({
+              step: 'complete',
+              progress: 0,
+              message: 'Chyba',
+              error: 'Chyba pri serializácii výsledku',
+            })
+            controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+            controller.close()
+          }
         }
 
         const sendError = (error: string) => {
