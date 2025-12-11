@@ -289,7 +289,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                   >
                     {/* Image */}
                     {displayImageUrl && displayImageUrl.trim() !== '' ? (
-                      <div className="relative w-full h-96 md:h-[28rem] overflow-hidden bg-gray-800">
+                      <div className="relative w-full h-72 md:h-80 overflow-hidden bg-gray-800">
                         <motion.img
                           key={displayImageUrl}
                           src={displayImageUrl}
@@ -370,7 +370,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     ) : (
                       // Placeholder ak nie je obrázok
-                      <div className="relative w-full h-96 md:h-[28rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <div className="relative w-full h-72 md:h-80 overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                         <div className="text-center">
                           <Camera className={`w-12 h-12 ${colors.text} mx-auto mb-2 opacity-50`} />
                           <p className={`text-xs ${colors.text} opacity-50`}>Obrázok sa načítava...</p>
@@ -386,7 +386,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm leading-relaxed mb-5 min-h-[80px]">{tip.description}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-4 min-h-[50px] line-clamp-4">{tip.description}</p>
 
                       {/* Meta Info */}
                       <div className="flex flex-wrap gap-3 pt-4 border-t border-white/10 mt-auto">
