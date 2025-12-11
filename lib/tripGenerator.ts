@@ -576,6 +576,59 @@ async function generateTripWithTips(
   }
 }
 
+/**
+ * Vytvorí Trip bez Google Places API - len z AI generovaných tipov
+ */
+async function generateTripWithoutPlaces(
+  tips: ParsedTip[],
+  input: UserInput,
+  onProgress?: (progress: number, message: string) => void
+): Promise<Trip> {
+  onProgress?.(60, 'Vytváram tipy...')
+  
+  const tipsWithImages: TripTip[] = tips.map((tip, index) => {
+    // Extrahuj názov z fake place_id (odstráň "AI_" prefix a "_timestamp")
+    const title = tip.place_id
+      .replace(/^AI_/, '')
+      .replace(/_\d+$/, '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase())
+    
+    // Použijeme placeholder obrázok
+    const placeholderText = encodeURIComponent(title.substring(0, 30))
+    const imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
+    
+    return {
+      title: title,
+      description: tip.description,
+      category: tip.category,
+      duration: tip.duration,
+      price: tip.price,
+      imageUrl: imageUrl,
+      place_id: tip.place_id,
+    }
+  })
+
+  onProgress?.(80, 'Vytváram súhrn...')
+  
+  const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v slovenčine. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
+  const summary = await generateText(summaryPrompt)
+  
+  const country = extractCountry(input.destination || '')
+
+  onProgress?.(100, 'Plán výletu hotový!')
+
+  return {
+    destination: input.destination || '',
+    country: country,
+    tips: tipsWithImages,
+    summary: summary.trim(),
+    bestTimeToVisit: undefined,
+    currency: undefined,
+    language: undefined,
+  }
+}
+
 function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
   const tips: ParsedTip[] = []
   
