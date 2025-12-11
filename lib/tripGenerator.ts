@@ -791,29 +791,50 @@ async function generateTripWithoutPlaces(
     // Skús nájsť skutočné miesto pomocou findPlaceByName
     try {
       const foundPlace = await findPlaceByName(title, input.destination || '')
-      if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
-        const firstPhoto = foundPlace.photos[0]
-        const photo_reference = (firstPhoto.photo_reference || firstPhoto.name || '') as string
+      
+      if (foundPlace) {
+        console.log(`[generateTripWithoutPlaces] ✓ Found place: "${foundPlace.name}"`)
+        console.log(`[generateTripWithoutPlaces]   Photos count: ${foundPlace.photos?.length || 0}`)
         
-        if (photo_reference) {
-          imageUrl = getPlacePhotoUrl(photo_reference, 800)
-          place_id = foundPlace.place_id
+        if (foundPlace.photos && foundPlace.photos.length > 0) {
+          const firstPhoto = foundPlace.photos[0]
+          console.log(`[generateTripWithoutPlaces]   First photo object:`, JSON.stringify({
+            photo_reference: firstPhoto.photo_reference?.substring(0, 50) || 'none',
+            name: firstPhoto.name?.substring(0, 50) || 'none',
+            height: firstPhoto.height,
+            width: firstPhoto.width,
+          }))
           
-          if (foundPlace.geometry?.location) {
-            coordinates = {
-              lat: foundPlace.geometry.location.lat,
-              lng: foundPlace.geometry.location.lng,
+          // Nové API používa 'name', legacy používa 'photo_reference'
+          const photo_reference = (firstPhoto.name || firstPhoto.photo_reference || '') as string
+          
+          console.log(`[generateTripWithoutPlaces]   Extracted photo_reference: ${photo_reference ? photo_reference.substring(0, 80) + '...' : 'MISSING'}`)
+          
+          if (photo_reference) {
+            imageUrl = getPlacePhotoUrl(photo_reference, 800)
+            place_id = foundPlace.place_id
+            
+            if (foundPlace.geometry?.location) {
+              coordinates = {
+                lat: foundPlace.geometry.location.lat,
+                lng: foundPlace.geometry.location.lng,
+              }
             }
+            
+            console.log(`✓ Found place and image for "${title}": ${foundPlace.name}`)
+            console.log(`  Final Image URL: ${imageUrl}`)
+          } else {
+            console.error(`❌ Photo reference is MISSING for "${title}"`)
           }
-          
-          console.log(`✓ Found place and image for "${title}": ${foundPlace.name}`)
-          console.log(`  Image URL: ${imageUrl.substring(0, 100)}...`)
+        } else {
+          console.warn(`⚠ Place "${title}" found but has no photos`)
         }
       } else {
-        console.warn(`⚠ Place "${title}" found but has no photos`)
+        console.warn(`⚠ Place "${title}" NOT FOUND by findPlaceByName`)
       }
-    } catch (error) {
-      console.warn(`⚠ Failed to find place "${title}":`, error)
+    } catch (error: any) {
+      console.error(`❌ ERROR finding place "${title}":`, error.message || error)
+      console.error(`  Error stack:`, error.stack)
       // Použijeme placeholder
     }
     
