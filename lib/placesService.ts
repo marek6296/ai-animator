@@ -257,7 +257,7 @@ export async function searchPlacesInCity(
             console.log(`✓ Found ${placesWithPhotos.length} places with photos (New API) in ${cityName}${locationBias ? ` (location bias: ${locationBias.lat}, ${locationBias.lng}, radius: ${locationBias.radius}m)` : ''}`)
             
             // Filtruj výsledky - musia obsahovať názov mesta v adrese (ak nie je location bias alebo ako dodatočná kontrola)
-            const filteredPlaces = placesWithPhotos.filter(place => {
+            const filteredPlaces = placesWithPhotos.filter((place: Place) => {
               if (!place.formatted_address) return false
               const addressLower = place.formatted_address.toLowerCase()
               const cityLower = cityName.toLowerCase()
