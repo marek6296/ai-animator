@@ -321,8 +321,8 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       dateFrom: hasSpecificDates ? dateFrom : undefined,
       dateTo: hasSpecificDates ? dateTo : undefined,
       duration: hasSpecificDates ? undefined : duration,
-      adults,
-      children: children > 0 ? children : undefined,
+      adults: undefined,
+      children: undefined,
       travelType,
       budget,
       tripGoals: tripGoals.length > 0 ? tripGoals : undefined,
@@ -599,67 +599,39 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
 
               {/* Termín / dĺžka - odstránené podľa požiadavky */}
 
-              {/* Počet ľudí */}
+              {/* Typ cestovania */}
               <div>
                 <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
                   <Users className="w-6 h-6" />
-                  Počet ľudí
+                  Typ cestovania
                 </label>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Dospelí *</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={adults}
-                      onChange={(e) => setAdults(parseInt(e.target.value) || 1)}
-                      disabled={isGenerating}
-                      className="w-full px-4 py-3 glass border border-cyan-500/30 rounded-lg text-white focus:border-cyan-400"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Deti (voliteľné)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={children}
-                      onChange={(e) => setChildren(parseInt(e.target.value) || 0)}
-                      disabled={isGenerating}
-                      className="w-full px-4 py-3 glass border border-cyan-500/30 rounded-lg text-white focus:border-cyan-400"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Typ cestovania (voliteľné)</label>
-                  <div className="grid grid-cols-4 gap-3">
-                    {[
-                      { value: 'solo', label: 'Solo' },
-                      { value: 'couple', label: 'Pár' },
-                      { value: 'family', label: 'Rodina' },
-                      { value: 'group', label: 'Partia' },
-                    ].map((type) => (
-                      <label
-                        key={type.value}
-                        className={`flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer transition-all glass ${
-                          travelType === type.value
-                            ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
-                            : 'border-gray-600 text-gray-400 hover:border-cyan-400/50'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="travelType"
-                          value={type.value}
-                          checked={travelType === type.value}
-                          onChange={(e) => setTravelType(e.target.value as typeof travelType)}
-                          disabled={isGenerating}
-                          className="sr-only"
-                        />
-                        <span className="text-sm font-bold">{type.label}</span>
-                      </label>
-                    ))}
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { value: 'solo', label: 'Solo' },
+                    { value: 'couple', label: 'Pár' },
+                    { value: 'family', label: 'Rodina' },
+                    { value: 'group', label: 'Partia' },
+                  ].map((type) => (
+                    <label
+                      key={type.value}
+                      className={`flex flex-col items-center justify-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
+                        travelType === type.value
+                          ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
+                          : 'border-gray-600 text-gray-400 hover:border-cyan-400/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="travelType"
+                        value={type.value}
+                        checked={travelType === type.value}
+                        onChange={(e) => setTravelType(e.target.value as typeof travelType)}
+                        disabled={isGenerating}
+                        className="sr-only"
+                      />
+                      <span className="text-sm font-bold">{type.label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
