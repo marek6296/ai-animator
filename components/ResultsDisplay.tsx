@@ -302,7 +302,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                   >
                     {/* Image */}
                     {displayImageUrl && displayImageUrl.trim() !== '' ? (
-                      <div className="relative w-full h-96 md:h-[28rem] overflow-hidden bg-gray-800">
+                      <div className="relative w-full h-[32rem] md:h-[36rem] overflow-hidden bg-gray-800">
                         <motion.img
                           key={displayImageUrl}
                           src={displayImageUrl}
@@ -383,7 +383,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     ) : (
                       // Placeholder ak nie je obrázok
-                      <div className="relative w-full h-96 md:h-[28rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <div className="relative w-full h-[32rem] md:h-[36rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                         <div className="text-center">
                           <Camera className={`w-12 h-12 ${colors.text} mx-auto mb-2 opacity-50`} />
                           <p className={`text-xs ${colors.text} opacity-50`}>Obrázok sa načítava...</p>
@@ -399,51 +399,59 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm leading-relaxed mb-3">{tip.description}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-2">{tip.description}</p>
 
                       {/* Meta Info */}
-                      <div className="flex flex-wrap gap-2 pt-3 border-t border-white/10 mt-auto">
-                        {tip.rating && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
-                            <Star className="w-4 h-4 text-cyan-400" />
-                            <span className="text-xs font-bold text-cyan-200">{tip.rating.toFixed(1)}</span>
-                            {tip.user_ratings_total !== undefined && (
-                              <span className="text-[11px] text-gray-400">({tip.user_ratings_total})</span>
+                      <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-auto">
+                        {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
+                        <div className="flex justify-between items-center gap-2">
+                          {/* Hodnotenie - vľavo */}
+                          {tip.rating && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
+                              <Star className="w-4 h-4 text-cyan-400" />
+                              <span className="text-xs font-bold text-cyan-200">{tip.rating.toFixed(1)}</span>
+                              {tip.user_ratings_total !== undefined && (
+                                <span className="text-[11px] text-gray-400">({tip.user_ratings_total})</span>
+                              )}
+                            </div>
+                          )}
+                          {/* Ostatné info - vpravo */}
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                            {(tip.price || tip.price_level !== undefined) && (
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30">
+                                <DollarSign className="w-4 h-4 text-pink-400" />
+                                <span className="text-xs font-bold text-pink-200">
+                                  {tip.price ? tip.price : priceLevelLabel(tip.price_level)}
+                                </span>
+                              </div>
+                            )}
+                            {tip.open_now !== undefined && (
+                              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
+                                <Clock className={`w-4 h-4 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
+                                <span className="text-xs font-bold">
+                                  {tip.open_now ? 'Otvorené teraz' : 'Zatvorené'}
+                                </span>
+                              </div>
+                            )}
+                            {tip.business_status && (
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30">
+                                <Info className="w-4 h-4 text-purple-300" />
+                                <span className="text-xs font-bold text-purple-100">{tip.business_status}</span>
+                              </div>
+                            )}
+                            {tip.duration && (
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
+                                <Clock className="w-4 h-4 text-cyan-300" />
+                                <span className="text-xs font-bold text-cyan-100">{tip.duration}</span>
+                              </div>
                             )}
                           </div>
-                        )}
-                        {(tip.price || tip.price_level !== undefined) && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30">
-                            <DollarSign className="w-4 h-4 text-pink-400" />
-                            <span className="text-xs font-bold text-pink-200">
-                              {tip.price ? tip.price : priceLevelLabel(tip.price_level)}
-                            </span>
-                          </div>
-                        )}
-                        {tip.open_now !== undefined && (
-                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
-                            <Clock className={`w-4 h-4 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
-                            <span className="text-xs font-bold">
-                              {tip.open_now ? 'Otvorené teraz' : 'Zatvorené'}
-                            </span>
-                          </div>
-                        )}
+                        </div>
+                        {/* Druhý riadok: Adresa - vľavo */}
                         {tip.location && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 w-fit">
                             <MapPin className="w-4 h-4 text-cyan-300" />
                             <span className="text-xs font-bold text-cyan-100">{tip.location}</span>
-                          </div>
-                        )}
-                        {tip.business_status && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30">
-                            <Info className="w-4 h-4 text-purple-300" />
-                            <span className="text-xs font-bold text-purple-100">{tip.business_status}</span>
-                          </div>
-                        )}
-                        {tip.duration && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
-                            <Clock className="w-4 h-4 text-cyan-300" />
-                            <span className="text-xs font-bold text-cyan-100">{tip.duration}</span>
                           </div>
                         )}
                       </div>
