@@ -118,3 +118,4 @@ function parseMemeTexts(text: string): string[] {
   return texts
 }
 
+// Build trigger
