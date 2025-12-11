@@ -258,13 +258,13 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
                     </div>
 
                     {/* Info Grid */}
-                    <div className="grid md:grid-cols-2 gap-4 overflow-hidden">
+                    <div className="grid md:grid-cols-2 gap-4 overflow-hidden items-stretch">
                       {/* Rating */}
                       {details.rating && (
-                        <div className="glass border border-cyan-400/20 rounded-xl p-4 overflow-hidden">
-                          <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="glass border border-cyan-400/20 rounded-xl p-4 overflow-hidden h-full">
+                          <div className="flex items-center gap-3 overflow-hidden h-full">
                             <Star className="w-6 h-6 text-cyan-400 fill-cyan-400 flex-shrink-0" />
-                            <div className="overflow-hidden">
+                            <div className="overflow-hidden leading-tight">
                               <div className="text-2xl font-black text-cyan-400 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>{details.rating.toFixed(1)}</div>
                               {details.user_ratings_total && (
                                 <div className="text-xs text-gray-400 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
@@ -278,10 +278,10 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
 
                       {/* Opening Hours */}
                       {details.opening_hours && (
-                        <div className="glass border border-purple-400/20 rounded-xl p-4 overflow-hidden">
-                          <div className="flex items-center gap-3 mb-2 overflow-hidden">
+                        <div className="glass border border-purple-400/20 rounded-xl p-4 overflow-hidden h-full">
+                          <div className="flex items-center gap-3 overflow-hidden h-full">
                             <Clock className="w-6 h-6 text-purple-400 flex-shrink-0" />
-                            <div className="overflow-hidden">
+                            <div className="overflow-hidden leading-tight">
                               <div className="text-lg font-bold text-purple-400 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
                                 {details.opening_hours.open_now ? 'Otvorené' : 'Zatvorené'}
                               </div>
@@ -297,8 +297,8 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
 
                       {/* Phone */}
                       {details.phone_number && (
-                        <div className="glass border border-pink-400/20 rounded-xl p-4 overflow-hidden">
-                          <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="glass border border-pink-400/20 rounded-xl p-4 overflow-hidden h-full">
+                          <div className="flex items-center gap-3 overflow-hidden h-full">
                             <Phone className="w-6 h-6 text-pink-400 flex-shrink-0" />
                             <a
                               href={`tel:${details.phone_number}`}
@@ -312,8 +312,8 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
 
                       {/* Website */}
                       {details.website && (
-                        <div className="glass border border-blue-400/20 rounded-xl p-4 overflow-hidden">
-                          <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="glass border border-blue-400/20 rounded-xl p-4 overflow-hidden h-full">
+                          <div className="flex items-center gap-3 overflow-hidden h-full">
                             <Globe className="w-6 h-6 text-blue-400 flex-shrink-0" />
                             <a
                               href={details.website}
@@ -330,8 +330,8 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
 
                       {/* Duration */}
                       {tip.duration && (
-                        <div className="glass border border-green-400/20 rounded-xl p-4 overflow-hidden">
-                          <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="glass border border-green-400/20 rounded-xl p-4 overflow-hidden h-full">
+                          <div className="flex items-center gap-3 overflow-hidden h-full">
                             <Clock className="w-6 h-6 text-green-400 flex-shrink-0" />
                             <div className="text-green-400 font-semibold break-words" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>{tip.duration}</div>
                           </div>
@@ -340,8 +340,8 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
 
                       {/* Price */}
                       {tip.price && (
-                        <div className="glass border border-yellow-400/20 rounded-xl p-4 overflow-hidden">
-                          <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="glass border border-yellow-400/20 rounded-xl p-4 overflow-hidden h-full">
+                          <div className="flex items-center gap-3 overflow-hidden h-full">
                             <DollarSign className="w-6 h-6 text-yellow-400 flex-shrink-0" />
                             <div className="text-yellow-400 font-semibold break-words" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>{tip.price}</div>
                           </div>
