@@ -137,15 +137,30 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       return
     }
 
-    console.log('[Autocomplete] Načítavam Google Maps API s PlaceAutocompleteElement...')
+    console.log('[Autocomplete] Načítavam Google Maps API...')
     const script = document.createElement('script')
-    // Nový PlaceAutocompleteElement nepotrebuje 'places' library, používa sa priamo
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async&libraries=places&language=sk`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=sk`
     script.async = true
     script.defer = true
     script.onload = () => {
-      console.log('[Autocomplete] Google Maps API načítaný úspešne')
-      setIsGoogleLoaded(true)
+      console.log('[Autocomplete] Script načítaný, čakám na inicializáciu Places API...')
+      // Počkaj, kým bude Places API skutočne dostupné
+      const checkPlaces = setInterval(() => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          console.log('[Autocomplete] Google Maps API a Places API načítané úspešne')
+          setIsGoogleLoaded(true)
+          clearInterval(checkPlaces)
+        }
+      }, 50)
+      
+      // Timeout po 10 sekundách
+      setTimeout(() => {
+        clearInterval(checkPlaces)
+        if (!window.google || !window.google.maps || !window.google.maps.places) {
+          console.error('[Autocomplete] Timeout: Places API sa nenačítalo')
+          toast.error('Nepodarilo sa načítať Google Places API')
+        }
+      }, 10000)
     }
     script.onerror = () => {
       console.error('[Autocomplete] Chyba pri načítaní Google Maps API')
@@ -169,6 +184,18 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       return
     }
     
+    // Skontroluj, či je Places API skutočne dostupné
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+      console.error('[Autocomplete] Google Maps API nie je dostupný (skontroluj window.google.maps.places)')
+      // Skús ešte raz po krátkom čase
+      const retryTimeout = setTimeout(() => {
+        if (window.google && window.google.maps && window.google.maps.places && autocompleteRef.current) {
+          initializeAutocomplete()
+        }
+      }, 200)
+      return () => clearTimeout(retryTimeout)
+    }
+    
     // Počkaj na input element (môže byť ešte nie je renderovaný)
     if (!autocompleteRef.current) {
       console.log('[Autocomplete] Input element ešte nie je pripravený, čakám...')
@@ -179,11 +206,6 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
         }
       }, 100)
       return () => clearTimeout(timeout)
-    }
-    
-    if (!window.google || !window.google.maps || !window.google.maps.places) {
-      console.error('[Autocomplete] Google Maps API nie je dostupný')
-      return
     }
 
     initializeAutocomplete()
