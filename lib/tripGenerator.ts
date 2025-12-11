@@ -423,6 +423,29 @@ export async function generateTrip(
         }
       }
       
+      // Vylúč podozrivé názvy (vulgarizmy, nechutné slová, fake miesta)
+      const suspiciousKeywords = [
+        'bordel', 'shit', 'fuck', 'sex', 'porn', 'xxx',
+        'test', 'testovacie', 'fake', 'spam', 'delete',
+        'súkromné', 'private', 'osobné', 'personal', 'my house', 'môj dom'
+      ]
+      if (suspiciousKeywords.some(keyword => nameLower.includes(keyword))) {
+        console.log(`❌ Excluding suspicious place "${place.name}" (suspicious keyword)`)
+        return false
+      }
+      
+      // Vylúč miesta s príliš málo recenziami (menej ako 3 = možno fake)
+      if ((place.user_ratings_total || 0) < 3) {
+        console.log(`❌ Excluding place "${place.name}" - too few reviews (${place.user_ratings_total || 0})`)
+        return false
+      }
+      
+      // Vylúč miesta s príliš vysokým ratingom a málo recenziami (možno fake)
+      if (place.rating && place.rating >= 4.9 && (place.user_ratings_total || 0) < 5) {
+        console.log(`❌ Excluding suspicious place "${place.name}" - perfect rating (${place.rating}) with few reviews (${place.user_ratings_total})`)
+        return false
+      }
+      
       return true
     })
     
@@ -2573,6 +2596,7 @@ ODPORÚČANIA V OKOLÍ:
 
 /**
  * Validuje miesta pomocou OpenAI - overí, či skutočne patria medzi turistické atrakcie
+ * Odstráni fake miesta, neplatné záznamy a nechutné obsahy z Google Maps
  */
 async function validatePlacesWithAI(
   tips: ParsedTip[],
@@ -2581,9 +2605,65 @@ async function validatePlacesWithAI(
   if (tips.length === 0) return tips
   
   try {
-    // Získaj informácie o miestach
-    const placesInfo = tips.map(tip => {
+    // PREDBEŽNÉ FILTROVANIE - odstráň podozrivé miesta pred AI validáciou
+    const preFilteredTips: ParsedTip[] = []
+    const preFilteredPlaces: Place[] = []
+    
+    for (let i = 0; i < tips.length; i++) {
+      const tip = tips[i]
       const place = allPlaces.find(p => p.place_id === tip.place_id)
+      if (!place) continue
+      
+      const nameLower = place.name.toLowerCase()
+      const types = place.types || []
+      
+      // FILTER 1: Vylúč miesta s málo recenziami (menej ako 3 = možno fake)
+      if ((place.user_ratings_total || 0) < 3) {
+        console.log(`❌ Excluding "${place.name}" - too few reviews (${place.user_ratings_total || 0})`)
+        continue
+      }
+      
+      // FILTER 2: Vylúč podozrivé názvy (obsahujú vulgarizmy, nechutné slová)
+      const suspiciousKeywords = [
+        'bordel', 'shit', 'fuck', 'sex', 'porn', 'xxx',
+        'test', 'testovacie', 'fake', 'spam', 'delete',
+        'súkromné', 'private', 'osobné', 'personal'
+      ]
+      if (suspiciousKeywords.some(keyword => nameLower.includes(keyword))) {
+        console.log(`❌ Excluding "${place.name}" - suspicious name`)
+        continue
+      }
+      
+      // FILTER 3: Vylúč miesta bez relevantných typov (ak nemá žiadny turistický typ)
+      const touristTypes = [
+        'museum', 'art_gallery', 'church', 'cathedral', 'monument', 'historical_site',
+        'castle', 'palace', 'ruins', 'archaeological_site', 'tourist_attraction',
+        'park', 'natural_feature', 'viewpoint', 'restaurant', 'cafe', 'bar',
+        'lodging', 'hotel', 'hostel', 'resort'
+      ]
+      const hasTouristType = types.some(t => touristTypes.includes(t))
+      if (!hasTouristType && types.length > 0) {
+        console.log(`❌ Excluding "${place.name}" - no tourist types (${types.join(', ')})`)
+        continue
+      }
+      
+      // FILTER 4: Vylúč miesta s príliš vysokým ratingom a málo recenziami (možno fake)
+      if (place.rating && place.rating >= 4.8 && (place.user_ratings_total || 0) < 5) {
+        console.log(`⚠ Suspicious rating for "${place.name}" (${place.rating} with ${place.user_ratings_total} reviews)`)
+        // Nevyradíme, ale označíme ako podozrivé
+      }
+      
+      preFilteredTips.push(tip)
+      preFilteredPlaces.push(place)
+    }
+    
+    console.log(`[validatePlacesWithAI] Pre-filtered ${preFilteredTips.length} out of ${tips.length} places`)
+    
+    if (preFilteredTips.length === 0) return []
+    
+    // AI VALIDÁCIA - over, či je to skutočná pamiatka/atrakcia
+    const placesInfo = preFilteredTips.map(tip => {
+      const place = preFilteredPlaces.find(p => p.place_id === tip.place_id)
       if (!place) return null
       
       return {
@@ -2603,10 +2683,11 @@ async function validatePlacesWithAI(
       category: string
     }>
     
-    if (placesInfo.length === 0) return tips
+    if (placesInfo.length === 0) return []
     
-    // Vytvor prompt pre validáciu
+    // Vytvor prísnejší prompt pre validáciu
     const validationPrompt = `Over, či tieto miesta skutočne patria medzi turistické atrakcie alebo relevantné miesta pre turistov.
+ODSTRÁŇ všetky fake miesta, neplatné záznamy, nechutné obsahy a miesta, ktoré niekto pridal na Google Maps ako vtip alebo spam.
 
 Miesta:
 ${placesInfo.map((p, i) => `${i + 1}. ${p.name} (${p.category})
@@ -2614,14 +2695,22 @@ ${placesInfo.map((p, i) => `${i + 1}. ${p.name} (${p.category})
    - Hodnotenie: ${p.rating || 'N/A'} (${p.user_ratings_total || 0} recenzií)
    - Adresa: ${p.formatted_address}`).join('\n\n')}
 
-PRAVIDLÁ:
-- attraction: MUSÍ byť skutočná turistická atrakcia (múzeum, galéria, historická pamiatka, kostol, hrad, zámok, námestie, monument). NIE sú to: obchody, banky, úrady, nemocnice, školy, parkoviská, čerpacie stanice, autoservisy, kancelárie, byty.
-- activity: MUSÍ byť skutočná aktivita pre turistov (park, záhrada, vyhliadka, turistická trasa, športová aktivita, wellness). NIE sú to: bežné obchody, služby, kancelárie.
-- restaurant: MUSÍ byť skutočná reštaurácia/kaviareň s jedlom pre turistov. NIE sú to: fast food reťazce, potraviny, obchody.
-- accommodation: MUSÍ byť skutočné ubytovanie (hotel, hostel, penzión). NIE sú to: kancelárie, byty na prenájom.
+KRITICKÉ PRAVIDLÁ - VYLÚČ TYTO:
+- Fake miesta, spam, vtipy, testovacie záznamy
+- Nechutné obsahy, vulgarizmy, nevhodné fotky
+- Súkromné miesta, byty, kancelárie
+- Obchody, služby, úrady (ak nie sú historické pamiatky)
+- Miesta s podozrivým názvom alebo málo recenziami
+- Všetko, čo NIE JE skutočná turistická atrakcia
 
-Vráť iba čísla miest (oddelené čiarkou), ktoré SKUTOČNE patria medzi turistické atrakcie alebo relevantné miesta pre turistov.
-Príklad: 1,2,4,5,7 (ak miesta 1,2,4,5,7 sú relevantné, ale 3 a 6 nie)
+POVOL LEN:
+- attraction: Skutočné pamiatky (múzeum, galéria, historická pamiatka, kostol, hrad, zámok, námestie, monument)
+- activity: Skutočné aktivity (park, záhrada, vyhliadka, turistická trasa, športová aktivita, wellness)
+- restaurant: Skutočné reštaurácie/kaviarne s jedlom pre turistov
+- accommodation: Skutočné ubytovanie (hotel, hostel, penzión)
+
+Vráť iba čísla miest (oddelené čiarkou), ktoré sú SKUTOČNÉ turistické atrakcie a NIE sú fake/spam/nechutné.
+Príklad: 1,2,4,5,7 (ak miesta 1,2,4,5,7 sú relevantné, ale 3 a 6 sú fake/spam)
 
 Odpoveď (iba čísla oddelené čiarkou):`
     
@@ -2634,27 +2723,36 @@ Odpoveď (iba čísla oddelené čiarkou):`
     if (matches) {
       matches.forEach(match => {
         const index = parseInt(match, 10) - 1 // -1 lebo AI používa 1-based index
-        if (index >= 0 && index < tips.length) {
+        if (index >= 0 && index < preFilteredTips.length) {
           validIndices.add(index)
         }
       })
     }
     
-    // Ak sme nedostali žiadne validné indexy, použijeme všetky (fallback)
+    // Ak sme nedostali žiadne validné indexy, použijeme len tie s najvyšším ratingom a recenziami
     if (validIndices.size === 0) {
-      console.warn('[validatePlacesWithAI] No valid indices found, using all places')
-      return tips
+      console.warn('[validatePlacesWithAI] No valid indices from AI, using top-rated places as fallback')
+      // Vráť len miesta s ratingom >= 4.0 a aspoň 5 recenziami
+      const fallbackTips = preFilteredTips.filter((tip, index) => {
+        const place = preFilteredPlaces[index]
+        return place && (place.rating || 0) >= 4.0 && (place.user_ratings_total || 0) >= 5
+      })
+      return fallbackTips
     }
     
     // Filtruj tipy podľa validných indexov
-    const validatedTips = tips.filter((_, index) => validIndices.has(index))
-    console.log(`[validatePlacesWithAI] Validated ${validatedTips.length} out of ${tips.length} places`)
+    const validatedTips = preFilteredTips.filter((_, index) => validIndices.has(index))
+    console.log(`[validatePlacesWithAI] Validated ${validatedTips.length} out of ${preFilteredTips.length} places (removed ${preFilteredTips.length - validatedTips.length} fake/invalid places)`)
     
     return validatedTips
   } catch (error) {
     console.error('[validatePlacesWithAI] Error validating places:', error)
-    // V prípade chyby vráť všetky tipy (fallback)
-    return tips
+    // V prípade chyby vráť len miesta s dobrým ratingom a recenziami
+    const fallbackTips = tips.filter(tip => {
+      const place = allPlaces.find(p => p.place_id === tip.place_id)
+      return place && (place.rating || 0) >= 4.0 && (place.user_ratings_total || 0) >= 5
+    })
+    return fallbackTips
   }
 }
 // Build timestamp: Thu Dec 11 06:51:01 CET 2025
