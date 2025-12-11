@@ -232,6 +232,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                           }}
                           onLoad={() => {
                             console.log(`✓ Image loaded successfully for "${tip.title}"`)
+                            console.log(`  Image URL: ${tip.imageUrl}`)
                           }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />

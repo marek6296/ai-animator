@@ -90,6 +90,15 @@ export default function Home() {
                     }
 
                     if (data.result) {
+                      console.log('[Frontend] Received result:', data.result)
+                      if (data.result.trip && data.result.trip.tips) {
+                        console.log('[Frontend] Tips with imageUrls:')
+                        data.result.trip.tips.forEach((tip: any, index: number) => {
+                          console.log(`  Tip ${index + 1}: "${tip.title}"`)
+                          console.log(`    imageUrl: ${tip.imageUrl || 'MISSING'}`)
+                          console.log(`    place_id: ${tip.place_id || 'MISSING'}`)
+                        })
+                      }
                       setResults(data.result)
                       toast.success('Plán výletu bol úspešne vygenerovaný!')
                     } else {
