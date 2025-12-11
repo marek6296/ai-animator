@@ -285,7 +285,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         return newState
                       })
                     }}
-                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]`}
+                    className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] flex flex-col h-full`}
                   >
                     {/* Image */}
                     {displayImageUrl && displayImageUrl.trim() !== '' ? (
@@ -378,7 +378,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    <div className="p-6">
+                    <div className="p-6 flex flex-col h-full">
                       {/* Title with Star */}
                       <div className="flex items-start gap-3 mb-4">
                         <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
@@ -389,7 +389,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                     <p className="text-gray-300 text-sm leading-relaxed mb-5 min-h-[80px]">{tip.description}</p>
 
                       {/* Meta Info */}
-                      <div className="flex flex-wrap gap-3 pt-4 border-t border-white/10">
+                      <div className="flex flex-wrap gap-3 pt-4 border-t border-white/10 mt-auto">
                         {tip.duration && (
                           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${colors.bg} ${colors.border} border`}>
                             <Clock className={`w-4 h-4 ${colors.text}`} />
