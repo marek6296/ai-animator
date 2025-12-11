@@ -398,11 +398,13 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         <h4 className="text-xl font-black text-white leading-tight line-clamp-2">{tip.title}</h4>
                       </div>
 
-                    {/* Description */}
-                    <p className="text-gray-300 text-sm leading-normal mb-0 line-clamp-7">{tip.description}</p>
+                      {/* Text Content Container - fixná výška pre zarovnanie */}
+                      <div className="flex-grow flex flex-col" style={{ minHeight: '10rem' }}>
+                        {/* Description */}
+                        <p className="text-gray-300 text-sm leading-normal mb-0 pb-0 line-clamp-7 flex-grow">{tip.description}</p>
 
-                      {/* Meta Info */}
-                      <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-2 flex-shrink-0">
+                        {/* Meta Info - čiara hneď za textom */}
+                        <div className="flex flex-col gap-2 pt-1 border-t border-white/10 mt-auto flex-shrink-0">
                         {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
                         <div className="flex justify-between items-center gap-2 min-h-[2rem]">
                           {/* Hodnotenie - vľavo */}
@@ -454,6 +456,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                             <span className="text-xs font-bold text-cyan-100 truncate">{tip.location}</span>
                           </div>
                         )}
+                      </div>
                       </div>
                     </div>
                     </motion.div>
