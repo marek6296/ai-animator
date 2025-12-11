@@ -105,9 +105,11 @@ export async function generateTrip(
     onProgress?.(30, 'Generujem itinerár pomocou AI...')
     
     // Vytvor zoznam miest v jednoduchšom formáte pre OpenAI
-    const placesList = placesForAI.slice(0, 50).map((place, index) => {
-      return `${index + 1}. ${place.name} (ID: ${place.place_id}) - ${place.formatted_address}${place.rating ? ` - ⭐ ${place.rating}/5` : ''}`
-    }).join('\n')
+    const placesList = placesForAI.length > 0
+      ? placesForAI.slice(0, 50).map((place, index) => {
+          return `${index + 1}. ${place.name} (ID: ${place.place_id}) - ${place.formatted_address}${place.rating ? ` - ⭐ ${place.rating}/5` : ''}`
+        }).join('\n')
+      : `Žiadne konkrétne miesta z Google Maps nie sú k dispozícii. Vytvor všeobecné tipy na výlet do ${input.destination} na základe tvojich znalostí.`
 
     // Vytvor mapu názov -> place_id pre fallback matching
     const nameToPlaceId = new Map<string, string>()
@@ -115,10 +117,79 @@ export async function generateTrip(
       nameToPlaceId.set(place.name.toLowerCase().trim(), place.place_id)
     }
 
-    const aiPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.
+    const aiPrompt = finalPlaces.length > 0
+      ? `Vytvor detailný plán výletu do ${input.destination} v Európe.
 
 Mám zoznam skutočných miest z Google Maps:
 ${placesList}
+
+${input.tripType ? `Typ výletu: ${input.tripType === 'city' ? 'mestský' : input.tripType === 'nature' ? 'prírodný' : 'kultúrny'}.` : ''}
+${input.duration ? `Dĺžka výletu: ${input.duration} dní.` : ''}
+${input.interests ? `Záujmy: ${input.interests}.` : ''}
+${input.budget ? `Rozpočet: ${input.budget === 'low' ? 'nízky' : input.budget === 'medium' ? 'stredný' : 'vysoký'}.` : ''}
+
+Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
+Tip 1: [NÁZOV MIESTA PRESNE AKO V ZOZNAME] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
+Tip 2: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+Tip 3: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+... (pokračuj až do Tip 12)
+
+Kategórie (použi presne tieto hodnoty):
+- attraction (pre pamiatky, múzeá, historické miesta)
+- activity (pre aktivity, zábavu, športy)
+- restaurant (pre reštaurácie, kaviarne, jedlo)
+- accommodation (pre ubytovanie, hotely)
+- tip (pre užitočné tipy, rady, praktické informácie)
+
+DÔLEŽITÉ PRAVIDLÁ:
+1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
+2. Prvé pole MUSÍ byť PRESNÝ názov miesta z vyššie uvedeného zoznamu (presne taký, ako je v zozname)
+3. Všetky polia MUSIA byť oddelené znakom | (pipe)
+4. Všetky texty MUSIA byť v slovenčine
+5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
+6. Zahrň rôzne kategórie - aspoň 3-4 attraction, 2-3 activity, 2 restaurant, 1-2 accommodation, 1-2 tip
+7. Popis musí byť detailný a zaujímavý (50-100 slov)
+8. Použi LEN názvy miest z poskytnutého zoznamu - NIKDY nevymýšľaj nové miesta
+
+Príklad správneho formátu:
+Tip 1: Colosseum | attraction | Toto je najznámejšia pamiatka v meste... | 2-3 hodiny | €15-20
+Tip 2: Trattoria da Enzo | restaurant | Táto reštaurácia ponúka... | 1-2 hodiny | €30-50
+
+Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
+      : `Vytvor detailný plán výletu do ${input.destination} v Európe.
+
+${input.tripType ? `Typ výletu: ${input.tripType === 'city' ? 'mestský' : input.tripType === 'nature' ? 'prírodný' : 'kultúrny'}.` : ''}
+${input.duration ? `Dĺžka výletu: ${input.duration} dní.` : ''}
+${input.interests ? `Záujmy: ${input.interests}.` : ''}
+${input.budget ? `Rozpočet: ${input.budget === 'low' ? 'nízky' : input.budget === 'medium' ? 'stredný' : 'vysoký'}.` : ''}
+
+Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
+Tip 1: [NÁZOV MIESTA] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
+Tip 2: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+Tip 3: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+... (pokračuj až do Tip 12)
+
+Kategórie (použi presne tieto hodnoty):
+- attraction (pre pamiatky, múzeá, historické miesta)
+- activity (pre aktivity, zábavu, športy)
+- restaurant (pre reštaurácie, kaviarne, jedlo)
+- accommodation (pre ubytovanie, hotely)
+- tip (pre užitočné tipy, rady, praktické informácie)
+
+DÔLEŽITÉ PRAVIDLÁ:
+1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
+2. Prvé pole MUSÍ byť názov miesta (môžeš použiť známe miesta v ${input.destination})
+3. Všetky polia MUSIA byť oddelené znakom | (pipe)
+4. Všetky texty MUSIA byť v slovenčine
+5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
+6. Zahrň rôzne kategórie - aspoň 3-4 attraction, 2-3 activity, 2 restaurant, 1-2 accommodation, 1-2 tip
+7. Popis musí byť detailný a zaujímavý (50-100 slov)
+
+Príklad správneho formátu:
+Tip 1: Koloseum | attraction | Toto je najznámejšia pamiatka v meste... | 2-3 hodiny | €15-20
+Tip 2: Trattoria da Enzo | restaurant | Táto reštaurácia ponúka... | 1-2 hodiny | €30-50
+
+Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
 ${input.tripType ? `Typ výletu: ${input.tripType === 'city' ? 'mestský' : input.tripType === 'nature' ? 'prírodný' : 'kultúrny'}.` : ''}
 ${input.duration ? `Dĺžka výletu: ${input.duration} dní.` : ''}
@@ -172,6 +243,25 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       if (simpleTips.length > 0) {
         console.log(`Simple parsing succeeded: ${simpleTips.length} tips`)
         return await generateTripWithTips(simpleTips, finalPlaces, input, onProgress)
+      }
+      
+      // Ak ani jednoduché parsovanie nefunguje, ale máme miesta, vytvor tipy z miest
+      if (finalPlaces.length > 0) {
+        console.warn('Creating tips from places directly since parsing failed')
+        const fallbackTips: ParsedTip[] = finalPlaces.slice(0, 12).map((place) => ({
+          place_id: place.place_id,
+          category: 'attraction' as TripTip['category'],
+          description: `Navštívte ${place.name} v ${input.destination}. ${place.formatted_address || ''}`,
+        }))
+        return await generateTripWithTips(fallbackTips, finalPlaces, input, onProgress)
+      }
+      
+      // Ak nemáme žiadne miesta, vytvor tipy len z AI odpovede (bez place_id)
+      console.warn('No places available, creating tips from AI response only')
+      const aiOnlyTips = parseTipsWithoutPlaceId(tipsText)
+      if (aiOnlyTips.length > 0) {
+        console.log(`Created ${aiOnlyTips.length} tips from AI response (without place_id)`)
+        return await generateTripWithoutPlaces(aiOnlyTips, input, onProgress)
       }
       
       console.error('Failed to parse tips. Raw text:', tipsText)
