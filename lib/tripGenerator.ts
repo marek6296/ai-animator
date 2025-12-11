@@ -157,7 +157,8 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
     const tipsText = await generateText(aiPrompt)
     onProgress?.(50, 'Spracovávam tipy...')
     
-    console.log('AI Response:', tipsText.substring(0, 1000))
+    console.log('AI Response (first 2000 chars):', tipsText.substring(0, 2000))
+    console.log('AI Response (full length):', tipsText.length)
     
     // Parsuj tipy - teraz očakávame názov miesta ako prvé pole, potom nájdeme place_id
     const tips = parseTipsByName(tipsText, nameToPlaceId)
@@ -165,112 +166,20 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
     console.log(`Parsed ${tips.length} tips`)
     
     if (tips.length === 0) {
+      // Ak parsing zlyhal, skúsime ešte raz s jednoduchším formátom
+      console.warn('First parsing attempt failed, trying simpler format...')
+      const simpleTips = parseTipsSimple(tipsText, nameToPlaceId)
+      if (simpleTips.length > 0) {
+        console.log(`Simple parsing succeeded: ${simpleTips.length} tips`)
+        return await generateTripWithTips(simpleTips, finalPlaces, input, onProgress)
+      }
+      
       console.error('Failed to parse tips. Raw text:', tipsText)
       throw new Error('Nepodarilo sa vytvoriť tipy. Skúste to znova.')
     }
-
+    
     // KROK 4: Spoj place_id s miestami z Google Places a získaj fotky
-    onProgress?.(60, 'Spárujem miesta s fotkami...')
-    const tipsWithImages: TripTip[] = []
-    
-    // Vytvor mapu place_id -> Place pre rýchle vyhľadávanie
-    const placesMap = new Map<string, Place>()
-    for (const place of finalPlaces) {
-      placesMap.set(place.place_id, place)
-    }
-    
-    for (let i = 0; i < tips.length; i++) {
-      const tip = tips[i]
-      const progress = 60 + (i / tips.length) * 20
-      
-      onProgress?.(progress, `Spárujem: ${tip.place_id}...`)
-      
-      try {
-        // Nájdeme miesto podľa place_id - žiadne textové matching!
-        const place = placesMap.get(tip.place_id)
-        
-        let imageUrl: string = ''
-        let photo_reference: string | undefined
-        let coordinates: { lat: number; lng: number } | undefined
-        
-        if (place && place.photos && place.photos.length > 0) {
-          // Použijeme photo_reference z Google Places - VŽDY cez Place Photos API
-          photo_reference = place.photos[0].photo_reference
-          imageUrl = getPlacePhotoUrl(photo_reference, 800)
-          
-          if (place.geometry?.location) {
-            coordinates = {
-              lat: place.geometry.location.lat,
-              lng: place.geometry.location.lng,
-            }
-          }
-          
-          console.log(`✓ Found place for place_id "${tip.place_id}": ${place.name}`)
-        } else {
-          // Ak miesto nemá fotku, použijeme placeholder
-          console.warn(`⚠ Place "${tip.place_id}" has no photo, using placeholder`)
-          const placeholderText = encodeURIComponent(place?.name || tip.place_id.substring(0, 30))
-          imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
-        }
-        
-        // VŽDY pridáme tip s imageUrl a place_id/photo_reference
-        tipsWithImages.push({
-          title: place?.name || tip.place_id,
-          description: tip.description,
-          category: tip.category,
-          duration: tip.duration,
-          price: tip.price,
-          location: place?.formatted_address,
-          imageUrl: imageUrl,
-          place_id: tip.place_id,
-          photo_reference: photo_reference,
-          coordinates: coordinates,
-        })
-        
-        console.log(`✓ Added tip "${place?.name || tip.place_id}" with imageUrl: ${imageUrl ? 'YES' : 'NO'}`)
-        
-        // Malé oneskorenie medzi requestmi
-        if (i < tips.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 200))
-        }
-      } catch (error) {
-        console.error(`Chyba pri získavaní obrázka pre tip ${i + 1} (place_id: ${tip.place_id}):`, error)
-        // Pokračujeme bez obrázka - použijeme placeholder
-        const placeholderText = encodeURIComponent(tip.place_id.substring(0, 30))
-        tipsWithImages.push({
-          title: tip.place_id,
-          description: tip.description,
-          category: tip.category,
-          duration: tip.duration,
-          price: tip.price,
-          imageUrl: `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`,
-          place_id: tip.place_id,
-        })
-      }
-    }
-
-    onProgress?.(80, 'Vytváram súhrn...')
-    
-    // Vygeneruj súhrn
-    const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v slovenčine. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
-    const summary = await generateText(summaryPrompt)
-    
-    // Extrahuj krajinu
-    const country = extractCountry(input.destination)
-
-    onProgress?.(100, 'Plán výletu hotový!')
-
-    console.log(`[generateTrip] Completed successfully for: ${input.destination}`)
-    
-    return {
-      destination: input.destination,
-      country: country,
-      tips: tipsWithImages,
-      summary: summary.trim(),
-      bestTimeToVisit: undefined,
-      currency: undefined,
-      language: undefined,
-    }
+    return await generateTripWithTips(tips, finalPlaces, input, onProgress)
   } catch (error: any) {
     console.error(`[generateTrip] Error for destination ${input.destination}:`, error)
     console.error(`[generateTrip] Error stack:`, error.stack)
