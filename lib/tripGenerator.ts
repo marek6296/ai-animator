@@ -318,6 +318,51 @@ function parseTipsByName(
   return tips.slice(0, 12) // Max 12 tipov
 }
 
+function parseTipsSimple(
+  tipsText: string,
+  nameToPlaceId: Map<string, string>
+): ParsedTip[] {
+  const tips: ParsedTip[] = []
+  
+  // Najjednoduchšia metóda: nájdi názvy miest v texte a vytvor tipy
+  const lines = tipsText.split('\n').filter(line => line.trim().length > 5)
+  
+  for (const line of lines) {
+    for (const [name, place_id] of nameToPlaceId.entries()) {
+      if (line.toLowerCase().includes(name.toLowerCase()) && !tips.find(t => t.place_id === place_id)) {
+        // Skús extrahovať kategóriu a popis z riadku
+        const parts = line.split('|').map(p => p.trim())
+        let category: TripTip['category'] = 'attraction'
+        let description = line
+        
+        if (parts.length >= 2) {
+          const categoryStr = (parts[1]?.toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
+          const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
+          if (validCategories.includes(categoryStr as TripTip['category'])) {
+            category = categoryStr as TripTip['category']
+          }
+          description = parts[2] || parts[1] || line
+        }
+        
+        // Vytvor jednoduchý tip
+        tips.push({
+          place_id: place_id,
+          category: category,
+          description: description.substring(0, 500) || `Navštívte ${name}`,
+          duration: parts[3] || undefined,
+          price: parts[4] || undefined,
+        })
+        console.log(`✓ Simple parsed tip: "${name}" -> place_id="${place_id}"`)
+        break
+      }
+    }
+    
+    if (tips.length >= 12) break
+  }
+  
+  return tips.slice(0, 12)
+}
+
 function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
   const tips: ParsedTip[] = []
   
