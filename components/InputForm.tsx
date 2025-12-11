@@ -355,7 +355,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
         return
       }
     }
-    if (currentStep < 4) {
+    if (currentStep < 2) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -400,7 +400,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
 
       {/* Progress Steps */}
       <div className="flex items-center justify-between mb-8">
-        {[1, 2, 3, 4, 5, 6].map((step) => (
+        {[1, 2].map((step) => (
           <div key={step} className="flex items-center flex-1">
             <div className="flex flex-col items-center flex-1">
               <div
@@ -413,15 +413,11 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 {currentStep > step ? <CheckCircle2 className="w-6 h-6" /> : step}
               </div>
               <span className="text-xs mt-2 text-gray-400 text-center">
-                {step === 1 && 'Základ'}
-                {step === 2 && 'Štýl'}
-                {step === 3 && 'Záujmy'}
-                {step === 4 && 'Doprava'}
-                {step === 5 && 'Jedlo'}
-                {step === 6 && 'Detail'}
+                {step === 1 && 'Mesto & Kategórie'}
+                {step === 2 && 'Špeciálne požiadavky'}
               </span>
             </div>
-            {step < 6 && (
+            {step < 2 && (
               <div
                 className={`h-1 flex-1 mx-2 ${
                   currentStep > step ? 'bg-cyan-400' : 'bg-gray-700'
@@ -443,7 +439,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 1 – ZÁKLAD</h3>
+              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 1 – MESTO & KATEGÓRIE</h3>
               
               {/* Destinácia */}
               <div>
@@ -596,88 +592,10 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 )}
               </div>
 
-              {/* Termín / dĺžka - odstránené podľa požiadavky */}
-
-              {/* Typ cestovania */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Users className="w-6 h-6" />
-                  Typ cestovania
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { value: 'solo', label: 'Solo' },
-                    { value: 'couple', label: 'Pár' },
-                    { value: 'family', label: 'Rodina' },
-                    { value: 'group', label: 'Partia' },
-                  ].map((type) => (
-                    <label
-                      key={type.value}
-                      className={`flex flex-col items-center justify-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
-                        travelType === type.value
-                          ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
-                          : 'border-gray-600 text-gray-400 hover:border-cyan-400/50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="travelType"
-                        value={type.value}
-                        checked={travelType === type.value}
-                        onChange={(e) => setTravelType(e.target.value as typeof travelType)}
-                        disabled={isGenerating}
-                        className="sr-only"
-                      />
-                      <span className="text-sm font-bold">{type.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rozpočet */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <DollarSign className="w-6 h-6" />
-                  Rozpočet
-                </label>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { value: 'low', label: 'Nízky', desc: '€', color: 'green' },
-                    { value: 'medium', label: 'Stredný', desc: '€€', color: 'cyan' },
-                    { value: 'high', label: 'Luxusný', desc: '€€€', color: 'purple' },
-                  ].map((budgetOption) => {
-                    const isSelected = budget === budgetOption.value
-                    const colorClasses = {
-                      green: isSelected ? 'border-green-400 bg-green-400/20 text-green-400' : 'border-gray-600 text-gray-400 hover:border-green-400/50',
-                      cyan: isSelected ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400' : 'border-gray-600 text-gray-400 hover:border-cyan-400/50',
-                      purple: isSelected ? 'border-purple-400 bg-purple-400/20 text-purple-400' : 'border-gray-600 text-gray-400 hover:border-purple-400/50',
-                    }
-                    
-                    return (
-                      <label
-                        key={budgetOption.value}
-                        className={`flex flex-col items-center p-6 border-2 rounded-lg cursor-pointer transition-all glass ${colorClasses[budgetOption.color as keyof typeof colorClasses]}`}
-                      >
-                        <input
-                          type="radio"
-                          name="budget"
-                          value={budgetOption.value}
-                          checked={budget === budgetOption.value}
-                          onChange={(e) => setBudget(e.target.value as typeof budget)}
-                          disabled={isGenerating}
-                          className="sr-only"
-                        />
-                        <span className="text-4xl mb-2 font-black">{budgetOption.desc}</span>
-                        <span className="text-sm font-bold">{budgetOption.label}</span>
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
             </motion.div>
           )}
 
-          {/* KROK 2 - ŠTÝL VÝLETU */}
+          {/* KROK 2 - ŠPECIÁLNE POŽIADAVKY */}
           {currentStep === 2 && (
             <motion.div
               key="step2"
@@ -686,195 +604,8 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 2 – ŠTÝL VÝLETU</h3>
+              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 2 – ŠPECIÁLNE POŽIADAVKY</h3>
               
-              {/* Cieľ tripu */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Heart className="w-6 h-6" />
-                  Cieľ tripu (typ výletu)
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {TRIP_GOALS.map((goal) => {
-                    const isSelected = tripGoals.includes(goal.id)
-                    return (
-                      <label
-                        key={goal.id}
-                        className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
-                          isSelected
-                            ? 'border-purple-400 bg-purple-400/20 text-purple-400'
-                            : 'border-gray-600 text-gray-400 hover:border-purple-400/50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setTripGoals([...tripGoals, goal.id])
-                            } else {
-                              setTripGoals(tripGoals.filter(g => g !== goal.id))
-                            }
-                          }}
-                          disabled={isGenerating}
-                          className="w-5 h-5 accent-purple-400"
-                        />
-                        <span className="text-2xl">{goal.icon}</span>
-                        <span className="text-sm font-bold">{goal.label}</span>
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Tempo programu */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Clock className="w-6 h-6" />
-                  Tempo programu
-                </label>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { value: 'relaxed', label: 'Voľné tempo', desc: 'Max 2 aktivity denne' },
-                    { value: 'balanced', label: 'Vyvážené', desc: 'Stredné tempo' },
-                    { value: 'intensive', label: 'Nabitý program', desc: 'Čo najviac vecí' },
-                  ].map((pace) => (
-                    <label
-                      key={pace.value}
-                      className={`flex flex-col p-6 border-2 rounded-lg cursor-pointer transition-all glass ${
-                        programPace === pace.value
-                          ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
-                          : 'border-gray-600 text-gray-400 hover:border-cyan-400/50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="programPace"
-                        value={pace.value}
-                        checked={programPace === pace.value}
-                        onChange={(e) => setProgramPace(e.target.value as typeof programPace)}
-                        disabled={isGenerating}
-                        className="sr-only"
-                      />
-                      <span className="text-lg font-bold mb-1">{pace.label}</span>
-                      <span className="text-xs text-gray-400">{pace.desc}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* KROK 3 - ZÁUJMY */}
-          {currentStep === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 3 – ZÁUJMY</h3>
-              <p className="text-sm text-gray-400 mb-4">
-                Vyberte, čo vás zaujíma. Môžete označiť najdôležitejšie hviezdičkou.
-              </p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {INTERESTS.map((interest) => {
-                  const isSelected = interests.includes(interest.id)
-                  const isPreferred = preferredInterests.includes(interest.id)
-                  return (
-                    <label
-                      key={interest.id}
-                      className={`flex items-center gap-2 p-3 border-2 rounded-lg cursor-pointer transition-all glass relative ${
-                        isSelected
-                          ? isPreferred
-                            ? 'border-yellow-400 bg-yellow-400/20 text-yellow-400'
-                            : 'border-purple-400 bg-purple-400/20 text-purple-400'
-                          : 'border-gray-600 text-gray-400 hover:border-purple-400/50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleInterest(interest.id)}
-                        disabled={isGenerating}
-                        className="w-4 h-4 accent-purple-400"
-                      />
-                      <span className="text-xl">{interest.icon}</span>
-                      <span className="text-sm font-bold flex-1">{interest.label}</span>
-                      {isSelected && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            togglePreferredInterest(interest.id)
-                          }}
-                          className="ml-1"
-                        >
-                          <Star
-                            className={`w-4 h-4 ${
-                              isPreferred
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-gray-500 hover:text-yellow-400'
-                            }`}
-                          />
-                        </button>
-                      )}
-                    </label>
-                  )
-                })}
-              </div>
-            </motion.div>
-          )}
-
-          {/* KROK 4 - DOPRAVA A LIMITY */}
-          {currentStep === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 4 – DOPRAVA A LIMITY</h3>
-              
-              {/* Ako sa pohybuje */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Car className="w-6 h-6" />
-                  Ako sa budeš po meste pohybovať?
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { value: 'walk_public', label: 'Pešo + MHD' },
-                    { value: 'walk_only', label: 'Len pešo' },
-                    { value: 'car', label: 'Auto' },
-                    { value: 'taxi', label: 'Taxi / Uber' },
-                  ].map((trans) => (
-                    <label
-                      key={trans.value}
-                      className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
-                        transportation === trans.value
-                          ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
-                          : 'border-gray-600 text-gray-400 hover:border-cyan-400/50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="transportation"
-                        value={trans.value}
-                        checked={transportation === trans.value}
-                        onChange={(e) => setTransportation(e.target.value as typeof transportation)}
-                        disabled={isGenerating}
-                        className="sr-only"
-                      />
-                      <span className="text-sm font-bold">{trans.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
               {/* Špeciálne požiadavky (Google Maps friendly) */}
               <div>
                 <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
@@ -956,153 +687,6 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
             </motion.div>
           )}
 
-          {/* KROK 5 - JEDLO A OBMEDZENIA */}
-          {currentStep === 5 && (
-            <motion.div
-              key="step5"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 5 – JEDLO A OBMEDZENIA</h3>
-              
-              {/* Stravovanie */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Utensils className="w-6 h-6" />
-                  Stravovanie
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                  {[
-                    { value: 'none', label: 'Žiadne obmedzenia' },
-                    { value: 'vegetarian', label: 'Vegetarián' },
-                    { value: 'vegan', label: 'Vegan' },
-                    { value: 'gluten_free', label: 'Bezlepkové' },
-                    { value: 'lactose_free', label: 'Bez laktózy' },
-                    { value: 'other', label: 'Iné' },
-                  ].map((restriction) => (
-                    <label
-                      key={restriction.value}
-                      className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
-                        dietaryRestrictions === restriction.value
-                          ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
-                          : 'border-gray-600 text-gray-400 hover:border-cyan-400/50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="dietaryRestrictions"
-                        value={restriction.value}
-                        checked={dietaryRestrictions === restriction.value}
-                        onChange={(e) => setDietaryRestrictions(e.target.value as typeof dietaryRestrictions)}
-                        disabled={isGenerating}
-                        className="sr-only"
-                      />
-                      <span className="text-sm font-bold">{restriction.label}</span>
-                    </label>
-                  ))}
-                </div>
-                {dietaryRestrictions === 'other' && (
-                  <input
-                    type="text"
-                    value={dietaryOther}
-                    onChange={(e) => setDietaryOther(e.target.value)}
-                    placeholder="Zadajte vaše obmedzenia..."
-                    disabled={isGenerating}
-                    className="w-full px-4 py-3 glass border border-cyan-500/30 rounded-lg text-white placeholder-gray-400 focus:border-cyan-400"
-                  />
-                )}
-              </div>
-
-              {/* Typ jedla */}
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Utensils className="w-6 h-6" />
-                  Typ jedla, ktoré preferuješ
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {FOOD_PREFERENCES.map((food) => {
-                    const isSelected = foodPreferences.includes(food.id)
-                    return (
-                      <label
-                        key={food.id}
-                        className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
-                          isSelected
-                            ? 'border-purple-400 bg-purple-400/20 text-purple-400'
-                            : 'border-gray-600 text-gray-400 hover:border-purple-400/50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFoodPreferences([...foodPreferences, food.id])
-                            } else {
-                              setFoodPreferences(foodPreferences.filter(f => f !== food.id))
-                            }
-                          }}
-                          disabled={isGenerating}
-                          className="w-5 h-5 accent-purple-400"
-                        />
-                        <span className="text-2xl">{food.icon}</span>
-                        <span className="text-sm font-bold">{food.label}</span>
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* KROK 6 - DETAIL ITINERÁRA */}
-          {currentStep === 6 && (
-            <motion.div
-              key="step6"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 6 – DETAIL ITINERÁRA</h3>
-              
-              <div>
-                <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
-                  <Calendar className="w-6 h-6" />
-                  Úroveň detailu plánu
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    { value: 'list', label: 'Len zoznam', desc: 'Zoznam miest a odporúčaní' },
-                    { value: 'basic', label: 'Základný plán', desc: 'Plán po dňoch (ráno/obed/večer)' },
-                    { value: 'detailed', label: 'Detailný plán', desc: 'Plán po hodinách' },
-                  ].map((detail) => (
-                    <label
-                      key={detail.value}
-                      className={`flex flex-col p-6 border-2 rounded-lg cursor-pointer transition-all glass ${
-                        itineraryDetail === detail.value
-                          ? 'border-cyan-400 bg-cyan-400/20 text-cyan-400'
-                          : 'border-gray-600 text-gray-400 hover:border-cyan-400/50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="itineraryDetail"
-                        value={detail.value}
-                        checked={itineraryDetail === detail.value}
-                        onChange={(e) => setItineraryDetail(e.target.value as typeof itineraryDetail)}
-                        disabled={isGenerating}
-                        className="sr-only"
-                      />
-                      <span className="text-lg font-bold mb-1">{detail.label}</span>
-                      <span className="text-xs text-gray-400">{detail.desc}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
         </AnimatePresence>
 
         {/* Navigation Buttons */}
@@ -1117,7 +701,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
             Späť
           </button>
 
-          {currentStep < 4 ? (
+          {currentStep < 2 ? (
             <button
               type="button"
               onClick={nextStep}
