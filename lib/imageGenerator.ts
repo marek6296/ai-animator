@@ -13,6 +13,7 @@ export async function generateSingleImage(
   onProgress?.(10, 'Transformujem fotku do vybraného štýlu...')
   
   // Vytvor prompt pre transformáciu štýlu
+  // Použij type assertion pre legacy properties
   const style = (input as any).style || 'comic-book'
   let styleTransform = style === 'manga' 
     ? 'Transform this photo into manga/anime style. Convert realistic photo to Japanese manga art style. Anime character design, manga illustration style, cel-shaded, vibrant colors, expressive eyes, stylized features, anime art, manga drawing. The face should look similar but in anime/manga style, not photorealistic.'
