@@ -98,15 +98,16 @@ export async function searchPlacesInCity(
       } catch (error: any) {
         clearTimeout(timeoutId)
         if (error.name !== 'AbortError') {
-          console.warn('Places API (New) failed, falling back to legacy:', error.message)
+          console.error('Places API (New) failed:', error.message)
         }
       }
     } catch (error: any) {
-      console.warn('Places API (New) not available, using legacy API')
+      console.error('Places API (New) error:', error.message)
     }
     
-    // Fallback na legacy API
-    return await searchPlacesLegacy(cityName, query, maxResults, googleApiKey)
+    // NEPOUŽÍVAJME legacy API - vráť prázdny array
+    console.warn('⚠ Places API (New) failed, returning empty array (legacy API is disabled)')
+    return []
   } catch (error: any) {
     console.error('Error searching places:', error)
     throw error

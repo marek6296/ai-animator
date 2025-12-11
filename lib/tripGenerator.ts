@@ -302,6 +302,7 @@ interface ParsedTip {
   description: string
   duration?: string
   price?: string
+  placeName?: string // Pôvodný názov miesta (pre generateTripWithoutPlaces)
 }
 
 function parseTipsByName(
@@ -540,6 +541,7 @@ function parseTipsWithoutPlaceId(tipsText: string): ParsedTip[] {
         description,
         duration: duration || undefined,
         price: price || undefined,
+        placeName: placeName, // Ulož pôvodný názov
       })
     }
   }
@@ -773,8 +775,8 @@ async function generateTripWithoutPlaces(
     const tip = tips[i]
     const progress = 60 + (i / tips.length) * 20
     
-    // Extrahuj názov z fake place_id (odstráň "AI_" prefix a "_timestamp")
-    const title = tip.place_id
+    // Použij pôvodný názov miesta ak existuje, inak skús extrahovať z place_id
+    const title = tip.placeName || tip.place_id
       .replace(/^AI_/, '')
       .replace(/_\d+$/, '')
       .replace(/_/g, ' ')
