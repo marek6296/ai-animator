@@ -302,7 +302,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                   >
                     {/* Image */}
                     {displayImageUrl && displayImageUrl.trim() !== '' ? (
-                      <div className="relative w-full h-[23rem] md:h-[27rem] overflow-hidden bg-gray-800">
+                      <div className="relative w-full h-[20rem] md:h-[24rem] overflow-hidden bg-gray-800">
                         <motion.img
                           key={displayImageUrl}
                           src={displayImageUrl}
@@ -383,7 +383,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     ) : (
                       // Placeholder ak nie je obrázok
-                      <div className="relative w-full h-[23rem] md:h-[27rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <div className="relative w-full h-[20rem] md:h-[24rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                         <div className="text-center">
                           <Camera className={`w-12 h-12 ${colors.text} mx-auto mb-2 opacity-50`} />
                           <p className={`text-xs ${colors.text} opacity-50`}>Obrázok sa načítava...</p>
@@ -393,22 +393,22 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                     
                     <div className="pb-5 px-5 flex flex-col h-full pt-2">
                       {/* Title with Star */}
-                      <div className="flex items-start gap-2 mb-1.5 flex-shrink-0">
+                      <div className="flex items-start gap-2 mb-1.5 flex-shrink-0 min-h-[2.5rem]">
                         <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
-                        <h4 className="text-xl font-black text-white leading-tight">{tip.title}</h4>
+                        <h4 className="text-xl font-black text-white leading-tight line-clamp-2">{tip.title}</h4>
                       </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm leading-relaxed mb-0 flex-grow min-h-0 line-clamp-3">{tip.description}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed mb-0 flex-grow min-h-[4.5rem] line-clamp-3">{tip.description}</p>
 
                       {/* Meta Info */}
                       <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-auto flex-shrink-0">
                         {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
-                        <div className="flex justify-between items-center gap-2">
+                        <div className="flex justify-between items-center gap-2 min-h-[2rem]">
                           {/* Hodnotenie - vľavo */}
                           {tip.rating && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
-                              <Star className="w-4 h-4 text-cyan-400" />
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 min-h-[2rem]">
+                              <Star className="w-4 h-4 text-cyan-400 flex-shrink-0" />
                               <span className="text-xs font-bold text-cyan-200">{tip.rating.toFixed(1)}</span>
                               {tip.user_ratings_total !== undefined && (
                                 <span className="text-[11px] text-gray-400">({tip.user_ratings_total})</span>
@@ -418,30 +418,30 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                           {/* Ostatné info - vpravo */}
                           <div className="flex items-center gap-2 flex-wrap justify-end">
                             {(tip.price || tip.price_level !== undefined) && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30">
-                                <DollarSign className="w-4 h-4 text-pink-400" />
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30 min-h-[2rem]">
+                                <DollarSign className="w-4 h-4 text-pink-400 flex-shrink-0" />
                                 <span className="text-xs font-bold text-pink-200">
                                   {tip.price ? tip.price : priceLevelLabel(tip.price_level)}
                                 </span>
                               </div>
                             )}
                             {tip.open_now !== undefined && (
-                              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
-                                <Clock className={`w-4 h-4 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
+                              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border min-h-[2rem] ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
+                                <Clock className={`w-4 h-4 flex-shrink-0 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
                                 <span className="text-xs font-bold">
                                   {tip.open_now ? 'Otvorené teraz' : 'Zatvorené'}
                                 </span>
                               </div>
                             )}
                             {tip.business_status && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30">
-                                <Info className="w-4 h-4 text-purple-300" />
-                                <span className="text-xs font-bold text-purple-100">{tip.business_status}</span>
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30 min-h-[2rem]">
+                                <Info className="w-4 h-4 text-purple-300 flex-shrink-0" />
+                                <span className="text-xs font-bold text-purple-100 truncate">{tip.business_status}</span>
                               </div>
                             )}
                             {tip.duration && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
-                                <Clock className="w-4 h-4 text-cyan-300" />
+                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 min-h-[2rem]">
+                                <Clock className="w-4 h-4 text-cyan-300 flex-shrink-0" />
                                 <span className="text-xs font-bold text-cyan-100">{tip.duration}</span>
                               </div>
                             )}
@@ -449,9 +449,9 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                         </div>
                         {/* Druhý riadok: Adresa - vľavo */}
                         {tip.location && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 w-fit">
-                            <MapPin className="w-4 h-4 text-cyan-300" />
-                            <span className="text-xs font-bold text-cyan-100">{tip.location}</span>
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30 min-h-[2rem]">
+                            <MapPin className="w-4 h-4 text-cyan-300 flex-shrink-0" />
+                            <span className="text-xs font-bold text-cyan-100 truncate">{tip.location}</span>
                           </div>
                         )}
                       </div>
