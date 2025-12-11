@@ -379,8 +379,57 @@ export async function generateTrip(
     const activePlacesFromDetails = placesWithActivity.filter(p => p !== null) as Place[]
     finalPlaces = [...activePlacesFromDetails, ...finalPlaces.slice(placesWithActivity.length)]
     
+    // Filtruj miesta, ktoré zjavne NIE SÚ turistické atrakcie
+    const touristPlacesOnly = finalPlaces.filter(place => {
+      const types = place.types || []
+      const nameLower = place.name.toLowerCase()
+      
+      // Vylúč miesta, ktoré zjavne nie sú turistické atrakcie
+      const excludeTypes = [
+        'bank', 'atm', 'finance', 'insurance_agency', 'accounting',
+        'lawyer', 'real_estate_agency', 'car_dealer', 'car_repair', 'car_rental',
+        'gas_station', 'parking', 'subway_station', 'bus_station', 'train_station',
+        'hospital', 'pharmacy', 'doctor', 'dentist', 'veterinary_care',
+        'school', 'university', 'library',
+        'post_office', 'courthouse', 'city_hall', 'local_government_office',
+        'funeral_home', 'cemetery',
+        'storage', 'moving_company', 'locksmith', 'plumber', 'electrician',
+        'hardware_store', 'furniture_store', 'home_goods_store',
+        'convenience_store', 'supermarket', 'grocery_or_supermarket'
+      ]
+      
+      // Ak má miesto typ, ktorý zjavne nie je turistická atrakcia, vylúč ho
+      if (types.some(t => excludeTypes.includes(t))) {
+        console.log(`❌ Excluding non-tourist place "${place.name}" (has excluded type)`)
+        return false
+      }
+      
+      // Vylúč miesta s názvami, ktoré zjavne nie sú turistické atrakcie
+      const excludeKeywords = [
+        'bank', 'banka', 'atm', 'úrad', 'office', 'kancelária',
+        'nemocnica', 'hospital', 'lekáreň', 'pharmacy',
+        'škola', 'school', 'univerzita', 'university',
+        'parkovisko', 'parking', 'čerpacia', 'gas station',
+        'autoservis', 'car repair', 'predajňa', 'store', 'obchod',
+        'supermarket', 'potraviny', 'grocery'
+      ]
+      
+      if (excludeKeywords.some(keyword => nameLower.includes(keyword))) {
+        // Ale povolime "museum shop", "gallery shop" atď.
+        if (!nameLower.includes('museum') && !nameLower.includes('gallery') && 
+            !nameLower.includes('múzeum') && !nameLower.includes('galéria')) {
+          console.log(`❌ Excluding non-tourist place "${place.name}" (has excluded keyword)`)
+          return false
+        }
+      }
+      
+      return true
+    })
+    
+    console.log(`[generateTrip] Filtered ${touristPlacesOnly.length} tourist places (removed ${finalPlaces.length - touristPlacesOnly.length} non-tourist places)`)
+    
     // Filtruj podľa vybraných kategórií (použijeme už definovanú premennú selectedCategories)
-    const categoryFilteredPlaces = finalPlaces.filter(place => {
+    const categoryFilteredPlaces = touristPlacesOnly.filter(place => {
       // Mapuj miesto na kategóriu - používame prioritné typy (najšpecifickejšie prvé)
       let placeCategory: string | null = null
       
@@ -792,6 +841,12 @@ DÔLEŽITÉ: NEPOUŽÍVAJ konkrétne názvy miest. Namiesto toho použij GENERIC
 - "nightlife area" (nočný život)
 - "shopping district" (nákupná štvrť)
 
+KRITICKÉ PRAVIDLÁ PRE TURISTICKÉ ATRAKCIE:
+1. attraction - MUSÍ byť skutočná turistická atrakcia: múzeá, galérie, historické pamiatky, kostoly, hrady, zámky, námestia, monumenty. NIE sú to: obchody, banky, úrady, nemocnice, školy, parkoviská, čerpacie stanice, autoservisy, kancelárie.
+2. activity - MUSÍ byť skutočná aktivita pre turistov: parky, záhrady, vyhliadky, turistické trasy, športové aktivity, wellness. NIE sú to: bežné obchody, služby, kancelárie.
+3. restaurant - MUSÍ byť skutočná reštaurácia/kaviareň s jedlom pre turistov. NIE sú to: fast food reťazce, potraviny, obchody.
+4. accommodation - MUSÍ byť skutočné ubytovanie: hotely, hostely, penzióny. NIE sú to: kancelárie, byty na prenájom.
+
 Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
 Tip 1: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis 400-450 znakov v slovenčine] | [Trvanie] | [Cena]
 Tip 2: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
@@ -813,6 +868,7 @@ DÔLEŽITÉ PRAVIDLÁ:
 5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
 6. Zahrň LEN vybrané kategórie: ${categoryInstructions}
 7. NEPOUŽÍVAJ kategórie, ktoré NIE SÚ vo VYBRANÝCH KATEGÓRIACH vyššie!
+8. VYBERAJ LEN SKUTOČNÉ TURISTICKÉ ATRAKCIE - nie obchody, služby, kancelárie, úrady!
 
 Príklad správneho formátu:
 Tip 1: top museum | attraction | Najlepšie múzeum v meste s rozsiahlymi zbierkami... | 2-3 hodiny | €10-15
@@ -879,7 +935,16 @@ Všetko v slovenčine. Striktne dodrž dĺžku 400-450 znakov.`
       }
     }
     
-    // KROK 6: Spoj place_id s miestami z Google Places a získaj fotky
+    // KROK 6: Validuj miesta pomocou OpenAI - over, či skutočne patria medzi turistické atrakcie
+    if (tips.length > 0) {
+      onProgress?.(55, 'Overujem relevantnosť miest...')
+      const validatedTips = await validatePlacesWithAI(tips, finalPlaces)
+      console.log(`[generateTrip] Validated ${validatedTips.length} places (removed ${tips.length - validatedTips.length} non-tourist places)`)
+      tips.length = 0
+      tips.push(...validatedTips)
+    }
+    
+    // KROK 7: Spoj place_id s miestami z Google Places a získaj fotky
     return await generateTripWithTips(tips, finalPlaces, input, onProgress)
   } catch (error: any) {
     console.error(`[generateTrip] Error for destination ${input.destination}:`, error)
@@ -2503,6 +2568,93 @@ ODPORÚČANIA V OKOLÍ:
     country: extractCountry(input.destination || rootPlace.formatted_address || ''),
     tips: allTips,
     summary: summary,
+  }
+}
+
+/**
+ * Validuje miesta pomocou OpenAI - overí, či skutočne patria medzi turistické atrakcie
+ */
+async function validatePlacesWithAI(
+  tips: ParsedTip[],
+  allPlaces: Place[]
+): Promise<ParsedTip[]> {
+  if (tips.length === 0) return tips
+  
+  try {
+    // Získaj informácie o miestach
+    const placesInfo = tips.map(tip => {
+      const place = allPlaces.find(p => p.place_id === tip.place_id)
+      if (!place) return null
+      
+      return {
+        name: place.name,
+        types: place.types?.join(', ') || '',
+        rating: place.rating,
+        user_ratings_total: place.user_ratings_total,
+        formatted_address: place.formatted_address,
+        category: tip.category
+      }
+    }).filter(Boolean) as Array<{
+      name: string
+      types: string
+      rating?: number
+      user_ratings_total?: number
+      formatted_address: string
+      category: string
+    }>
+    
+    if (placesInfo.length === 0) return tips
+    
+    // Vytvor prompt pre validáciu
+    const validationPrompt = `Over, či tieto miesta skutočne patria medzi turistické atrakcie alebo relevantné miesta pre turistov.
+
+Miesta:
+${placesInfo.map((p, i) => `${i + 1}. ${p.name} (${p.category})
+   - Typy: ${p.types}
+   - Hodnotenie: ${p.rating || 'N/A'} (${p.user_ratings_total || 0} recenzií)
+   - Adresa: ${p.formatted_address}`).join('\n\n')}
+
+PRAVIDLÁ:
+- attraction: MUSÍ byť skutočná turistická atrakcia (múzeum, galéria, historická pamiatka, kostol, hrad, zámok, námestie, monument). NIE sú to: obchody, banky, úrady, nemocnice, školy, parkoviská, čerpacie stanice, autoservisy, kancelárie, byty.
+- activity: MUSÍ byť skutočná aktivita pre turistov (park, záhrada, vyhliadka, turistická trasa, športová aktivita, wellness). NIE sú to: bežné obchody, služby, kancelárie.
+- restaurant: MUSÍ byť skutočná reštaurácia/kaviareň s jedlom pre turistov. NIE sú to: fast food reťazce, potraviny, obchody.
+- accommodation: MUSÍ byť skutočné ubytovanie (hotel, hostel, penzión). NIE sú to: kancelárie, byty na prenájom.
+
+Vráť iba čísla miest (oddelené čiarkou), ktoré SKUTOČNE patria medzi turistické atrakcie alebo relevantné miesta pre turistov.
+Príklad: 1,2,4,5,7 (ak miesta 1,2,4,5,7 sú relevantné, ale 3 a 6 nie)
+
+Odpoveď (iba čísla oddelené čiarkou):`
+    
+    const { generateText } = await import('./aiService')
+    const validationResult = await generateText(validationPrompt)
+    
+    // Parsuj odpoveď - očakávame čísla oddelené čiarkou
+    const validIndices = new Set<number>()
+    const matches = validationResult.match(/\d+/g)
+    if (matches) {
+      matches.forEach(match => {
+        const index = parseInt(match, 10) - 1 // -1 lebo AI používa 1-based index
+        if (index >= 0 && index < tips.length) {
+          validIndices.add(index)
+        }
+      })
+    }
+    
+    // Ak sme nedostali žiadne validné indexy, použijeme všetky (fallback)
+    if (validIndices.size === 0) {
+      console.warn('[validatePlacesWithAI] No valid indices found, using all places')
+      return tips
+    }
+    
+    // Filtruj tipy podľa validných indexov
+    const validatedTips = tips.filter((_, index) => validIndices.has(index))
+    console.log(`[validatePlacesWithAI] Validated ${validatedTips.length} out of ${tips.length} places`)
+    
+    return validatedTips
+  } catch (error) {
+    console.error('[validatePlacesWithAI] Error validating places:', error)
+    // V prípade chyby vráť všetky tipy (fallback)
+    return tips
   }
 }
 // Build timestamp: Thu Dec 11 06:51:01 CET 2025
