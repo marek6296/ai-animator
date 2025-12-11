@@ -330,7 +330,6 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       interests: interests.length > 0 ? interests : undefined,
       preferredInterests: preferredInterests.length > 0 ? preferredInterests : undefined,
       transportation,
-      maxWalkingMinutes: undefined, // dočasne vypnuté
       accessibilityNeeds,
       avoidStairs,
       travelingWithPet,
