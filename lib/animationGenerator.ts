@@ -16,9 +16,9 @@ export async function generateAnimation(
     onProgress?.(frameProgress, `Generujem rámec ${i + 1} z ${frameCount}...`)
     
     const framePrompt = `Animovaný rámec ${i + 1} z ${frameCount} pre plynulú animáciu pohybu.
-    Hlavná postava: ${input.self}
-    Situácia: ${input.situation}
-    Ostatné postavy: ${input.friends}
+    Hlavná postava: ${(input as any).self || 'postava'}
+    Situácia: ${(input as any).situation || 'animácia'}
+    Ostatné postavy: ${(input as any).friends || ''}
     
     Toto je rámec ${i + 1} z ${frameCount} pre plynulú animáciu. Postavy sa pohybujú a menia pozíciu.
     Pre rámec ${i + 1}: ${i === 0 ? 'začiatočná pozícia' : i === frameCount - 1 ? 'konečná pozícia' : 'stredná pozícia v pohybe'}.
