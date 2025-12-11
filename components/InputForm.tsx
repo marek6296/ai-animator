@@ -14,6 +14,15 @@ declare global {
   interface Window {
     google: any
   }
+  
+  // Typy pre nový PlaceAutocompleteElement
+  namespace JSX {
+    interface IntrinsicElements {
+      'gmp-place-autocomplete': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        ongmp-placechanged?: (e: CustomEvent<{ place: any }>) => void
+      }
+    }
+  }
 }
 
 interface InputFormProps {
@@ -100,7 +109,6 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
   const [selectedCategories, setSelectedCategories] = useState<('attraction' | 'activity' | 'restaurant' | 'accommodation' | 'tip')[]>(['attraction', 'activity', 'restaurant'])
   
   const autocompleteRef = useRef<HTMLInputElement>(null)
-  const autocompleteWidgetRef = useRef<any>(null)
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
 
   // Načítaj Google Maps API
@@ -130,7 +138,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       return () => clearInterval(checkInterval)
     }
 
-    // Načítaj Google Maps API
+    // Načítaj Google Maps API s novým PlaceAutocompleteElement
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY
     if (!apiKey) {
       console.error('[Autocomplete] NEXT_PUBLIC_GOOGLE_API_KEY nie je nastavený')
@@ -138,9 +146,10 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       return
     }
 
-    console.log('[Autocomplete] Načítavam Google Maps API...')
+    console.log('[Autocomplete] Načítavam Google Maps API s PlaceAutocompleteElement...')
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=sk`
+    // Nový PlaceAutocompleteElement nepotrebuje 'places' library, používa sa priamo
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&loading=async&libraries=places&language=sk`
     script.async = true
     script.defer = true
     script.onload = () => {
@@ -190,77 +199,74 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
   }, [isGoogleLoaded, currentStep]) // Pridaj currentStep, aby sa reinicializovalo pri zmene kroku
 
   const initializeAutocomplete = () => {
+    // POZNÁMKA: Používame starý google.maps.places.Autocomplete
+    // Google odporúča migráciu na PlaceAutocompleteElement, ale:
+    // - Starý Autocomplete stále funguje pre existujúcich zákazníkov
+    // - Google dá aspoň 12 mesiacov výpovede pred ukončením podpory
+    // - Varovanie v konzole je len informačné, nie chyba
+    // Migráciu na nový element plánujeme v budúcnosti
+    
     if (!autocompleteRef.current || !window.google || !window.google.maps || !window.google.maps.places) {
       return
     }
 
-    // Ak už existuje widget, znič ho
-    if (autocompleteWidgetRef.current && window.google) {
-      window.google.maps.event.clearInstanceListeners(autocompleteWidgetRef.current)
-      autocompleteWidgetRef.current = null
-    }
-
-    console.log('[Autocomplete] Inicializujem Autocomplete widget...')
-    
     try {
+      console.log('[Autocomplete] Inicializujem Autocomplete widget...')
+      
       const autocomplete = new window.google.maps.places.Autocomplete(autocompleteRef.current, {
-        // Podporujeme všetky typy miest: mestá, regióny, POI, adresy, atď.
-        // types: undefined znamená všetky typy (najlepšie pre autocomplete)
         fields: ['place_id', 'name', 'formatted_address', 'geometry', 'types'],
         language: 'sk',
-        // componentRestrictions: undefined, // Žiadne obmedzenia krajiny
       })
-
-      autocompleteWidgetRef.current = autocomplete
-      console.log('[Autocomplete] Widget inicializovaný úspešne')
 
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace()
-        console.log('[Autocomplete] Miesto vybraté:', place)
-        
-        if (place && place.place_id) {
-          setDestination(place.name || '')
-          setDestinationPlaceId(place.place_id)
-          
-          // Ulož kompletnú informáciu o mieste
-          setSelectedPlace({
-            place_id: place.place_id,
-            name: place.name || '',
-            formatted_address: place.formatted_address,
-            types: place.types || [],
-            geometry: place.geometry ? {
-              location: {
-                lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng(),
-              }
-            } : undefined,
-          })
-          
-          console.log('[Autocomplete] Miesto uložené:', place.name)
-          
-          // Automaticky urči režim podľa typu miesta
-          if (place.types && place.types.some((t: string) => ['point_of_interest', 'tourist_attraction', 'museum', 'park', 'restaurant'].includes(t))) {
-            // Ak je to POI, nastav default na 'around', ale používateľ môže zmeniť
-            if (mode === 'city') {
-              setMode('around')
-            }
-          } else {
-            // Ak je to mesto/región, nastav na 'city'
-            setMode('city')
-          }
-        } else {
-          console.warn('[Autocomplete] Miesto nemá place_id:', place)
-        }
-      })
-
-      // Debug: skontroluj, či sa zobrazujú návrhy
-      autocomplete.addListener('place_changed', () => {
-        console.log('[Autocomplete] place_changed event fired')
+        handlePlaceSelection(place)
       })
       
+      console.log('[Autocomplete] Widget inicializovaný úspešne')
     } catch (error) {
       console.error('[Autocomplete] Chyba pri inicializácii:', error)
       toast.error('Chyba pri inicializácii autocomplete')
+    }
+  }
+
+  const handlePlaceSelection = (place: any) => {
+    console.log('[Autocomplete] Miesto vybraté:', place)
+    
+    if (place && place.place_id) {
+      setDestination(place.name || '')
+      setDestinationPlaceId(place.place_id)
+      
+      // Ulož kompletnú informáciu o mieste
+      setSelectedPlace({
+        place_id: place.place_id,
+        name: place.name || '',
+        formatted_address: place.formatted_address,
+        types: place.types || [],
+        geometry: place.geometry ? {
+          location: {
+            lat: typeof place.geometry.location.lat === 'function' 
+              ? place.geometry.location.lat() 
+              : place.geometry.location.lat,
+            lng: typeof place.geometry.location.lng === 'function'
+              ? place.geometry.location.lng()
+              : place.geometry.location.lng,
+          }
+        } : undefined,
+      })
+      
+      console.log('[Autocomplete] Miesto uložené:', place.name)
+      
+      // Automaticky urči režim podľa typu miesta
+      if (place.types && place.types.some((t: string) => ['point_of_interest', 'tourist_attraction', 'museum', 'park', 'restaurant'].includes(t))) {
+        if (mode === 'city') {
+          setMode('around')
+        }
+      } else {
+        setMode('city')
+      }
+    } else {
+      console.warn('[Autocomplete] Miesto nemá place_id:', place)
     }
   }
 
@@ -425,6 +431,8 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                   Destinácia <span className="text-pink-400">*</span>
                 </label>
                 <div className="relative">
+                  {/* Používame starý Autocomplete (stále funguje pre existujúcich zákazníkov) */}
+                  {/* Varovanie v konzole je len informačné - Google dá aspoň 12 mesiacov výpovede */}
                   <input
                     ref={autocompleteRef}
                     type="text"
