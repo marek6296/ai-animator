@@ -135,18 +135,20 @@ Kategórie (použi presne tieto hodnoty):
 - accommodation (pre ubytovanie, hotely)
 - tip (pre užitočné tipy, rady, praktické informácie)
 
-Príklady:
-Tip 1: Eiffelova veža | attraction | Eiffelova veža je ikonická oceľová veža v Paríži, ktorá je jednou z najznámejších pamiatok na svete. | 2-3 hodiny | €25-30
-Tip 2: Louvre | attraction | Louvre je najväčšie múzeum na svete s obrovskou zbierkou umenia vrátane Mony Lisy. | 3-4 hodiny | €17
-
 DÔLEŽITÉ PRAVIDLÁ:
 1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
 2. Všetky polia MUSIA byť oddelené znakom | (pipe)
 3. Všetky texty MUSIA byť v slovenčine
 4. Vytvor MINIMÁLNE 10 tipov, ideálne 12
 5. Zahrň rôzne kategórie - aspoň 3-4 attraction, 2-3 activity, 2 restaurant, 1-2 accommodation, 1-2 tip
-6. Názvy miest musia byť konkrétne a skutočné (napr. "Eiffelova veža", nie "vysoká veža")
-7. Popis musí byť detailný a zaujímavý (50-100 slov)
+6. NÁZOV MIESTA MUSÍ BYŤ PRESNE TAKÝ, AKO JE V ZOZNAME MIEST VYŠŠIE - použij PRESNÝ názov z Google Maps (napr. ak v zozname je "Eiffel Tower", použij "Eiffel Tower", nie "Eiffelova veža")
+7. Ak chceš použiť slovenský názov, urob to, ale MUSÍŠ zachovať hlavný názov z Google Maps (napr. "Eiffel Tower (Eiffelova veža)")
+8. Popis musí byť detailný a zaujímavý (50-100 slov)
+
+Príklady správnych názvov (podľa zoznamu miest vyššie):
+- Ak v zozname je "Louvre Museum", použij "Louvre Museum" alebo "Louvre Museum (Louvre)"
+- Ak v zozname je "Notre-Dame de Paris", použij "Notre-Dame de Paris" alebo "Notre-Dame de Paris (Katedrála Notre-Dame)"
+- Ak v zozname je "Eiffel Tower", použij "Eiffel Tower" alebo "Eiffel Tower (Eiffelova veža)"
 
 Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
@@ -183,7 +185,9 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       try {
         // Nájdeme zodpovedajúce miesto z Google Places - vylepšené matching
         const tipTitleLower = tip.title.toLowerCase().trim()
-        const matchingPlace = places.find(place => {
+        
+        // Najprv skúsime nájsť presnú zhodu alebo zhodu s hlavným názvom
+        let matchingPlace = places.find(place => {
           const placeNameLower = place.name.toLowerCase().trim()
           
           // Presná zhoda
@@ -191,25 +195,44 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
             return true
           }
           
-          // Jeden názov obsahuje druhý
-          if (placeNameLower.includes(tipTitleLower) || tipTitleLower.includes(placeNameLower)) {
-            // Ale skontroluj, či to nie je príliš všeobecné (napr. "Hotel" vs "Eiffel Tower Hotel")
-            // Ak je tip názov kratší ako 10 znakov, potrebujeme presnejšiu zhodu
-            if (tipTitleLower.length < 10) {
-              // Pre krátke názvy potrebujeme, aby sa zhodovali aspoň na začiatku
-              return placeNameLower.startsWith(tipTitleLower) || tipTitleLower.startsWith(placeNameLower)
-            }
+          // Odstráň zátvorky a všetko v nich (napr. "Eiffel Tower (Eiffelova veža)" -> "Eiffel Tower")
+          const tipTitleClean = tipTitleLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
+          const placeNameClean = placeNameLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
+          
+          if (placeNameClean === tipTitleClean || tipTitleClean === placeNameClean) {
             return true
           }
           
-          // Fuzzy match - podobnosť aspoň 70%
-          const similarity = calculateSimilarity(tipTitleLower, placeNameLower)
-          if (similarity > 0.7) {
+          // Jeden názov obsahuje druhý (po očistení)
+          if (placeNameClean.includes(tipTitleClean) || tipTitleClean.includes(placeNameClean)) {
+            // Ale skontroluj, či to nie je príliš všeobecné (napr. "Hotel" vs "Eiffel Tower Hotel")
+            // Ak je tip názov kratší ako 10 znakov, potrebujeme presnejšiu zhodu
+            if (tipTitleClean.length < 10) {
+              // Pre krátke názvy potrebujeme, aby sa zhodovali aspoň na začiatku
+              return placeNameClean.startsWith(tipTitleClean) || tipTitleClean.startsWith(placeNameClean)
+            }
             return true
           }
           
           return false
         })
+        
+        // Ak sme nenašli presnú zhodu, skúsime fuzzy match
+        if (!matchingPlace) {
+          matchingPlace = places.find(place => {
+            const placeNameLower = place.name.toLowerCase().trim()
+            const tipTitleClean = tipTitleLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
+            const placeNameClean = placeNameLower.replace(/\s*\([^)]*\)\s*/g, '').trim()
+            
+            // Fuzzy match - podobnosť aspoň 60% (znížené z 70% pre lepšie výsledky)
+            const similarity = calculateSimilarity(tipTitleClean, placeNameClean)
+            if (similarity > 0.6) {
+              return true
+            }
+            
+            return false
+          })
+        }
         
         // Pomocná funkcia pre výpočet podobnosti
         function calculateSimilarity(str1: string, str2: string): number {
