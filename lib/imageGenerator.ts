@@ -6,7 +6,7 @@ export async function generateSingleImage(
   onProgress?: (progress: number, message: string) => void
 ): Promise<SingleImage> {
   // Pre transformáciu fotky do štýlu - používame img2img
-  if (!input.useReferenceImage || !input.referenceImage) {
+  if (!(input as any).useReferenceImage || !(input as any).referenceImage) {
     throw new Error('Pre transformáciu fotky je potrebná referenčná fotka')
   }
 
