@@ -97,7 +97,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
   const [foodPreferences, setFoodPreferences] = useState<string[]>([])
   const [itineraryDetail, setItineraryDetail] = useState<'list' | 'basic' | 'detailed'>('basic')
   const [mode, setMode] = useState<'city' | 'around' | 'single'>('city')
-  const [selectedCategories, setSelectedCategories] = useState<('attraction' | 'activity' | 'restaurant' | 'accommodation' | 'tip')[]>(['attraction', 'activity', 'restaurant'])
+  const [selectedCategories, setSelectedCategories] = useState<('attraction' | 'activity' | 'restaurant' | 'accommodation' | 'tip')[]>([])
   
   const autocompleteRef = useRef<HTMLInputElement>(null)
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
@@ -301,6 +301,12 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       setCurrentStep(1)
       return
     }
+    // MUSÍ vybrať aspoň jednu kategóriu
+    if (selectedCategories.length === 0) {
+      toast.error('Prosím, vyberte aspoň jednu kategóriu')
+      setCurrentStep(1)
+      return
+    }
     
     const input: UserInput = {
       destination: selectedPlace.name, // Pre kompatibilitu
@@ -308,7 +314,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       root_place_id: selectedPlace.place_id,
       selectedPlace: selectedPlace,
       mode: mode,
-      selectedCategories: selectedCategories.length > 0 ? selectedCategories : ['attraction', 'activity', 'restaurant'],
+      selectedCategories: selectedCategories,
       hasSpecificDates,
       dateFrom: hasSpecificDates ? dateFrom : undefined,
       dateTo: hasSpecificDates ? dateTo : undefined,
