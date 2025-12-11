@@ -26,8 +26,8 @@ export async function generateSingleImage(
   
   // Ak je zadaný vlastný prompt, pridáme ho
   let imagePrompt = styleTransform
-  if (input.customPrompt && input.customPrompt.trim()) {
-    imagePrompt = `${styleTransform} ${input.customPrompt.trim()}.`
+  if ((input as any).customPrompt && (input as any).customPrompt.trim()) {
+    imagePrompt = `${styleTransform} ${(input as any).customPrompt.trim()}.`
   }
   
   onProgress?.(30, 'Generujem transformovaný obrázok...')
