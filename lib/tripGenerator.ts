@@ -420,6 +420,50 @@ function parseTipsSimple(
 }
 
 /**
+ * Parsuje tipy bez place_id - len názvy miest a popisy
+ */
+function parseTipsWithoutPlaceId(tipsText: string): ParsedTip[] {
+  const tips: ParsedTip[] = []
+  
+  if (!tipsText || tipsText.trim().length === 0) {
+    return tips
+  }
+  
+  // Regex pre formát: Tip X: Názov | category | description | duration | price
+  const tipRegex = /(?:Tip\s*)?\d+[.:]\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*(?:\|\s*(.+?)\s*(?:\|\s*(.+?))?)?(?=\s*(?:Tip\s*)?\d+[.:]|$)/gis
+  
+  const matches = Array.from(tipsText.matchAll(tipRegex))
+  
+  for (const match of matches) {
+    const placeName = match[1]?.trim() || ''
+    const category = (match[2]?.trim().toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
+    const description = match[3]?.trim() || ''
+    const duration = match[4]?.trim() || ''
+    const price = match[5]?.trim() || ''
+    
+    const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
+    const finalCategory = validCategories.includes(category as TripTip['category']) 
+      ? (category as TripTip['category'])
+      : 'attraction'
+    
+    if (placeName && description && description.length > 20) {
+      // Vytvor fake place_id z názvu (pre kompatibilitu)
+      const fakePlaceId = `AI_${placeName.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`
+      
+      tips.push({
+        place_id: fakePlaceId,
+        category: finalCategory,
+        description,
+        duration: duration || undefined,
+        price: price || undefined,
+      })
+    }
+  }
+  
+  return tips.slice(0, 12)
+}
+
+/**
  * Spojí parsované tipy s miestami z Google Places a vytvorí finálny Trip objekt
  */
 async function generateTripWithTips(
