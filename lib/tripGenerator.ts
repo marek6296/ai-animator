@@ -466,7 +466,7 @@ async function generateTripWithTips(
   console.log(`[generateTrip] Completed successfully for: ${input.destination}`)
   
   return {
-    destination: input.destination,
+    destination: input.destination || '',
     country: country,
     tips: tipsWithImages,
     summary: summary.trim(),
