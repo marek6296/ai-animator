@@ -26,10 +26,70 @@ export async function generateTrip(
     }
 
     console.log(`[generateTrip] Starting for destination: ${input.destination}`)
-    onProgress?.(5, 'Generujem plán výletu...')
+    onProgress?.(5, 'Hľadám zaujímavé miesta v meste...')
 
-  // Vytvor prompt pre generovanie trip tips
-  let tripPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.`
+    // KROK 1: Získaj miesta z Google Places API
+    const cityTranslations: Record<string, string> = {
+      'Paríž': 'Paris', 'Londýn': 'London', 'Rím': 'Rome', 'Barcelona': 'Barcelona',
+      'Amsterdam': 'Amsterdam', 'Berlín': 'Berlin', 'Viedeň': 'Vienna', 'Praha': 'Prague',
+      'Budapešť': 'Budapest', 'Krakow': 'Krakow', 'Atény': 'Athens', 'Lisabon': 'Lisbon',
+      'Dublin': 'Dublin', 'Edinburgh': 'Edinburgh', 'Kodaň': 'Copenhagen', 'Štokholm': 'Stockholm',
+      'Oslo': 'Oslo', 'Helsinki': 'Helsinki', 'Reykjavík': 'Reykjavik', 'Zürich': 'Zurich',
+      'Miláno': 'Milan', 'Florencia': 'Florence', 'Venezia': 'Venice', 'Neapol': 'Naples',
+      'Madrid': 'Madrid', 'Sevilla': 'Seville', 'Valencia': 'Valencia', 'Porto': 'Porto',
+      'Brusel': 'Brussels', 'Antverpy': 'Antwerp', 'Bruggy': 'Bruges', 'Bratislava': 'Bratislava',
+      'Ljubljana': 'Ljubljana', 'Záhreb': 'Zagreb',
+    }
+    const englishCity = cityTranslations[input.destination] || input.destination
+
+    // Získaj rôzne typy miest
+    const places: Place[] = []
+    
+    // Turistické atrakcie
+    onProgress?.(10, 'Hľadám turistické atrakcie...')
+    try {
+      const attractions = await searchPlacesInCity(englishCity, 'tourist attractions', 15)
+      places.push(...attractions)
+    } catch (error) {
+      console.warn('Error searching attractions:', error)
+    }
+    
+    // Reštaurácie
+    onProgress?.(15, 'Hľadám reštaurácie...')
+    try {
+      const restaurants = await searchPlacesInCity(englishCity, 'restaurants', 10)
+      places.push(...restaurants)
+    } catch (error) {
+      console.warn('Error searching restaurants:', error)
+    }
+    
+    // Aktivity
+    onProgress?.(20, 'Hľadám aktivity...')
+    try {
+      const activities = await searchPlacesInCity(englishCity, 'activities', 10)
+      places.push(...activities)
+    } catch (error) {
+      console.warn('Error searching activities:', error)
+    }
+
+    console.log(`[generateTrip] Found ${places.length} places from Google Places API`)
+
+    // KROK 2: Vytvor prompt pre OpenAI s miestami z Google Places
+    onProgress?.(25, 'Generujem plán výletu...')
+    
+    // Formátuj miesta pre OpenAI
+    const placesList = places.map((place, index) => {
+      const types = place.types?.join(', ') || 'attraction'
+      const rating = place.rating ? ` (Hodnotenie: ${place.rating}/5)` : ''
+      return `${index + 1}. ${place.name} - ${place.formatted_address}${rating} (Typ: ${types})`
+    }).join('\n')
+
+    let tripPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.
+
+Mám zoznam skutočných miest z Google Maps:
+${placesList}
+
+Z týchto miest vyber a zoraď 10-12 najzaujímavejších pre výlet.`
   
   if (input.tripType) {
     const tripTypeNames: Record<string, string> = {
@@ -107,56 +167,74 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
     console.warn(`Only ${tips.length} tips parsed. This might be a parsing issue.`)
   }
 
-  // Získame obrázky z Unsplash pre každý tip
-  onProgress?.(60, 'Načítavam obrázky...')
-  const tipsWithImages: TripTip[] = []
-  
-  for (let i = 0; i < tips.length; i++) {
-    const tip = tips[i]
-    const progress = 60 + (i / tips.length) * 15
+    // KROK 3: Spáruj tipy s miestami z Google Places a získaj fotky
+    onProgress?.(60, 'Spárujem miesta s fotkami...')
+    const tipsWithImages: TripTip[] = []
     
-    onProgress?.(progress, `Načítavam obrázok pre: ${tip.title}...`)
-    
-    try {
-      // NAJPRV: Skúsime Google Places Photo API priamo (najpresnejšie)
+    for (let i = 0; i < tips.length; i++) {
+      const tip = tips[i]
+      const progress = 60 + (i / tips.length) * 20
+      
+      onProgress?.(progress, `Spárujem: ${tip.title}...`)
+      
+      // Nájdeme zodpovedajúce miesto z Google Places
+      const matchingPlace = places.find(place => 
+        place.name.toLowerCase().includes(tip.title.toLowerCase()) ||
+        tip.title.toLowerCase().includes(place.name.toLowerCase())
+      )
+      
       let imageUrl: string = ''
+      let place_id: string | undefined
+      let photo_reference: string | undefined
+      let coordinates: { lat: number; lng: number } | undefined
       
-      // Preklad destinácie do angličtiny
-      const cityTranslations: Record<string, string> = {
-        'Paríž': 'Paris', 'Londýn': 'London', 'Rím': 'Rome', 'Barcelona': 'Barcelona',
-        'Amsterdam': 'Amsterdam', 'Berlín': 'Berlin', 'Viedeň': 'Vienna', 'Praha': 'Prague',
-        'Budapešť': 'Budapest', 'Krakow': 'Krakow', 'Atény': 'Athens', 'Lisabon': 'Lisbon',
-        'Dublin': 'Dublin', 'Edinburgh': 'Edinburgh', 'Kodaň': 'Copenhagen', 'Štokholm': 'Stockholm',
-        'Oslo': 'Oslo', 'Helsinki': 'Helsinki', 'Reykjavík': 'Reykjavik', 'Zürich': 'Zurich',
-        'Miláno': 'Milan', 'Florencia': 'Florence', 'Venezia': 'Venice', 'Neapol': 'Naples',
-        'Madrid': 'Madrid', 'Sevilla': 'Seville', 'Valencia': 'Valencia', 'Porto': 'Porto',
-        'Brusel': 'Brussels', 'Antverpy': 'Antwerp', 'Bruggy': 'Bruges', 'Bratislava': 'Bratislava',
-        'Ljubljana': 'Ljubljana', 'Záhreb': 'Zagreb',
-      }
-      const englishCity = cityTranslations[input.destination] || input.destination
-      
-      // Vyčistíme názov miesta
-      let cleanTitle = tip.title
-        .replace(/^(v|na|do|z|k|o|s|a|the|a|le|la|les|el|los|las)\s+/gi, '')
-        .replace(/\s+(v|na|do|z|k|o|s|a|the|a)$/gi, '')
-        .trim()
-      
-      // Skúsime Google Places API priamo
-      if (cleanTitle && englishCity) {
-        try {
-          const { getImageFromGooglePlaces } = await import('@/lib/imageService')
-          const placesImage = await getImageFromGooglePlaces(cleanTitle, englishCity)
-          if (placesImage) {
-            imageUrl = placesImage
-            console.log(`✓ Google Places found image for "${tip.title}"`)
+      if (matchingPlace && matchingPlace.photos && matchingPlace.photos.length > 0) {
+        // Použijeme photo_reference z Google Places
+        photo_reference = matchingPlace.photos[0].photo_reference
+        place_id = matchingPlace.place_id
+        imageUrl = getPlacePhotoUrl(photo_reference, 800)
+        
+        if (matchingPlace.geometry?.location) {
+          coordinates = {
+            lat: matchingPlace.geometry.location.lat,
+            lng: matchingPlace.geometry.location.lng,
           }
-        } catch (error) {
-          console.warn(`Google Places API failed for "${tip.title}":`, error)
+        }
+        
+        console.log(`✓ Found matching place for "${tip.title}": ${matchingPlace.name}`)
+      } else {
+        // Fallback: Skúsime nájsť miesto podľa názvu
+        console.log(`⚠ No exact match for "${tip.title}", trying to find by name...`)
+        const foundPlace = await findPlaceByName(tip.title, englishCity)
+        
+        if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
+          photo_reference = foundPlace.photos[0].photo_reference
+          place_id = foundPlace.place_id
+          imageUrl = getPlacePhotoUrl(photo_reference, 800)
+          
+          if (foundPlace.geometry?.location) {
+            coordinates = {
+              lat: foundPlace.geometry.location.lat,
+              lng: foundPlace.geometry.location.lng,
+            }
+          }
+          
+          console.log(`✓ Found place by name for "${tip.title}": ${foundPlace.name}`)
+        } else {
+          // Posledný fallback: Použijeme starý systém
+          console.warn(`⚠ No Google Places match for "${tip.title}", using fallback image search`)
+          try {
+            const imageQuery = createImageQuery(input.destination, tip.title, tip.category)
+            imageUrl = await getImageFromUnsplash(imageQuery)
+          } catch (error) {
+            console.warn(`Error getting fallback image for "${tip.title}":`, error)
+            imageUrl = `https://via.placeholder.com/800x600/1a1a2e/00ffff?text=${encodeURIComponent(tip.title.substring(0, 30))}`
+          }
         }
       }
       
-      // Ak Google Places nefunguje, použijeme bežné vyhľadávanie
-      if (!imageUrl || imageUrl.includes('via.placeholder.com')) {
+      // Ak sme stále nemáme obrázok, použijeme placeholder
+      if (!imageUrl) {
         // Vytvor query pre vyhľadávanie obrázka
         const imageQuery = createImageQuery(input.destination, tip.title, tip.category)
         console.log(`Image query for "${tip.title}": ${imageQuery}`)
