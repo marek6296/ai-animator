@@ -744,15 +744,21 @@ async function generateTripWithTips(
 
 /**
  * Vytvorí Trip bez Google Places API - len z AI generovaných tipov
+ * Pre každý tip skúsi nájsť skutočné miesto a obrázok pomocou findPlaceByName
  */
 async function generateTripWithoutPlaces(
   tips: ParsedTip[],
   input: UserInput,
   onProgress?: (progress: number, message: string) => void
 ): Promise<Trip> {
-  onProgress?.(60, 'Vytváram tipy...')
+  onProgress?.(60, 'Vytváram tipy a hľadám obrázky...')
   
-  const tipsWithImages: TripTip[] = tips.map((tip, index) => {
+  const tipsWithImages: TripTip[] = []
+  
+  for (let i = 0; i < tips.length; i++) {
+    const tip = tips[i]
+    const progress = 60 + (i / tips.length) * 20
+    
     // Extrahuj názov z fake place_id (odstráň "AI_" prefix a "_timestamp")
     const title = tip.place_id
       .replace(/^AI_/, '')
@@ -760,20 +766,57 @@ async function generateTripWithoutPlaces(
       .replace(/_/g, ' ')
       .replace(/\b\w/g, (l) => l.toUpperCase())
     
-    // Použijeme placeholder obrázok
-    const placeholderText = encodeURIComponent(title.substring(0, 30))
-    const imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${placeholderText}`
+    onProgress?.(progress, `Hľadám obrázok pre: ${title}...`)
     
-    return {
+    let imageUrl = `https://placehold.co/800x600/1a1a2e/00ffff?text=${encodeURIComponent(title.substring(0, 30))}`
+    let place_id = tip.place_id
+    let coordinates: { lat: number; lng: number } | undefined
+    
+    // Skús nájsť skutočné miesto pomocou findPlaceByName
+    try {
+      const foundPlace = await findPlaceByName(title, input.destination || '')
+      if (foundPlace && foundPlace.photos && foundPlace.photos.length > 0) {
+        const firstPhoto = foundPlace.photos[0]
+        const photo_reference = (firstPhoto.photo_reference || firstPhoto.name || '') as string
+        
+        if (photo_reference) {
+          imageUrl = getPlacePhotoUrl(photo_reference, 800)
+          place_id = foundPlace.place_id
+          
+          if (foundPlace.geometry?.location) {
+            coordinates = {
+              lat: foundPlace.geometry.location.lat,
+              lng: foundPlace.geometry.location.lng,
+            }
+          }
+          
+          console.log(`✓ Found place and image for "${title}": ${foundPlace.name}`)
+          console.log(`  Image URL: ${imageUrl.substring(0, 100)}...`)
+        }
+      } else {
+        console.warn(`⚠ Place "${title}" found but has no photos`)
+      }
+    } catch (error) {
+      console.warn(`⚠ Failed to find place "${title}":`, error)
+      // Použijeme placeholder
+    }
+    
+    // Malé oneskorenie medzi requestmi
+    if (i < tips.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+    
+    tipsWithImages.push({
       title: title,
       description: tip.description,
       category: tip.category,
       duration: tip.duration,
       price: tip.price,
       imageUrl: imageUrl,
-      place_id: tip.place_id,
-    }
-  })
+      place_id: place_id,
+      coordinates: coordinates,
+    })
+  }
 
   onProgress?.(80, 'Vytváram súhrn...')
   
