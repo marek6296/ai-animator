@@ -391,7 +391,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    <div className="pt-4 pb-4 px-5 flex flex-col h-full min-h-[200px]">
+                    <div className="pt-4 pb-4 px-5 flex flex-col h-full">
                       {/* Title with Star */}
                       <div className="flex items-start gap-2 mb-1.5 flex-shrink-0 min-h-[2.5rem]">
                         <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
@@ -399,7 +399,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm leading-normal mb-0 flex-grow min-h-0 line-clamp-7">{tip.description}</p>
+                    <p className="text-gray-300 text-sm leading-normal mb-0 line-clamp-7">{tip.description}</p>
 
                       {/* Meta Info */}
                       <div className="flex flex-col gap-2 pt-2 border-t border-white/10 mt-auto flex-shrink-0">
