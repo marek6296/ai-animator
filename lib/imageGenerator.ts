@@ -34,7 +34,7 @@ export async function generateSingleImage(
   // Vygeneruj obrázok pomocou img2img
   const imageUrl = await generateImage(
     imagePrompt, 
-    input.style,
+    style,
     2,
     (input as any).referenceImage,
     (input as any).imageStrength || 0.7
