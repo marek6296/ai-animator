@@ -191,17 +191,6 @@ Tip 2: Trattoria da Enzo | restaurant | Táto reštaurácia ponúka... | 1-2 hod
 
 Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
-${input.tripType ? `Typ výletu: ${input.tripType === 'city' ? 'mestský' : input.tripType === 'nature' ? 'prírodný' : 'kultúrny'}.` : ''}
-${input.duration ? `Dĺžka výletu: ${input.duration} dní.` : ''}
-${input.interests ? `Záujmy: ${input.interests}.` : ''}
-${input.budget ? `Rozpočet: ${input.budget === 'low' ? 'nízky' : input.budget === 'medium' ? 'stredný' : 'vysoký'}.` : ''}
-
-Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
-Tip 1: [NÁZOV MIESTA PRESNE AKO V ZOZNAME] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
-Tip 2: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-Tip 3: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-... (pokračuj až do Tip 12)
-
 Kategórie (použi presne tieto hodnoty):
 - attraction (pre pamiatky, múzeá, historické miesta)
 - activity (pre aktivity, zábavu, športy)
