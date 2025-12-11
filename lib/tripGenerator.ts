@@ -459,7 +459,7 @@ async function generateTripWithTips(
   const summary = await generateText(summaryPrompt)
   
   // Extrahuj krajinu
-  const country = extractCountry(input.destination)
+  const country = extractCountry(input.destination || '')
 
   onProgress?.(100, 'Plán výletu hotový!')
 
