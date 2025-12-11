@@ -61,6 +61,19 @@ const categoryColors: Record<TripTip['category'], { bg: string; border: string; 
   },
 }
 
+// Mapovanie price_level na text
+function priceLevelLabel(level?: number) {
+  if (level === undefined || level === null) return null
+  const map: Record<number, string> = {
+    0: 'Bezplatné',
+    1: '€',
+    2: '€€',
+    3: '€€€',
+    4: '€€€€',
+  }
+  return map[level] ?? `€ (${level})`
+}
+
 export default function ResultsDisplay({ results, userInput }: ResultsDisplayProps) {
   const [selectedTip, setSelectedTip] = useState<TripTip | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -389,7 +402,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                     <p className="text-gray-300 text-sm leading-relaxed mb-3">{tip.description}</p>
 
                       {/* Meta Info */}
-                      <div className="flex flex-wrap gap-2 pt-3 border-t border-white/10">
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-white/10 mt-auto">
                         {tip.rating && (
                           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
                             <Star className="w-4 h-4 text-cyan-400" />
