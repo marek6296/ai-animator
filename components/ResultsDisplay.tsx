@@ -300,168 +300,120 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                     }}
                     className={`glass rounded-xl overflow-hidden border-2 card-futuristic ${colors.border} ${colors.bg} hover:${colors.glow} transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] flex flex-col h-full`}
                   >
-                    {/* Image */}
-                    {displayImageUrl && displayImageUrl.trim() !== '' ? (
-                      <div className="relative w-full h-[24rem] md:h-[28rem] overflow-hidden bg-gray-800">
-                        <motion.img
-                          key={displayImageUrl}
-                          src={displayImageUrl}
-                          alt={`${tip.title} in ${trip.destination}`}
-                          className="w-full h-full object-cover"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.5 }}
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                          onError={async (e) => {
-                            // Fallback ak sa obrázok nenačíta - skúsime iný zdroj
-                            console.error(`Failed to load image for "${tip.title}": ${tip.imageUrl}`)
-                            const img = e.currentTarget as HTMLImageElement
-                            
-                            // Ak je to Unsplash Source, skúsime Pexels
-                            if (tip.imageUrl.includes('source.unsplash.com')) {
-                              const cityTranslations: Record<string, string> = {
-                                'Paríž': 'Paris', 'Londýn': 'London', 'Rím': 'Rome', 'Barcelona': 'Barcelona',
-                                'Amsterdam': 'Amsterdam', 'Berlín': 'Berlin', 'Viedeň': 'Vienna', 'Praha': 'Prague',
-                              }
-                              const englishCity = cityTranslations[trip.destination] || trip.destination
-                              
-                              // Skúsime Pexels API priamo
-                              try {
-                                const pexelsUrl = `https://api.pexels.com/v1/search?query=${encodeURIComponent(`${tip.title} ${englishCity}`)}&per_page=1&orientation=landscape`
-                                const response = await fetch(pexelsUrl)
-                                if (response.ok) {
-                                  const data = await response.json()
-                                  if (data.photos && data.photos.length > 0) {
-                                    const newUrl = data.photos[0].src?.large || data.photos[0].src?.medium
-                                    if (newUrl) {
-                                      img.src = newUrl
-                                      console.log(`✓ Retry successful with Pexels for "${tip.title}"`)
-                                      return
-                                    }
-                                  }
+                    {/* ÚPLNE NOVÝ DIZAJN - Moderný, symetrický, čitateľný */}
+                    <div className="flex flex-col h-full bg-gray-950">
+                      {/* Fotka - menšia, na vrchu */}
+                      {displayImageUrl && displayImageUrl.trim() !== '' ? (
+                        <div className="relative w-full h-48 overflow-hidden bg-gray-800">
+                          <motion.img
+                            key={displayImageUrl}
+                            src={displayImageUrl}
+                            alt={`${tip.title} in ${trip.destination}`}
+                            className="w-full h-full object-cover"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            onError={async (e) => {
+                              console.error(`Failed to load image for "${tip.title}": ${tip.imageUrl}`)
+                              const img = e.currentTarget as HTMLImageElement
+                              const parent = img.parentElement
+                              if (parent) {
+                                img.style.display = 'none'
+                                if (!parent.querySelector('.error-placeholder')) {
+                                  const placeholder = document.createElement('div')
+                                  placeholder.className = 'error-placeholder absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center z-10'
+                                  placeholder.innerHTML = `
+                                    <div class="text-center">
+                                      <svg class="w-12 h-12 text-gray-500 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                      </svg>
+                                      <p class="text-xs text-gray-400 opacity-50">Obrázok sa nenačítal</p>
+                                    </div>
+                                  `
+                                  parent.appendChild(placeholder)
                                 }
-                              } catch (error) {
-                                console.warn('Pexels retry failed:', error)
                               }
-                            }
-                            
-                            // Ak sa stále nenačíta, zobrazíme placeholder
-                            const parent = img.parentElement
-                            if (parent) {
-                              img.style.display = 'none'
-                              if (!parent.querySelector('.error-placeholder')) {
-                                const placeholder = document.createElement('div')
-                                placeholder.className = 'error-placeholder absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center z-10'
-                                placeholder.innerHTML = `
-                                  <div class="text-center">
-                                    <svg class="w-12 h-12 text-gray-500 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                    </svg>
-                                    <p class="text-xs text-gray-400 opacity-50">Obrázok sa nenačítal</p>
-                                  </div>
-                                `
-                                parent.appendChild(placeholder)
-                              }
-                            }
-                          }}
-                          onLoad={() => {
-                            console.log(`✓ Image loaded successfully for "${tip.title}"`)
-                            console.log(`  Image URL: ${displayImageUrl}`)
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                        <div className={`absolute top-2 left-2 px-2.5 py-1.5 rounded-lg bg-black/90 ${colors.border} border backdrop-blur-md shadow-xl ${colors.glow} z-10`}>
-                          <div className={`flex items-center gap-1.5 ${colors.text}`}>
-                            <div className="flex-shrink-0 flex items-center justify-center" style={{ width: '16px', height: '16px' }}>
-                              {categoryIcons[categoryKey]}
+                            }}
+                          />
+                          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-sm border border-white/20">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-shrink-0" style={{ width: '18px', height: '18px' }}>
+                                {categoryIcons[categoryKey]}
+                              </div>
+                              <span className="text-xs font-bold text-white uppercase tracking-wide">{categoryLabels[categoryKey]}</span>
                             </div>
-                            <span className="text-xs font-bold uppercase tracking-wide drop-shadow-lg leading-none">{categoryLabels[categoryKey]}</span>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      // Placeholder ak nie je obrázok
-                      <div className="relative w-full h-[24rem] md:h-[28rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                        <div className="text-center">
-                          <Camera className={`w-12 h-12 ${colors.text} mx-auto mb-2 opacity-50`} />
-                          <p className={`text-xs ${colors.text} opacity-50`}>Obrázok sa načítava...</p>
+                      ) : (
+                        <div className="relative w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                          <Camera className="w-12 h-12 text-gray-500 opacity-50" />
                         </div>
-                      </div>
-                    )}
-                    
-                    {/* NOVÉ ROZLOŽENIE - Čistý dizajn bez prázdnych miest */}
-                    <div className="flex flex-col bg-gradient-to-b from-gray-900/95 to-gray-950/95">
-                      {/* Názov */}
-                      <div className="px-5 pt-4 pb-2 flex-shrink-0">
-                        <div className="flex items-start gap-2">
-                          <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-0.5`} />
-                          <h4 className="text-xl font-black text-white leading-tight line-clamp-2">{tip.title}</h4>
+                      )}
+
+                      {/* Obsahová časť */}
+                      <div className="flex-1 flex flex-col p-6">
+                        {/* Názov - veľký a čitateľný */}
+                        <h4 className="text-2xl font-bold text-white mb-3 leading-tight line-clamp-2">{tip.title}</h4>
+
+                        {/* Popis - v boxe s dobrým kontrastom */}
+                        <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700/50">
+                          <p className="text-gray-200 text-sm leading-relaxed line-clamp-4">{tip.description}</p>
                         </div>
-                      </div>
 
-                      {/* Popis - bez fixnej výšky, prispôsobí sa obsahu */}
-                      <div className="px-5 pb-2 flex-shrink-0">
-                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">{tip.description}</p>
-                      </div>
-
-                      {/* Čiara - hneď za popisom */}
-                      <div className="px-5 pt-2 border-t border-white/10 flex-shrink-0"></div>
-
-                      {/* Badges - bez prázdneho miesta */}
-                      <div className="px-5 py-3 flex flex-col gap-2 flex-shrink-0">
-                        {/* Prvý riadok: Hodnotenie vľavo, ostatné info vpravo */}
-                        <div className="flex justify-between items-center gap-2">
-                          {/* Hodnotenie - vľavo */}
-                          {tip.rating && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
-                              <Star className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-                              <span className="text-xs font-bold text-cyan-200">{tip.rating.toFixed(1)}</span>
-                              {tip.user_ratings_total !== undefined && (
-                                <span className="text-[11px] text-gray-400">({tip.user_ratings_total})</span>
-                              )}
-                            </div>
-                          )}
-                          {/* Ostatné info - vpravo */}
-                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                        {/* Badges - symetrický grid */}
+                        <div className="mt-auto space-y-3">
+                          {/* Prvý riadok - Rating a Cena */}
+                          <div className="grid grid-cols-2 gap-3">
+                            {tip.rating && (
+                              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-cyan-500/10 border border-cyan-400/30">
+                                <Star className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-bold text-cyan-200">{tip.rating.toFixed(1)}</span>
+                                  {tip.user_ratings_total !== undefined && (
+                                    <span className="text-[10px] text-gray-400">({tip.user_ratings_total} recenzií)</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                             {(tip.price || tip.price_level !== undefined) && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-pink-400/30">
-                                <DollarSign className="w-4 h-4 text-pink-400 flex-shrink-0" />
-                                <span className="text-xs font-bold text-pink-200">
+                              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-pink-500/10 border border-pink-400/30">
+                                <DollarSign className="w-5 h-5 text-pink-400 flex-shrink-0" />
+                                <span className="text-sm font-bold text-pink-200">
                                   {tip.price ? tip.price : priceLevelLabel(tip.price_level)}
                                 </span>
                               </div>
                             )}
+                          </div>
+
+                          {/* Druhý riadok - Status a ďalšie info */}
+                          <div className="grid grid-cols-2 gap-3">
                             {tip.open_now !== undefined && (
-                              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${tip.open_now ? 'border-green-400/40 bg-green-400/10' : 'border-red-400/40 bg-red-400/10'}`}>
-                                <Clock className={`w-4 h-4 flex-shrink-0 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
-                                <span className="text-xs font-bold">
-                                  {tip.open_now ? 'Otvorené teraz' : 'Zatvorené'}
+                              <div className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border ${tip.open_now ? 'border-green-400/40 bg-green-500/10' : 'border-red-400/40 bg-red-500/10'}`}>
+                                <Clock className={`w-5 h-5 flex-shrink-0 ${tip.open_now ? 'text-green-300' : 'text-red-300'}`} />
+                                <span className="text-sm font-bold text-white">
+                                  {tip.open_now ? 'Otvorené' : 'Zatvorené'}
                                 </span>
                               </div>
                             )}
                             {tip.business_status && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-purple-400/30">
-                                <Info className="w-4 h-4 text-purple-300 flex-shrink-0" />
-                                <span className="text-xs font-bold text-purple-100 truncate">{tip.business_status}</span>
-                              </div>
-                            )}
-                            {tip.duration && (
-                              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
-                                <Clock className="w-4 h-4 text-cyan-300 flex-shrink-0" />
-                                <span className="text-xs font-bold text-cyan-100">{tip.duration}</span>
+                              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500/10 border border-purple-400/30">
+                                <Info className="w-5 h-5 text-purple-300 flex-shrink-0" />
+                                <span className="text-sm font-bold text-purple-200 truncate">{tip.business_status}</span>
                               </div>
                             )}
                           </div>
+
+                          {/* Adresa - plná šírka */}
+                          {tip.location && (
+                            <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gray-800/50 border border-gray-700/50">
+                              <MapPin className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                              <span className="text-sm font-medium text-gray-300 truncate">{tip.location}</span>
+                            </div>
+                          )}
                         </div>
-                        {/* Druhý riadok: Adresa - vľavo */}
-                        {tip.location && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-cyan-400/30">
-                            <MapPin className="w-4 h-4 text-cyan-300 flex-shrink-0" />
-                            <span className="text-xs font-bold text-cyan-100 truncate">{tip.location}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                     </motion.div>
