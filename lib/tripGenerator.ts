@@ -266,14 +266,14 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       }
     }
 
-  onProgress?.(80, 'Vytváram súhrn...')
-  
-  // Vygeneruj súhrn
-  const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v slovenčine. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
-  const summary = await generateText(summaryPrompt)
-  
-  // Extrahuj krajinu (jednoduchá logika)
-  const country = extractCountry(input.destination)
+    onProgress?.(80, 'Vytváram súhrn...')
+    
+    // Vygeneruj súhrn
+    const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v slovenčine. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
+    const summary = await generateText(summaryPrompt)
+    
+    // Extrahuj krajinu (jednoduchá logika)
+    const country = extractCountry(input.destination)
 
     onProgress?.(100, 'Plán výletu hotový!')
 
