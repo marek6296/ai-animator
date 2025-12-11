@@ -302,7 +302,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                   >
                     {/* Image */}
                     {displayImageUrl && displayImageUrl.trim() !== '' ? (
-                      <div className="relative w-full h-[22rem] md:h-[26rem] overflow-hidden bg-gray-800">
+                      <div className="relative w-full h-[24rem] md:h-[28rem] overflow-hidden bg-gray-800">
                         <motion.img
                           key={displayImageUrl}
                           src={displayImageUrl}
@@ -383,7 +383,7 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     ) : (
                       // Placeholder ak nie je obrázok
-                      <div className="relative w-full h-[22rem] md:h-[26rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                      <div className="relative w-full h-[24rem] md:h-[28rem] overflow-hidden bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
                         <div className="text-center">
                           <Camera className={`w-12 h-12 ${colors.text} mx-auto mb-2 opacity-50`} />
                           <p className={`text-xs ${colors.text} opacity-50`}>Obrázok sa načítava...</p>
@@ -391,9 +391,9 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                       </div>
                     )}
                     
-                    <div className="p-6 flex flex-col h-full">
+                    <div className="pt-5 pb-6 px-6 flex flex-col h-full">
                       {/* Title with Star */}
-                      <div className="flex items-start gap-3 mb-4 flex-shrink-0">
+                      <div className="flex items-start gap-3 mb-3 flex-shrink-0">
                         <Star className={`w-5 h-5 ${colors.text} flex-shrink-0 mt-1`} />
                         <h4 className="text-xl font-black text-white leading-tight">{tip.title}</h4>
                       </div>
