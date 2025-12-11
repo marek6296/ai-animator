@@ -63,10 +63,13 @@ export default function Home() {
           })
 
           if (!progressResponse.ok) {
-            throw new Error('Chyba pri získavaní progressu')
+            const errorText = await progressResponse.text()
+            console.error(`Progress fetch failed: ${progressResponse.status} - ${errorText}`)
+            throw new Error(`Chyba pri získavaní progressu: ${progressResponse.status}`)
           }
 
           const progressData = await progressResponse.json()
+          console.log(`[Frontend] Progress update:`, progressData)
           setProgress(progressData)
 
           if (progressData.step === 'complete') {
@@ -99,6 +102,7 @@ export default function Home() {
           if (error.name === 'AbortError') {
             return
           }
+          console.error('Error fetching progress:', error)
           console.error('Progress polling error:', error)
         }
       }, 1000)
