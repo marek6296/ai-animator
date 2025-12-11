@@ -61,3 +61,4 @@ export async function generateSingleImage(
     description: `Fotka transformovaná do ${styleName.toLowerCase()} štýlu`,
   }
 }
+// TypeScript fix
