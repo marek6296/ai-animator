@@ -702,9 +702,6 @@ export async function generateTrip(
         parts.push(`Doprava: ${transportLabels[input.transportation]}`)
       }
       
-      if (input.maxWalkingMinutes) {
-        parts.push(`Max. chodenie pešo medzi miestami: ${input.maxWalkingMinutes} minút`)
-      }
       
       // Špeciálne požiadavky
       const specialNeeds: string[] = []
