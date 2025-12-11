@@ -96,7 +96,7 @@ export async function generateTrip(
       place_id: place.place_id,
       name: place.name,
       rating: place.rating,
-      user_ratings_total: 0, // Google Places API neposkytuje toto v Text Search
+      user_ratings_total: 0,
       types: place.types || [],
       formatted_address: place.formatted_address,
     }))
@@ -106,8 +106,14 @@ export async function generateTrip(
     
     // Vytvor zoznam miest v jednoduchšom formáte pre OpenAI
     const placesList = placesForAI.slice(0, 50).map((place, index) => {
-      return `${index + 1}. ${place.name} (place_id: ${place.place_id}) - ${place.formatted_address}${place.rating ? ` - Hodnotenie: ${place.rating}/5` : ''}`
+      return `${index + 1}. ${place.name} (ID: ${place.place_id}) - ${place.formatted_address}${place.rating ? ` - ⭐ ${place.rating}/5` : ''}`
     }).join('\n')
+
+    // Vytvor mapu názov -> place_id pre fallback matching
+    const nameToPlaceId = new Map<string, string>()
+    for (const place of placesForAI) {
+      nameToPlaceId.set(place.name.toLowerCase().trim(), place.place_id)
+    }
 
     const aiPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.
 
@@ -120,9 +126,9 @@ ${input.interests ? `Záujmy: ${input.interests}.` : ''}
 ${input.budget ? `Rozpočet: ${input.budget === 'low' ? 'nízky' : input.budget === 'medium' ? 'stredný' : 'vysoký'}.` : ''}
 
 Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
-Tip 1: [place_id] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
-Tip 2: [place_id] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-Tip 3: [place_id] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+Tip 1: [NÁZOV MIESTA PRESNE AKO V ZOZNAME] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
+Tip 2: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+Tip 3: [NÁZOV] | [Kategória] | [Popis] | [Trvanie] | [Cena]
 ... (pokračuj až do Tip 12)
 
 Kategórie (použi presne tieto hodnoty):
@@ -134,27 +140,27 @@ Kategórie (použi presne tieto hodnoty):
 
 DÔLEŽITÉ PRAVIDLÁ:
 1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
-2. Prvé pole MUSÍ byť place_id z vyššie uvedeného zoznamu (presne taký, ako je v zátvorke za názvom miesta)
+2. Prvé pole MUSÍ byť PRESNÝ názov miesta z vyššie uvedeného zoznamu (presne taký, ako je v zozname)
 3. Všetky polia MUSIA byť oddelené znakom | (pipe)
 4. Všetky texty MUSIA byť v slovenčine
 5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
 6. Zahrň rôzne kategórie - aspoň 3-4 attraction, 2-3 activity, 2 restaurant, 1-2 accommodation, 1-2 tip
 7. Popis musí byť detailný a zaujímavý (50-100 slov)
-8. Použi LEN place_id z poskytnutého zoznamu - NIKDY nevymýšľaj nové miesta alebo place_id
+8. Použi LEN názvy miest z poskytnutého zoznamu - NIKDY nevymýšľaj nové miesta
 
 Príklad správneho formátu:
-Tip 1: ChIJN1t_tDeuEmsRUsoyG83frY4 | attraction | Toto je najznámejšia pamiatka v meste... | 2-3 hodiny | €15-20
-Tip 2: ChIJN1t_tDeuEmsRUsoyG83frY5 | restaurant | Táto reštaurácia ponúka... | 1-2 hodiny | €30-50
+Tip 1: Colosseum | attraction | Toto je najznámejšia pamiatka v meste... | 2-3 hodiny | €15-20
+Tip 2: Trattoria da Enzo | restaurant | Táto reštaurácia ponúka... | 1-2 hodiny | €30-50
 
 Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
     const tipsText = await generateText(aiPrompt)
     onProgress?.(50, 'Spracovávam tipy...')
     
-    console.log('AI Response:', tipsText.substring(0, 500))
+    console.log('AI Response:', tipsText.substring(0, 1000))
     
-    // Parsuj tipy - teraz očakávame place_id ako prvé pole
-    const tips = parseTipsWithPlaceId(tipsText)
+    // Parsuj tipy - teraz očakávame názov miesta ako prvé pole, potom nájdeme place_id
+    const tips = parseTipsByName(tipsText, nameToPlaceId)
     
     console.log(`Parsed ${tips.length} tips`)
     
@@ -278,6 +284,129 @@ interface ParsedTip {
   description: string
   duration?: string
   price?: string
+}
+
+function parseTipsByName(
+  tipsText: string,
+  nameToPlaceId: Map<string, string>
+): ParsedTip[] {
+  const tips: ParsedTip[] = []
+  
+  if (!tipsText || tipsText.trim().length === 0) {
+    console.warn('Empty tips text')
+    return tips
+  }
+  
+  console.log('Raw tips text:', tipsText.substring(0, 1000))
+  
+  // Regex pre formát: Tip X: Názov | category | description | duration | price
+  const tipRegex = /(?:Tip\s*)?\d+[.:]\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*(?:\|\s*(.+?)\s*(?:\|\s*(.+?))?)?(?=\s*(?:Tip\s*)?\d+[.:]|$)/gis
+  
+  const matches = Array.from(tipsText.matchAll(tipRegex))
+  
+  console.log(`Found ${matches.length} matches with regex`)
+  
+  if (matches.length > 0) {
+    for (const match of matches) {
+      const placeName = match[1]?.trim() || ''
+      const category = (match[2]?.trim().toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
+      const description = match[3]?.trim() || ''
+      const duration = match[4]?.trim() || ''
+      const price = match[5]?.trim() || ''
+      
+      // Nájdeme place_id podľa názvu
+      const placeNameLower = placeName.toLowerCase().trim()
+      let place_id = nameToPlaceId.get(placeNameLower)
+      
+      // Ak sme nenašli presnú zhodu, skúsime fuzzy match
+      if (!place_id) {
+        for (const [name, id] of nameToPlaceId.entries()) {
+          if (name.includes(placeNameLower) || placeNameLower.includes(name)) {
+            place_id = id
+            console.log(`✓ Found fuzzy match: "${placeName}" -> "${name}" (place_id: ${id})`)
+            break
+          }
+        }
+      }
+      
+      // Validácia kategórie
+      const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
+      const finalCategory = validCategories.includes(category as TripTip['category']) 
+        ? (category as TripTip['category'])
+        : 'attraction'
+      
+      if (place_id && description && description.length > 20) {
+        tips.push({
+          place_id,
+          category: finalCategory,
+          description,
+          duration: duration || undefined,
+          price: price || undefined,
+        })
+        console.log(`✓ Parsed tip: place_name="${placeName}" -> place_id="${place_id}", category="${finalCategory}"`)
+      } else {
+        console.warn(`Skipping invalid tip: place_name="${placeName}" (place_id: ${place_id || 'NOT FOUND'}), desc="${description.substring(0, 30)}" (length: ${description.length})`)
+      }
+    }
+  }
+  
+  // Fallback: Skús rozdeliť podľa riadkov s "|"
+  if (tips.length === 0) {
+    console.log('Trying fallback parsing method')
+    const lines = tipsText.split('\n').filter(line => {
+      const trimmed = line.trim()
+      return trimmed.length > 10 && trimmed.includes('|')
+    })
+    
+    for (let i = 0; i < Math.min(lines.length, 12); i++) {
+      const line = lines[i]
+      const parts = line.split('|').map(p => p.trim()).filter(p => p.length > 0)
+      
+      // Odstráň číslo na začiatku ak existuje
+      let placeName = parts[0] || ''
+      placeName = placeName.replace(/^(?:Tip\s*)?\d+[.:]\s*/, '').trim()
+      
+      if (parts.length >= 3 && placeName) {
+        // Nájdeme place_id podľa názvu
+        const placeNameLower = placeName.toLowerCase().trim()
+        let place_id = nameToPlaceId.get(placeNameLower)
+        
+        if (!place_id) {
+          for (const [name, id] of nameToPlaceId.entries()) {
+            if (name.includes(placeNameLower) || placeNameLower.includes(name)) {
+              place_id = id
+              break
+            }
+          }
+        }
+        
+        if (place_id) {
+          const category = (parts[1]?.toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
+          const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
+          const finalCategory = validCategories.includes(category as TripTip['category']) 
+            ? (category as TripTip['category'])
+            : 'attraction'
+          
+          tips.push({
+            place_id: place_id,
+            category: finalCategory,
+            description: parts[2] || parts[1] || line,
+            duration: parts[3] || undefined,
+            price: parts[4] || undefined,
+          })
+          console.log(`✓ Parsed tip (fallback): place_name="${placeName}" -> place_id="${place_id}"`)
+        }
+      }
+    }
+  }
+  
+  console.log(`Final parsed tips count: ${tips.length}`)
+  
+  if (tips.length === 0) {
+    console.error('Failed to parse any tips. Full text:', tipsText)
+  }
+  
+  return tips.slice(0, 12) // Max 12 tipov
 }
 
 function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
