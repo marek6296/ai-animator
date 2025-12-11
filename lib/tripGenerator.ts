@@ -191,29 +191,6 @@ Tip 2: Trattoria da Enzo | restaurant | Táto reštaurácia ponúka... | 1-2 hod
 
 Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
-Kategórie (použi presne tieto hodnoty):
-- attraction (pre pamiatky, múzeá, historické miesta)
-- activity (pre aktivity, zábavu, športy)
-- restaurant (pre reštaurácie, kaviarne, jedlo)
-- accommodation (pre ubytovanie, hotely)
-- tip (pre užitočné tipy, rady, praktické informácie)
-
-DÔLEŽITÉ PRAVIDLÁ:
-1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
-2. Prvé pole MUSÍ byť PRESNÝ názov miesta z vyššie uvedeného zoznamu (presne taký, ako je v zozname)
-3. Všetky polia MUSIA byť oddelené znakom | (pipe)
-4. Všetky texty MUSIA byť v slovenčine
-5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
-6. Zahrň rôzne kategórie - aspoň 3-4 attraction, 2-3 activity, 2 restaurant, 1-2 accommodation, 1-2 tip
-7. Popis musí byť detailný a zaujímavý (50-100 slov)
-8. Použi LEN názvy miest z poskytnutého zoznamu - NIKDY nevymýšľaj nové miesta
-
-Príklad správneho formátu:
-Tip 1: Colosseum | attraction | Toto je najznámejšia pamiatka v meste... | 2-3 hodiny | €15-20
-Tip 2: Trattoria da Enzo | restaurant | Táto reštaurácia ponúka... | 1-2 hodiny | €30-50
-
-Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
-
     const tipsText = await generateText(aiPrompt)
     onProgress?.(50, 'Spracovávam tipy...')
     
