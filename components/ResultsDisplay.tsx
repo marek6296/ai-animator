@@ -355,11 +355,13 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
 
                       {/* Obsahová časť */}
                       <div className="flex-1 flex flex-col p-6">
-                        {/* Názov - veľký a čitateľný */}
-                        <h4 className="text-2xl font-bold text-white mb-3 leading-tight line-clamp-2">{tip.title}</h4>
+                        {/* Názov - fixná výška pre symetriu */}
+                        <div className="mb-3" style={{ minHeight: '4.5rem', maxHeight: '4.5rem' }}>
+                          <h4 className="text-2xl font-bold text-white leading-tight line-clamp-2">{tip.title}</h4>
+                        </div>
 
-                        {/* Popis - v boxe s dobrým kontrastom */}
-                        <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700/50">
+                        {/* Popis - fixná výška pre symetriu */}
+                        <div className="mb-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700/50" style={{ minHeight: '7rem', maxHeight: '7rem' }}>
                           <p className="text-gray-200 text-sm leading-relaxed line-clamp-4">{tip.description}</p>
                         </div>
 
