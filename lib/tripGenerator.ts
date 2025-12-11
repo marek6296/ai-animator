@@ -847,25 +847,25 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       return await generateTripWithTips(fallbackTips, finalPlaces, input, onProgress)
     }
     
-    // KROK 5: Voliteľne - AI doplní extra krátky text pre max 10 miest (lacné!)
+    // KROK 5: Voliteľne - AI doplní krátky text (max ~200 znakov) pre max 10 miest
     if (tips.length > 0 && tips.length <= 10) {
-      onProgress?.(50, 'Generujem extra krátke popisy...')
+      onProgress?.(50, 'Generujem krátke popisy...')
       
       const placesForText = tips.slice(0, 10).map((tip, index) => {
         const place = finalPlaces.find(p => p.place_id === tip.place_id)
         return place ? `${index + 1}. ${place.name} (${tip.category})` : null
       }).filter(Boolean).join('\n')
       
-      const textPrompt = `Pre tieto miesta vytvor ULTRA krátky popis v slovenčine, max 50 znakov (nie slov!):
+      const textPrompt = `Pre tieto miesta vytvor krátky popis v slovenčine, max 200 znakov (nie slov!):
 
 ${placesForText}
 
 Formát:
-1. [popis do 50 znakov]
-2. [popis do 50 znakov]
+1. [popis do 200 znakov]
+2. [popis do 200 znakov]
 ...
 
-Všetko v slovenčine. Striktne dodrž dĺžku do 50 znakov.`
+Všetko v slovenčine. Striktne dodrž dĺžku do 200 znakov.`
       
       try {
         const descriptionsText = await generateText(textPrompt)
@@ -874,7 +874,7 @@ Všetko v slovenčine. Striktne dodrž dĺžku do 50 znakov.`
         for (let i = 0; i < Math.min(tips.length, descriptionLines.length); i++) {
           const descMatch = descriptionLines[i].match(/^\d+\.\s*(.+)$/)
           if (descMatch) {
-            tips[i].description = descMatch[1].trim()
+            tips[i].description = descMatch[1].trim().slice(0, 200)
           }
         }
       } catch (error) {
@@ -1520,27 +1520,27 @@ async function generateTripWithTips(
         // Získaj description - ak nie je alebo je prázdny, vygeneruj pomocou OpenAI
         let description = tip.description?.trim() || ''
         
-        // Ak description je prázdny alebo veľmi krátky, skús vygenerovať pomocou OpenAI (ultra krátky, <= 50 znakov)
+        // Ak description je prázdny alebo veľmi krátky, skús vygenerovať pomocou OpenAI (krátky, <= 400 znakov)
         if (!description || description.length < 5) {
           try {
             // Získaj názov mesta z input.destination alebo z formatted_address
             const cityName = input.destination || place?.formatted_address?.split(',')[0] || 'mesto'
-            const descriptionPrompt = `Vytvor ULTRA krátky popis v slovenčine pre miesto "${placeName}" v meste ${cityName}, max 50 znakov (nie slov!). 
-Použi 1 vetu alebo frázu. Žiadne formátovanie, žiadny úvod ani záver.`
+            const descriptionPrompt = `Vytvor krátky popis v slovenčine pre miesto "${placeName}" v meste ${cityName}, max 400 znakov (nie slov!). 
+Môže to byť 1-2 vety. Žiadne formátovanie, žiadny úvod ani záver.`
             
             onProgress?.(60 + (i / uniqueTips.length) * 10, `Generujem popis pre ${placeName}...`)
             const generatedDescription = await generateText(descriptionPrompt)
             if (generatedDescription && generatedDescription.trim().length > 3) {
-              description = generatedDescription.trim().slice(0, 50)
+              description = generatedDescription.trim().slice(0, 400)
               console.log(`✓ Generated description for "${placeName}": ${description}`)
             } else {
               // Fallback ak generovanie zlyhalo
-              description = `Navštívte ${placeName} v ${cityName}`.slice(0, 50)
+              description = `Navštívte ${placeName} v ${cityName}`.slice(0, 400)
             }
           } catch (error) {
             console.warn(`⚠ Failed to generate description for "${placeName}":`, error)
             // Použijeme fallback description
-            description = `Navštívte ${placeName}`.slice(0, 50)
+            description = `Navštívte ${placeName}`.slice(0, 400)
           }
         }
         
@@ -1884,27 +1884,27 @@ async function generateTripWithoutPlaces(
     // Získaj description - ak nie je alebo je prázdny, vygeneruj pomocou OpenAI
     let description = tip.description?.trim() || ''
     
-    // Ak description je prázdny alebo veľmi krátky, skús vygenerovať pomocou OpenAI (ultra krátky, <= 50 znakov)
+    // Ak description je prázdny alebo veľmi krátky, skús vygenerovať pomocou OpenAI (krátky, <= 400 znakov)
     if (!description || description.length < 5) {
       try {
         // Získaj názov mesta z input.destination alebo z formatted_address
         const cityName = input.destination || foundPlace?.formatted_address?.split(',')[0] || 'mesto'
-        const descriptionPrompt = `Vytvor ULTRA krátky popis v slovenčine pre miesto "${title}" v meste ${cityName}, max 50 znakov (nie slov!). 
-Použi 1 vetu alebo frázu. Žiadne formátovanie, žiadny úvod ani záver.`
+        const descriptionPrompt = `Vytvor krátky popis v slovenčine pre miesto "${title}" v meste ${cityName}, max 400 znakov (nie slov!). 
+Môže to byť 1-2 vety. Žiadne formátovanie, žiadny úvod ani záver.`
         
         onProgress?.(70 + (i / tips.length) * 10, `Generujem popis pre ${title}...`)
         const generatedDescription = await generateText(descriptionPrompt)
         if (generatedDescription && generatedDescription.trim().length > 3) {
-          description = generatedDescription.trim().slice(0, 50)
+          description = generatedDescription.trim().slice(0, 400)
           console.log(`✓ Generated description for "${title}": ${description}`)
         } else {
           // Fallback ak generovanie zlyhalo
-          description = `Navštívte ${title} v ${cityName}`.slice(0, 50)
+          description = `Navštívte ${title} v ${cityName}`.slice(0, 400)
         }
       } catch (error) {
         console.warn(`⚠ Failed to generate description for "${title}":`, error)
         // Použijeme fallback description
-        description = `Navštívte ${title}`.slice(0, 50)
+        description = `Navštívte ${title}`.slice(0, 400)
       }
     }
     
