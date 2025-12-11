@@ -104,10 +104,15 @@ export async function generateTrip(
     // KROK 3: Zavolaj OpenAI na vytvorenie itinerára
     onProgress?.(30, 'Generujem itinerár pomocou AI...')
     
+    // Vytvor zoznam miest v jednoduchšom formáte pre OpenAI
+    const placesList = placesForAI.slice(0, 50).map((place, index) => {
+      return `${index + 1}. ${place.name} (place_id: ${place.place_id}) - ${place.formatted_address}${place.rating ? ` - Hodnotenie: ${place.rating}/5` : ''}`
+    }).join('\n')
+
     const aiPrompt = `Vytvor detailný plán výletu do ${input.destination} v Európe.
 
-Mám zoznam skutočných miest z Google Maps s place_id:
-${JSON.stringify(placesForAI.slice(0, 50), null, 2)}
+Mám zoznam skutočných miest z Google Maps:
+${placesList}
 
 ${input.tripType ? `Typ výletu: ${input.tripType === 'city' ? 'mestský' : input.tripType === 'nature' ? 'prírodný' : 'kultúrny'}.` : ''}
 ${input.duration ? `Dĺžka výletu: ${input.duration} dní.` : ''}
@@ -117,7 +122,8 @@ ${input.budget ? `Rozpočet: ${input.budget === 'low' ? 'nízky' : input.budget 
 Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
 Tip 1: [place_id] | [Kategória] | [Popis 50-100 slov v slovenčine] | [Trvanie] | [Cena]
 Tip 2: [place_id] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-...
+Tip 3: [place_id] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+... (pokračuj až do Tip 12)
 
 Kategórie (použi presne tieto hodnoty):
 - attraction (pre pamiatky, múzeá, historické miesta)
@@ -128,13 +134,17 @@ Kategórie (použi presne tieto hodnoty):
 
 DÔLEŽITÉ PRAVIDLÁ:
 1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
-2. Prvé pole MUSÍ byť place_id z vyššie uvedeného zoznamu (presne taký, ako je v JSON)
+2. Prvé pole MUSÍ byť place_id z vyššie uvedeného zoznamu (presne taký, ako je v zátvorke za názvom miesta)
 3. Všetky polia MUSIA byť oddelené znakom | (pipe)
 4. Všetky texty MUSIA byť v slovenčine
 5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
-6. Zahrň rôzne kategórie
+6. Zahrň rôzne kategórie - aspoň 3-4 attraction, 2-3 activity, 2 restaurant, 1-2 accommodation, 1-2 tip
 7. Popis musí byť detailný a zaujímavý (50-100 slov)
-8. Použi len place_id z poskytnutého zoznamu - NIKDY nevymýšľaj nové miesta
+8. Použi LEN place_id z poskytnutého zoznamu - NIKDY nevymýšľaj nové miesta alebo place_id
+
+Príklad správneho formátu:
+Tip 1: ChIJN1t_tDeuEmsRUsoyG83frY4 | attraction | Toto je najznámejšia pamiatka v meste... | 2-3 hodiny | €15-20
+Tip 2: ChIJN1t_tDeuEmsRUsoyG83frY5 | restaurant | Táto reštaurácia ponúka... | 1-2 hodiny | €30-50
 
 Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
@@ -278,8 +288,11 @@ function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
     return tips
   }
   
+  console.log('Raw tips text:', tipsText.substring(0, 1000))
+  
   // Regex pre formát: Tip X: place_id | category | description | duration | price
-  const tipRegex = /(?:Tip\s*)?\d+[.:]\s*([A-Za-z0-9_-]+)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*(?:\|\s*(.+?)\s*(?:\|\s*(.+?))?)?(?=\s*(?:Tip\s*)?\d+[.:]|$)/gis
+  // place_id môže obsahovať písmená, čísla, podčiarkovníky, pomlčky
+  const tipRegex = /(?:Tip\s*)?\d+[.:]\s*([A-Za-z0-9_-]{10,})\s*\|\s*(.+?)\s*\|\s*(.+?)\s*(?:\|\s*(.+?)\s*(?:\|\s*(.+?))?)?(?=\s*(?:Tip\s*)?\d+[.:]|$)/gis
   
   const matches = Array.from(tipsText.matchAll(tipRegex))
   
@@ -299,7 +312,7 @@ function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
         ? (category as TripTip['category'])
         : 'attraction'
       
-      if (place_id && description && place_id.length > 5 && description.length > 20) {
+      if (place_id && description && place_id.length >= 10 && description.length > 20) {
         tips.push({
           place_id,
           category: finalCategory,
@@ -307,15 +320,16 @@ function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
           duration: duration || undefined,
           price: price || undefined,
         })
+        console.log(`✓ Parsed tip: place_id="${place_id}", category="${finalCategory}"`)
       } else {
-        console.warn(`Skipping invalid tip: place_id="${place_id}", desc="${description.substring(0, 30)}"`)
+        console.warn(`Skipping invalid tip: place_id="${place_id}" (length: ${place_id.length}), desc="${description.substring(0, 30)}" (length: ${description.length})`)
       }
     }
   }
   
-  // Fallback: Skús rozdeliť podľa riadkov s "|"
+  // Fallback 1: Skús rozdeliť podľa riadkov s "|"
   if (tips.length === 0) {
-    console.log('Trying fallback parsing method')
+    console.log('Trying fallback parsing method 1')
     const lines = tipsText.split('\n').filter(line => {
       const trimmed = line.trim()
       return trimmed.length > 10 && trimmed.includes('|')
@@ -329,7 +343,11 @@ function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
       let placeIdPart = parts[0] || ''
       placeIdPart = placeIdPart.replace(/^(?:Tip\s*)?\d+[.:]\s*/, '').trim()
       
-      if (parts.length >= 3 && placeIdPart) {
+      // Skús nájsť place_id (začína s ChIJ alebo obsahuje len alfanumerické znaky a podčiarkovníky)
+      const placeIdMatch = placeIdPart.match(/([A-Za-z0-9_-]{10,})/)
+      const place_id = placeIdMatch ? placeIdMatch[1] : placeIdPart
+      
+      if (parts.length >= 3 && place_id && place_id.length >= 10) {
         const category = (parts[1]?.toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
         const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
         const finalCategory = validCategories.includes(category as TripTip['category']) 
@@ -337,17 +355,71 @@ function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
           : 'attraction'
         
         tips.push({
-          place_id: placeIdPart,
+          place_id: place_id,
           category: finalCategory,
           description: parts[2] || parts[1] || line,
           duration: parts[3] || undefined,
           price: parts[4] || undefined,
         })
+        console.log(`✓ Parsed tip (fallback 1): place_id="${place_id}"`)
+      }
+    }
+  }
+  
+  // Fallback 2: Ak OpenAI nevrátil place_id, použijeme názvy miest a nájdeme ich place_id neskôr
+  if (tips.length === 0) {
+    console.log('Trying fallback parsing method 2 - parsing by name')
+    const lines = tipsText.split('\n').filter(line => {
+      const trimmed = line.trim()
+      return trimmed.length > 10 && (trimmed.includes('|') || trimmed.match(/^(?:Tip\s*)?\d+[.:]/))
+    })
+    
+    for (let i = 0; i < Math.min(lines.length, 12); i++) {
+      const line = lines[i]
+      let parts = line.split('|').map(p => p.trim()).filter(p => p.length > 0)
+      
+      // Ak nie je pipe, skús rozdeliť inak
+      if (parts.length === 1) {
+        const match = line.match(/(?:Tip\s*)?\d+[.:]\s*(.+)/)
+        if (match) {
+          parts = [match[1]]
+        }
+      }
+      
+      if (parts.length >= 2) {
+        // Odstráň číslo na začiatku
+        let firstPart = parts[0].replace(/^(?:Tip\s*)?\d+[.:]\s*/, '').trim()
+        
+        // Skús nájsť place_id
+        const placeIdMatch = firstPart.match(/([A-Za-z0-9_-]{10,})/)
+        const place_id = placeIdMatch ? placeIdMatch[1] : null
+        
+        if (place_id && place_id.length >= 10) {
+          const category = (parts[1]?.toLowerCase() || 'attraction').replace(/[^a-z]/g, '')
+          const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
+          const finalCategory = validCategories.includes(category as TripTip['category']) 
+            ? (category as TripTip['category'])
+            : 'attraction'
+          
+          tips.push({
+            place_id: place_id,
+            category: finalCategory,
+            description: parts[2] || parts[1] || line,
+            duration: parts[3] || undefined,
+            price: parts[4] || undefined,
+          })
+          console.log(`✓ Parsed tip (fallback 2): place_id="${place_id}"`)
+        }
       }
     }
   }
   
   console.log(`Final parsed tips count: ${tips.length}`)
+  
+  if (tips.length === 0) {
+    console.error('Failed to parse any tips. Full text:', tipsText)
+  }
+  
   return tips.slice(0, 12) // Max 12 tipov
 }
 
