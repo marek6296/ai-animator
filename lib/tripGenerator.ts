@@ -796,7 +796,7 @@ DÔLEŽITÉ: NEPOUŽÍVAJ konkrétne názvy miest. Namiesto toho použij GENERIC
 - "shopping district" (nákupná štvrť)
 
 Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
-Tip 1: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Krátky popis 20-30 slov v slovenčine] | [Trvanie] | [Cena]
+Tip 1: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis 400-450 znakov v slovenčine] | [Trvanie] | [Cena]
 Tip 2: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
 Tip 3: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
 ... (pokračuj až do Tip 12)
@@ -847,7 +847,7 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
       return await generateTripWithTips(fallbackTips, finalPlaces, input, onProgress)
     }
     
-    // KROK 5: Voliteľne - AI doplní krátky text (max ~200 znakov) pre max 10 miest
+    // KROK 5: Voliteľne - AI doplní text (400-450 znakov) pre max 10 miest
     if (tips.length > 0 && tips.length <= 10) {
       onProgress?.(50, 'Generujem krátke popisy...')
       
@@ -856,16 +856,16 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
         return place ? `${index + 1}. ${place.name} (${tip.category})` : null
       }).filter(Boolean).join('\n')
       
-      const textPrompt = `Pre tieto miesta vytvor krátky popis v slovenčine, max 200 znakov (nie slov!):
+      const textPrompt = `Pre tieto miesta vytvor popis v slovenčine, 400-450 znakov (nie slov!):
 
 ${placesForText}
 
 Formát:
-1. [popis do 200 znakov]
-2. [popis do 200 znakov]
+1. [popis 400-450 znakov]
+2. [popis 400-450 znakov]
 ...
 
-Všetko v slovenčine. Striktne dodrž dĺžku do 200 znakov.`
+Všetko v slovenčine. Striktne dodrž dĺžku 400-450 znakov.`
       
       try {
         const descriptionsText = await generateText(textPrompt)
@@ -874,7 +874,7 @@ Všetko v slovenčine. Striktne dodrž dĺžku do 200 znakov.`
         for (let i = 0; i < Math.min(tips.length, descriptionLines.length); i++) {
           const descMatch = descriptionLines[i].match(/^\d+\.\s*(.+)$/)
           if (descMatch) {
-            tips[i].description = descMatch[1].trim().slice(0, 200)
+            tips[i].description = descMatch[1].trim().slice(0, 450)
           }
         }
       } catch (error) {
@@ -1520,27 +1520,27 @@ async function generateTripWithTips(
         // Získaj description - ak nie je alebo je prázdny, vygeneruj pomocou OpenAI
         let description = tip.description?.trim() || ''
         
-        // Ak description je prázdny alebo veľmi krátky, skús vygenerovať pomocou OpenAI (krátky, <= 400 znakov)
+        // Ak description je prázdny alebo veľmi krátky, skús vygenerovať pomocou OpenAI (400-450 znakov)
         if (!description || description.length < 5) {
           try {
             // Získaj názov mesta z input.destination alebo z formatted_address
             const cityName = input.destination || place?.formatted_address?.split(',')[0] || 'mesto'
-            const descriptionPrompt = `Vytvor krátky popis v slovenčine pre miesto "${placeName}" v meste ${cityName}, max 400 znakov (nie slov!). 
-Môže to byť 1-2 vety. Žiadne formátovanie, žiadny úvod ani záver.`
+            const descriptionPrompt = `Vytvor popis v slovenčine pre miesto "${placeName}" v meste ${cityName}, presne 400-450 znakov (nie slov!). 
+Môže to byť 3-5 viet s detailným popisom. Žiadne formátovanie, žiadny úvod ani záver.`
             
             onProgress?.(60 + (i / uniqueTips.length) * 10, `Generujem popis pre ${placeName}...`)
             const generatedDescription = await generateText(descriptionPrompt)
             if (generatedDescription && generatedDescription.trim().length > 3) {
-              description = generatedDescription.trim().slice(0, 400)
+              description = generatedDescription.trim().slice(0, 450)
               console.log(`✓ Generated description for "${placeName}": ${description}`)
             } else {
               // Fallback ak generovanie zlyhalo
-              description = `Navštívte ${placeName} v ${cityName}`.slice(0, 400)
+              description = `Navštívte ${placeName} v ${cityName}`.slice(0, 450)
             }
           } catch (error) {
             console.warn(`⚠ Failed to generate description for "${placeName}":`, error)
             // Použijeme fallback description
-            description = `Navštívte ${placeName}`.slice(0, 400)
+            description = `Navštívte ${placeName}`.slice(0, 450)
           }
         }
         
@@ -1550,6 +1550,11 @@ Môže to byť 1-2 vety. Žiadne formátovanie, žiadny úvod ani záver.`
           category: tip.category,
           duration: tip.duration,
           price: tip.price,
+          rating: place?.rating,
+          user_ratings_total: place?.user_ratings_total,
+          price_level: (place as any)?.price_level ?? (place as any)?.priceLevel,
+          business_status: (place as any)?.business_status ?? (place as any)?.businessStatus,
+          open_now: (place as any)?.opening_hours?.open_now ?? (place as any)?.currentOpeningHours?.openNow,
           location: place?.formatted_address,
           imageUrl: imageUrl,
           place_id: tip.place_id,
@@ -1583,24 +1588,24 @@ Môže to byť 1-2 vety. Žiadne formátovanie, žiadny úvod ani záver.`
         if (!description || description.length < 20) {
           try {
             const cityName = input.destination || 'mesto'
-            const descriptionPrompt = `Vytvor krátky popis (50-100 slov) v slovenčine pre miesto "${tip.place_id}" v meste ${cityName}. 
+            const descriptionPrompt = `Vytvor popis (400-450 znakov, nie slov!) v slovenčine pre miesto "${tip.place_id}" v meste ${cityName}. 
             
 Popis by mal obsahovať:
 - Čo je to za miesto
 - Prečo je to zaujímavé alebo dôležité
 - Čo tam návštevníci môžu očakávať alebo zažiť
 
-Odpovedz len popisom v slovenčine, bez úvodu, bez záveru, bez formátovania.`
+Odpovedz len popisom v slovenčine, bez úvodu, bez záveru, bez formátovania. Presne 400-450 znakov.`
             
             const generatedDescription = await generateText(descriptionPrompt)
             if (generatedDescription && generatedDescription.trim().length > 20) {
-              description = generatedDescription.trim()
+              description = generatedDescription.trim().slice(0, 450)
             } else {
-              description = `Navštívte ${tip.place_id} v ${cityName}.`
+              description = `Navštívte ${tip.place_id} v ${cityName}.`.slice(0, 450)
             }
           } catch (error) {
             console.warn(`⚠ Failed to generate description for "${tip.place_id}":`, error)
-            description = `Navštívte ${tip.place_id}`
+            description = `Navštívte ${tip.place_id}`.slice(0, 450)
           }
         }
         
@@ -1889,22 +1894,22 @@ async function generateTripWithoutPlaces(
       try {
         // Získaj názov mesta z input.destination alebo z formatted_address
         const cityName = input.destination || foundPlace?.formatted_address?.split(',')[0] || 'mesto'
-        const descriptionPrompt = `Vytvor krátky popis v slovenčine pre miesto "${title}" v meste ${cityName}, max 400 znakov (nie slov!). 
-Môže to byť 1-2 vety. Žiadne formátovanie, žiadny úvod ani záver.`
+        const descriptionPrompt = `Vytvor popis v slovenčine pre miesto "${title}" v meste ${cityName}, presne 400-450 znakov (nie slov!). 
+Môže to byť 3-5 viet s detailným popisom. Žiadne formátovanie, žiadny úvod ani záver.`
         
         onProgress?.(70 + (i / tips.length) * 10, `Generujem popis pre ${title}...`)
         const generatedDescription = await generateText(descriptionPrompt)
         if (generatedDescription && generatedDescription.trim().length > 3) {
-          description = generatedDescription.trim().slice(0, 400)
+          description = generatedDescription.trim().slice(0, 450)
           console.log(`✓ Generated description for "${title}": ${description}`)
         } else {
           // Fallback ak generovanie zlyhalo
-          description = `Navštívte ${title} v ${cityName}`.slice(0, 400)
+          description = `Navštívte ${title} v ${cityName}`.slice(0, 450)
         }
       } catch (error) {
         console.warn(`⚠ Failed to generate description for "${title}":`, error)
         // Použijeme fallback description
-        description = `Navštívte ${title}`.slice(0, 400)
+        description = `Navštívte ${title}`.slice(0, 450)
       }
     }
     
@@ -1914,10 +1919,16 @@ Môže to byť 1-2 vety. Žiadne formátovanie, žiadny úvod ani záver.`
       category: tip.category,
       duration: tip.duration,
       price: tip.price,
+      rating: foundPlace?.rating,
+      user_ratings_total: foundPlace?.user_ratings_total,
+      price_level: (foundPlace as any)?.price_level ?? (foundPlace as any)?.priceLevel,
+      business_status: (foundPlace as any)?.business_status ?? (foundPlace as any)?.businessStatus,
+      open_now: (foundPlace as any)?.opening_hours?.open_now ?? (foundPlace as any)?.currentOpeningHours?.openNow,
       imageUrl: imageUrl,
       place_id: place_id,
       photoReferences: photoReferences,
       coordinates: coordinates,
+      location: foundPlace?.formatted_address,
     })
   }
 
