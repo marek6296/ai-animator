@@ -63,6 +63,8 @@ export interface TripTip {
     lat: number
     lng: number
   }
+  place_id?: string // Google Places place_id
+  photo_reference?: string // Google Places photo_reference
 }
 
 export interface Trip {

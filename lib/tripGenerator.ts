@@ -1,6 +1,7 @@
 import { generateText } from './aiService'
 import { getImageFromUnsplash, createImageQuery, createAlternativeQuery } from './imageService'
 import { getMultipleCoordinates } from './geocodingService'
+import { searchPlacesInCity, findPlaceByName, getPlacePhotoUrl, type Place } from './placesService'
 import type { UserInput, Trip, TripTip } from '@/types'
 
 // Zoznam európskych miest a krajín
@@ -332,10 +333,13 @@ Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočn
         console.log(`✓ Final image for "${tip.title}": ${imageUrl.substring(0, 80)}...`)
       }
       
-      // VŽDY pridáme imageUrl - aj keď je to fallback
+      // VŽDY pridáme tip s imageUrl a place_id/photo_reference
       tipsWithImages.push({
         ...tip,
-        imageUrl: imageUrl, // Vždy máme nejaký URL
+        imageUrl: imageUrl,
+        place_id: place_id,
+        photo_reference: photo_reference,
+        coordinates: coordinates,
       })
       
       console.log(`✓ Added tip "${tip.title}" with imageUrl: ${imageUrl ? 'YES' : 'NO'}`)
