@@ -145,10 +145,30 @@ export async function generateTrip(
       : `Žiadne konkrétne miesta z Google Maps nie sú k dispozícii. Vytvor všeobecné tipy na výlet do ${input.destination} na základe tvojich znalostí.`
 
     // Vytvor mapu názov -> place_id pre fallback matching
+    // Použijeme viacero variantov názvu pre lepšie matching
     const nameToPlaceId = new Map<string, string>()
     for (const place of placesForAI) {
-      nameToPlaceId.set(place.name.toLowerCase().trim(), place.place_id)
+      const nameLower = place.name.toLowerCase().trim()
+      // Pridajme presný názov
+      nameToPlaceId.set(nameLower, place.place_id)
+      // Pridajme variant bez diakritiky
+      const nameNoDiacritics = nameLower.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      if (nameNoDiacritics !== nameLower) {
+        nameToPlaceId.set(nameNoDiacritics, place.place_id)
+      }
+      // Pridajme variant bez článkov a zbytočných slov
+      const nameCleaned = nameLower.replace(/^(the|a|an|le|la|les|der|die|das|il|lo|gli|le|el|los|las)\s+/i, '').trim()
+      if (nameCleaned !== nameLower && nameCleaned.length > 3) {
+        nameToPlaceId.set(nameCleaned, place.place_id)
+      }
+      // Pridajme variant len s prvými slovami (pre dlhé názvy)
+      const firstWords = nameLower.split(/\s+/).slice(0, 3).join(' ')
+      if (firstWords !== nameLower && firstWords.length > 5) {
+        nameToPlaceId.set(firstWords, place.place_id)
+      }
     }
+    
+    console.log(`[generateTrip] Created nameToPlaceId map with ${nameToPlaceId.size} entries`)
 
     const aiPrompt = finalPlaces.length > 0
       ? `Vytvor detailný plán výletu do ${input.destination} v Európe.
@@ -316,15 +336,46 @@ function parseTipsByName(
       const placeNameLower = placeName.toLowerCase().trim()
       let place_id = nameToPlaceId.get(placeNameLower)
       
-      // Ak sme nenašli presnú zhodu, skúsime fuzzy match
+      // Ak sme nenašli presnú zhodu, skúsime viacero variantov
       if (!place_id) {
-        for (const [name, id] of nameToPlaceId.entries()) {
-          if (name.includes(placeNameLower) || placeNameLower.includes(name)) {
-            place_id = id
-            console.log(`✓ Found fuzzy match: "${placeName}" -> "${name}" (place_id: ${id})`)
-            break
+        // Variant bez diakritiky
+        const nameNoDiacritics = placeNameLower.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        place_id = nameToPlaceId.get(nameNoDiacritics)
+        
+        if (!place_id) {
+          // Variant bez článkov
+          const nameCleaned = placeNameLower.replace(/^(the|a|an|le|la|les|der|die|das|il|lo|gli|le|el|los|las)\s+/i, '').trim()
+          place_id = nameToPlaceId.get(nameCleaned)
+        }
+        
+        if (!place_id) {
+          // Variant len s prvými slovami
+          const firstWords = placeNameLower.split(/\s+/).slice(0, 3).join(' ')
+          place_id = nameToPlaceId.get(firstWords)
+        }
+        
+        // Ak stále nemáme, skúsime fuzzy match
+        if (!place_id) {
+          let bestMatch: { similarity: number; id: string } | null = null
+          for (const [name, id] of nameToPlaceId.entries()) {
+            const similarity = calculateSimilarity(placeNameLower, name)
+            if (similarity > 0.7 && (!bestMatch || similarity > bestMatch.similarity)) {
+              bestMatch = { similarity, id }
+            }
+            // Tiež skúsime či jeden obsahuje druhý
+            if (name.includes(placeNameLower) || placeNameLower.includes(name)) {
+              if (!bestMatch || similarity > bestMatch.similarity) {
+                bestMatch = { similarity: 0.9, id }
+              }
+            }
+          }
+          if (bestMatch) {
+            place_id = bestMatch.id
+            console.log(`✓ Found fuzzy match: "${placeName}" -> place_id: ${place_id} (similarity: ${bestMatch.similarity.toFixed(2)})`)
           }
         }
+      } else {
+        console.log(`✓ Found exact match: "${placeName}" -> place_id: ${place_id}`)
       }
       
       // Validácia kategórie
@@ -528,17 +579,46 @@ async function generateTripWithTips(
       // Ak sme nenašli miesto podľa place_id, skúsime nájsť podľa názvu (fallback)
       if (!place) {
         console.warn(`⚠ Place not found by place_id "${tip.place_id}", trying to find by name...`)
-        // Skúsime nájsť miesto podľa názvu v tips (ak máme title)
+        
+        // Skúsime nájsť miesto podľa názvu v finalPlaces
+        // Najprv skúsime nájsť v AI odpovedi názov miesta (ak máme description)
+        const descriptionLower = tip.description.toLowerCase()
+        let bestMatch: { place: Place; score: number } | null = null
+        
         for (const p of finalPlaces) {
-          // Použijeme fuzzy matching na názvy
-          const tipTitle = tip.place_id.toLowerCase().replace(/^ai_/, '').replace(/_\d+$/, '').replace(/_/g, ' ')
-          const placeName = p.name.toLowerCase()
-          if (placeName.includes(tipTitle) || tipTitle.includes(placeName) || 
-              calculateSimilarity(placeName, tipTitle) > 0.7) {
-            place = p
-            console.log(`✓ Found place by name match: "${p.name}" for "${tip.place_id}"`)
-            break
+          const placeNameLower = p.name.toLowerCase()
+          let score = 0
+          
+          // Presná zhoda názvu v description
+          if (descriptionLower.includes(placeNameLower)) {
+            score += 10
           }
+          
+          // Čiastočná zhoda
+          const placeNameWords = placeNameLower.split(/\s+/)
+          let matchingWords = 0
+          for (const word of placeNameWords) {
+            if (word.length > 3 && descriptionLower.includes(word)) {
+              matchingWords++
+            }
+          }
+          score += matchingWords * 2
+          
+          // Fuzzy similarity
+          const similarity = calculateSimilarity(descriptionLower, placeNameLower)
+          score += similarity * 5
+          
+          if (score > 5 && (!bestMatch || score > bestMatch.score)) {
+            bestMatch = { place: p, score }
+          }
+        }
+        
+        if (bestMatch && bestMatch.score > 5) {
+          place = bestMatch.place
+          console.log(`✓ Found place by description match: "${place.name}" (score: ${bestMatch.score.toFixed(2)})`)
+        } else {
+          // Ak stále nemáme, skúsime nájsť pomocou findPlaceByName
+          console.warn(`⚠ Still no place found, trying findPlaceByName...`)
         }
       }
       
