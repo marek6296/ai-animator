@@ -1,7 +1,7 @@
 {
-  "name": "ai-animator",
+  "name": "easy-trip",
   "version": "1.0.3",
-  "description": "AI aplikácia pre vytváranie personalizovaných komiksov, animácií a meme packov",
+  "description": "Inteligentný plánovač výletov po Európe - Easy Trip",
   "private": true,
   "scripts": {
     "dev": "next dev",

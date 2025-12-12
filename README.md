@@ -1,19 +1,23 @@
-# AI Animator 🎨
+# Easy Trip 🗺️
 
-Aplikácia pre vytváranie personalizovaných komiksov, animácií a meme packov pomocou umelnej inteligencie.
+Inteligentný plánovač výletov po Európe. Získajte personalizované tipy na destinácie, aktivity a miesta na návštevu pomocou umelnej inteligencie a Google Places API.
 
 ## Funkcie
 
-- 🎭 **Komiksy** - AI vytvorí personalizovaný komiks na základe vášho príbehu
-- 🎬 **Animácie** - Krátke animácie zachytávajúce vašu situáciu
-- 😂 **Meme Pack** - Sada personalizovaných memov pre vás a vašich kamarátov
+- 🏛️ **Pamiatky** - Objavte najkrajšie historické pamiatky a múzeá
+- 🎯 **Aktivity** - Nájdite zábavné aktivity a zážitky
+- 🍽️ **Reštaurácie** - Odporučenia na najlepšie reštaurácie a kaviarne
+- 🏨 **Ubytovanie** - Tipy na ubytovanie
+- 💡 **Tipy** - Praktické rady a užitočné informácie
+- 📍 **Google Maps integrácia** - Presné fotky a informácie z Google Maps
+- 🎨 **Moderný dizajn** - Futuristické UI s animáciami
 
 ## Požiadavky
 
 - Node.js 18+ 
 - npm alebo yarn
-- OpenAI API kľúč (pre GPT-4 - text a prompty)
-- Replicate API token (pre Stable Diffusion SDXL + LoRA - obrázky)
+- OpenAI API kľúč (pre GPT-4 - generovanie popisov a plánov)
+- Google Places API (New) kľúč (pre vyhľadávanie miest a fotiek)
 
 ## Inštalácia
 
@@ -24,18 +28,15 @@ npm install
 
 2. Vytvorte `.env` súbor v koreňovom adresári:
 ```env
-# OpenAI API (pre text a prompty)
+# OpenAI API (pre text a generovanie plánov)
 OPENAI_API_KEY=your_openai_api_key_here
 
-# Replicate API (pre Stable Diffusion SDXL + LoRA)
-REPLICATE_API_TOKEN=your_replicate_api_token_here
-
-# Voliteľné: LoRA model (ak máte vlastný)
-LORA_MODEL=username/your-lora-model
-LORA_WEIGHT=0.8
+# Google Places API (pre vyhľadávanie miest a fotiek)
+GOOGLE_API_KEY=your_google_api_key_here
+NEXT_PUBLIC_GOOGLE_API_KEY=your_google_api_key_here
 ```
 
-**Poznámka:** Pre detailné nastavenie Stable Diffusion SDXL + LoRA pozrite si [STABLE_DIFFUSION_SETUP.md](./STABLE_DIFFUSION_SETUP.md)
+**Poznámka:** Pre detailné nastavenie Google Places API pozrite si [GOOGLE_MAPS_SETUP.md](./GOOGLE_MAPS_SETUP.md)
 
 3. Spustite vývojový server:
 ```bash
@@ -47,15 +48,17 @@ npm run dev
 ## Použitie
 
 1. Vyplňte formulár:
-   - **O sebe** - Opíšte seba
-   - **Situácia** - Opíšte situáciu, ktorú chcete zachytiť
-   - **Kamarátov** - Opíšte svojich kamarátov
+   - **Mesto** - Vyberte destináciu pomocou Google Places Autocomplete
+   - **Kategórie** - Vyberte, čo chcete hľadať (pamiatky, aktivity, reštaurácie, ubytovanie, tipy)
+   - **Špeciálne požiadavky** - Vyberte požiadavky (bezbariérový prístup, vhodné pre deti, atď.)
 
-2. Kliknite na "Vytvoriť komiks, animáciu a meme pack"
+2. Kliknite na "Vytvoriť výlet"
 
 3. Počkajte na vygenerovanie (môže trvať niekoľko minút)
 
-4. Prezrite si výsledky a stiahnite si ich
+4. Prezrite si výsledky s presnými fotkami z Google Maps
+
+5. Kliknite na akékoľvek miesto pre detailné informácie
 
 ## Technológie
 
@@ -63,12 +66,15 @@ npm run dev
 - **TypeScript** - Typovaný JavaScript
 - **Tailwind CSS** - Utility-first CSS framework
 - **Framer Motion** - Animácie
-- **OpenAI API** - GPT-4 pre text a prompty
-- **Replicate API** - Stable Diffusion SDXL + LoRA pre obrázky
+- **OpenAI API** - GPT-4 pre generovanie plánov a popisov
+- **Google Places API (New)** - Vyhľadávanie miest a fotiek
+- **Server-Sent Events (SSE)** - Real-time progress updates
 
 ## Deployment
 
 ### GitHub & Vercel
+
+Projekt je nasadený na Vercel pod názvom **easy-trip.sk**.
 
 Pre kompletné inštrukcie na nasadenie na GitHub a Vercel, pozrite si [DEPLOYMENT.md](./DEPLOYMENT.md).
 
@@ -76,10 +82,6 @@ Pre kompletné inštrukcie na nasadenie na GitHub a Vercel, pozrite si [DEPLOYME
 
 1. **GitHub:**
    ```bash
-   # Spustite pomocný skript
-   ./scripts/setup-github.sh
-   
-   # Alebo manuálne:
    git remote add origin https://github.com/YOUR_USERNAME/REPO_NAME.git
    git push -u origin main
    ```
@@ -87,22 +89,21 @@ Pre kompletné inštrukcie na nasadenie na GitHub a Vercel, pozrite si [DEPLOYME
 2. **Vercel:**
    - Choďte na https://vercel.com
    - Importujte váš GitHub repozitár
-   - Pridajte Environment Variable: `OPENAI_API_KEY`
+   - Pridajte Environment Variables:
+     - `OPENAI_API_KEY`
+     - `GOOGLE_API_KEY`
+     - `NEXT_PUBLIC_GOOGLE_API_KEY`
    - Deploy!
 
 Vercel automaticky nasadí novú verziu pri každom push na GitHub! 🚀
 
 ## Poznámky
 
-- Generovanie môže trvať niekoľko minút, pretože každý obrázok sa generuje individuálne
+- Generovanie môže trvať niekoľko minút, pretože sa vyhľadávajú miesta a generujú popisy
 - Uistite sa, že máte dostatočný kredit na OpenAI účte
-- DALL-E 3 má rate limits, takže veľké požiadavky môžu trvať dlhšie
+- Google Places API má rate limits, takže veľké požiadavky môžu trvať dlhšie
+- Všetky fotky sú z Google Maps, takže sú presné a relevantné
 
 ## Licencia
 
 MIT
-
-
-
-
-

@@ -6,7 +6,7 @@ import ToasterProvider from '@/components/ToasterProvider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Trip Planner - Plánovač výletov po Európe',
+  title: 'Easy Trip - Plánovač výletov po Európe',
   description: 'Inteligentný plánovač výletov po Európe. Získajte personalizované tipy na destinácie, aktivity a miesta na návštevu.',
 }
 
