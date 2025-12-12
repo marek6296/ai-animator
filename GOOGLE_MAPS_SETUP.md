@@ -1,4 +1,4 @@
-# Nastavenie Google Maps pre Trip Planner
+# Nastavenie Google Maps pre Easy Places
 
 Aby aplikácia mohla zobrazovať mapu s miestami, musíte nastaviť Google Maps JavaScript API.
 

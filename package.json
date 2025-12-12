@@ -1,7 +1,7 @@
 {
-  "name": "easy-trip",
+  "name": "easy-places",
   "version": "1.0.3",
-  "description": "Inteligentný plánovač výletov po Európe - Easy Trip",
+  "description": "Inteligentný plánovač výletov po Európe - Easy Places",
   "private": true,
   "scripts": {
     "dev": "next dev",

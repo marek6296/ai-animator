@@ -1,4 +1,4 @@
-# Easy Trip 🗺️
+# Easy Places 🗺️
 
 Inteligentný plánovač výletov po Európe. Získajte personalizované tipy na destinácie, aktivity a miesta na návštevu pomocou umelnej inteligencie a Google Places API.
 
@@ -74,7 +74,7 @@ npm run dev
 
 ### GitHub & Vercel
 
-Projekt je nasadený na Vercel pod názvom **easy-trip.sk**.
+Projekt je nasadený na Vercel pod názvom **easy-places.sk**.
 
 Pre kompletné inštrukcie na nasadenie na GitHub a Vercel, pozrite si [DEPLOYMENT.md](./DEPLOYMENT.md).
 

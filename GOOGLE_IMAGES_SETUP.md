@@ -1,4 +1,4 @@
-# Nastavenie Google Obrázkov pre Trip Planner
+# Nastavenie Google Obrázkov pre Easy Places
 
 Aby aplikácia mohla používať obrázky z Google Obrázkov, musíte nastaviť Google Custom Search API.
 
@@ -12,7 +12,7 @@ Váš Search Engine ID: `f28fca8bd7d394bc4`
 2. **Vytvorte nový projekt** (alebo vyberte existujúci):
    - Kliknite na dropdown s názvom projektu v hornej časti
    - Kliknite na "New Project"
-   - Zadajte názov (napr. "Trip Planner")
+   - Zadajte názov (napr. "Easy Places")
    - Kliknite "Create"
 
 3. **Povoľte Custom Search API**:

@@ -10,7 +10,7 @@
 1. V **hornej časti stránky** (modrý pruh) uvidíte dropdown s názvom projektu
 2. Kliknite na **dropdown** (môže tam byť napísané "Select a project" alebo názov existujúceho projektu)
 3. Kliknite na **"NEW PROJECT"** (alebo vyberte existujúci projekt)
-4. Zadajte názov projektu (napr. "Trip Planner")
+4. Zadajte názov projektu (napr. "Easy Places")
 5. Kliknite **"CREATE"**
 
 ## Krok 3: Nájdite "Credentials" (API Keys)
