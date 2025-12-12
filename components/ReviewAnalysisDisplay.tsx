@@ -1,25 +1,106 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Star, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, Lightbulb, Languages, BarChart3 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
-import type { ReviewAnalysisResult } from '@/types'
+import type { ReviewAnalysisResult, NormalizedReview } from '@/types'
 
 interface ReviewAnalysisDisplayProps {
   result: ReviewAnalysisResult
 }
 
+interface TranslatedReview extends NormalizedReview {
+  translatedText?: string
+  isTranslating?: boolean
+}
+
 export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayProps) {
-  const { t } = useLanguage()
+  const { t, selectedLanguage } = useLanguage()
   const { placeName, formattedAddress, rating, userRatingsTotal, analysis, normalizedReviews } = result
+  const [translatedReviews, setTranslatedReviews] = useState<TranslatedReview[]>([])
+  const [isTranslating, setIsTranslating] = useState(false)
+
+  // Mapovanie jazykových kódov (sk, en, no -> sk, en, no)
+  const languageMap: Record<string, string> = {
+    'sk': 'sk',
+    'en': 'en',
+    'no': 'no',
+    'slovak': 'sk',
+    'slovenčina': 'sk',
+    'english': 'en',
+    'norwegian': 'no',
+    'norsk': 'no',
+  }
+
+  // Prelož recenzie, ak nie sú v zvolenom jazyku
+  useEffect(() => {
+    const translateReviews = async () => {
+      // Skontroluj, či sú všetky recenzie už v zvolenom jazyku
+      const targetLang = selectedLanguage
+      const allInTargetLanguage = normalizedReviews.every(review => {
+        const reviewLang = languageMap[review.language.toLowerCase()] || review.language.toLowerCase()
+        return reviewLang === targetLang
+      })
+
+      if (allInTargetLanguage) {
+        // Všetky recenzie sú už v zvolenom jazyku
+        setTranslatedReviews(normalizedReviews.map(r => ({ ...r, translatedText: r.text })))
+        return
+      }
+
+      setIsTranslating(true)
+      try {
+        const response = await fetch('/api/translate-reviews', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            reviews: normalizedReviews.map(r => ({
+              text: r.text,
+              language: r.language,
+            })),
+            targetLanguage: selectedLanguage,
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const translated = normalizedReviews.map((review, index) => {
+            const translatedData = data.translatedReviews[index]
+            return {
+              ...review,
+              translatedText: translatedData?.translatedText || review.text,
+            }
+          })
+          setTranslatedReviews(translated)
+        } else {
+          // V prípade chyby použij pôvodné recenzie
+          setTranslatedReviews(normalizedReviews.map(r => ({ ...r, translatedText: r.text })))
+        }
+      } catch (error) {
+        console.error('Error translating reviews:', error)
+        // V prípade chyby použij pôvodné recenzie
+        setTranslatedReviews(normalizedReviews.map(r => ({ ...r, translatedText: r.text })))
+      } finally {
+        setIsTranslating(false)
+      }
+    }
+
+    translateReviews()
+  }, [normalizedReviews, selectedLanguage])
+
+  // Použi preložené recenzie, ak sú dostupné, inak pôvodné
+  const reviewsToDisplay = translatedReviews.length > 0 ? translatedReviews : normalizedReviews
 
   // Google Places API vracia len obmedzený počet recenzií (zvyčajne 5)
   const hasMoreReviews = userRatingsTotal && userRatingsTotal > normalizedReviews.length
 
   // Filtruj recenzie podľa sentimentu (rating)
-  const positiveReviews = normalizedReviews.filter(r => r.rating >= 4)
-  const neutralReviews = normalizedReviews.filter(r => r.rating === 3)
-  const negativeReviews = normalizedReviews.filter(r => r.rating <= 2)
+  const positiveReviews = reviewsToDisplay.filter(r => r.rating >= 4)
+  const neutralReviews = reviewsToDisplay.filter(r => r.rating === 3)
+  const negativeReviews = reviewsToDisplay.filter(r => r.rating <= 2)
 
   const getTrendIcon = () => {
     if (!analysis.recentTrends) return <Minus className="w-5 h-5" />
@@ -340,7 +421,9 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                         <span className="text-xs text-gray-400 ml-2">{review.author_name}</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-300 line-clamp-3">{review.text}</p>
+                    <p className="text-sm text-gray-300 line-clamp-3">
+                      {(review as TranslatedReview).translatedText || review.text}
+                    </p>
                     {review.relative_time_description && (
                       <p className="text-xs text-gray-500 mt-1">{review.relative_time_description}</p>
                     )}
@@ -380,7 +463,9 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                         <span className="text-xs text-gray-400 ml-2">{review.author_name}</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-300 line-clamp-3">{review.text}</p>
+                    <p className="text-sm text-gray-300 line-clamp-3">
+                      {(review as TranslatedReview).translatedText || review.text}
+                    </p>
                     {review.relative_time_description && (
                       <p className="text-xs text-gray-500 mt-1">{review.relative_time_description}</p>
                     )}
@@ -420,7 +505,9 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                         <span className="text-xs text-gray-400 ml-2">{review.author_name}</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-300 line-clamp-3">{review.text}</p>
+                    <p className="text-sm text-gray-300 line-clamp-3">
+                      {(review as TranslatedReview).translatedText || review.text}
+                    </p>
                     {review.relative_time_description && (
                       <p className="text-xs text-gray-500 mt-1">{review.relative_time_description}</p>
                     )}
