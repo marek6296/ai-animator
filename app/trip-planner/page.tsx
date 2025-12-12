@@ -96,7 +96,7 @@ export default function TripPlanner() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify(inputWithLanguage),
         signal: abortControllerRef.current.signal,
       })
 

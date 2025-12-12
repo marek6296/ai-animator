@@ -906,7 +906,7 @@ Tip 2: local restaurant | restaurant | Tradičná reštaurácia s lokálnou kuch
 
 Vráť LEN zoznam tipov v tomto formáte, bez úvodu, bez záveru, bez dodatočného textu. Začni priamo s "Tip 1:"`
 
-    const skeletonText = await generateText(aiPrompt)
+    const skeletonText = await generateText(aiPrompt, 2, language)
     onProgress?.(40, 'Spracovávam skeleton plán...')
     
     console.log('[generateTrip] AI skeleton response:', skeletonText.substring(0, 500))
@@ -948,10 +948,10 @@ Formát:
 2. [popis 400-450 znakov]
 ...
 
-Všetko v slovenčine. Striktne dodrž dĺžku 400-450 znakov.`
+Všetko v ${languageName}. Striktne dodrž dĺžku 400-450 znakov.`
       
       try {
-        const descriptionsText = await generateText(textPrompt)
+        const descriptionsText = await generateText(textPrompt, 2, language)
         const descriptionLines = descriptionsText.split('\n').filter(l => l.trim().match(/^\d+\./))
         
         for (let i = 0; i < Math.min(tips.length, descriptionLines.length); i++) {
@@ -968,7 +968,7 @@ Všetko v slovenčine. Striktne dodrž dĺžku 400-450 znakov.`
     // KROK 6: Validuj miesta pomocou OpenAI - over, či skutočne patria medzi turistické atrakcie
     if (tips.length > 0) {
       onProgress?.(55, 'Overujem relevantnosť miest...')
-      const validatedTips = await validatePlacesWithAI(tips, finalPlaces)
+      const validatedTips = await validatePlacesWithAI(tips, finalPlaces, input)
       console.log(`[generateTrip] Validated ${validatedTips.length} places (removed ${tips.length - validatedTips.length} non-tourist places)`)
       tips.length = 0
       tips.push(...validatedTips)
@@ -1698,11 +1698,13 @@ async function generateTripWithTips(
           try {
             // Získaj názov mesta z input.destination alebo z formatted_address
             const cityName = input.destination || place?.formatted_address?.split(',')[0] || 'mesto'
-            const descriptionPrompt = `Vytvor popis v slovenčine pre miesto "${placeName}" v meste ${cityName}, presne 400-450 znakov (nie slov!). 
+            const language: Language = input.language || 'sk'
+            const languageName = getLanguageNameForAI(language)
+            const descriptionPrompt = `Vytvor popis v ${languageName} pre miesto "${placeName}" v meste ${cityName}, presne 400-450 znakov (nie slov!). 
 Môže to byť 3-5 viet s detailným popisom. Žiadne formátovanie, žiadny úvod ani záver.`
             
             onProgress?.(60 + (i / uniqueTips.length) * 10, `Generujem popis pre ${placeName}...`)
-            const generatedDescription = await generateText(descriptionPrompt)
+            const generatedDescription = await generateText(descriptionPrompt, 2, language)
             if (generatedDescription && generatedDescription.trim().length > 3) {
               description = generatedDescription.trim().slice(0, 450)
               console.log(`✓ Generated description for "${placeName}": ${description}`)
@@ -1761,16 +1763,18 @@ Môže to byť 3-5 viet s detailným popisom. Žiadne formátovanie, žiadny úv
         if (!description || description.length < 20) {
           try {
             const cityName = input.destination || 'mesto'
-            const descriptionPrompt = `Vytvor popis (400-450 znakov, nie slov!) v slovenčine pre miesto "${tip.place_id}" v meste ${cityName}. 
+            const language: Language = input.language || 'sk'
+            const languageName = getLanguageNameForAI(language)
+            const descriptionPrompt = `Vytvor popis (400-450 znakov, nie slov!) v ${languageName} pre miesto "${tip.place_id}" v meste ${cityName}. 
             
 Popis by mal obsahovať:
 - Čo je to za miesto
 - Prečo je to zaujímavé alebo dôležité
 - Čo tam návštevníci môžu očakávať alebo zažiť
 
-Odpovedz len popisom v slovenčine, bez úvodu, bez záveru, bez formátovania. Presne 400-450 znakov.`
+Odpovedz len popisom v ${languageName}, bez úvodu, bez záveru, bez formátovania. Presne 400-450 znakov.`
             
-            const generatedDescription = await generateText(descriptionPrompt)
+            const generatedDescription = await generateText(descriptionPrompt, 2, language)
             if (generatedDescription && generatedDescription.trim().length > 20) {
               description = generatedDescription.trim().slice(0, 450)
             } else {
@@ -1799,6 +1803,8 @@ Odpovedz len popisom v slovenčine, bez úvodu, bez záveru, bez formátovania. 
 
   // KROK 5: Finálna kontrola cez OpenAI - odstráň duplikáty a skontroluj konzistentnosť
   onProgress?.(75, 'Kontrolujem duplikáty a konzistentnosť...')
+  
+  const language: Language = input.language || 'sk'
   
   if (tipsWithImages.length > 0) {
     const tipsForReview = tipsWithImages.map((tip, index) => ({
@@ -1852,7 +1858,7 @@ Poznámky:
 Vráť LEN JSON, bez dodatočného textu.`
 
     try {
-      const reviewResponse = await generateText(reviewPrompt)
+      const reviewResponse = await generateText(reviewPrompt, 2, language)
       console.log('[Review] OpenAI response:', reviewResponse)
       
       // Parsuj JSON odpoveď
@@ -1910,7 +1916,6 @@ Vráť LEN JSON, bez dodatočného textu.`
   onProgress?.(80, 'Vytváram súhrn...')
   
   // Vygeneruj súhrn
-  const language: Language = input.language || 'sk'
   const languageName = getLanguageNameForAI(language)
   const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v ${languageName}. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
   const summary = await generateText(summaryPrompt, 2, language)
@@ -1942,6 +1947,7 @@ async function generateTripWithoutPlaces(
   input: UserInput,
   onProgress?: (progress: number, message: string) => void
 ): Promise<Trip> {
+  const language: Language = input.language || 'sk'
   onProgress?.(60, 'Vytváram tipy a hľadám obrázky...')
   
   const tipsWithImages: TripTip[] = []
@@ -2069,11 +2075,12 @@ async function generateTripWithoutPlaces(
       try {
         // Získaj názov mesta z input.destination alebo z formatted_address
         const cityName = input.destination || foundPlace?.formatted_address?.split(',')[0] || 'mesto'
-        const descriptionPrompt = `Vytvor popis v slovenčine pre miesto "${title}" v meste ${cityName}, presne 400-450 znakov (nie slov!). 
+        const languageName = getLanguageNameForAI(language)
+        const descriptionPrompt = `Vytvor popis v ${languageName} pre miesto "${title}" v meste ${cityName}, presne 400-450 znakov (nie slov!). 
 Môže to byť 3-5 viet s detailným popisom. Žiadne formátovanie, žiadny úvod ani záver.`
         
         onProgress?.(70 + (i / tips.length) * 10, `Generujem popis pre ${title}...`)
-        const generatedDescription = await generateText(descriptionPrompt)
+        const generatedDescription = await generateText(descriptionPrompt, 2, language)
         if (generatedDescription && generatedDescription.trim().length > 3) {
           description = generatedDescription.trim().slice(0, 450)
           console.log(`✓ Generated description for "${title}": ${description}`)
@@ -2506,6 +2513,9 @@ async function generateAroundPlaceTrip(
   }
   const contextDescription = contextParts.join('\n')
   
+  const language: Language = input.language || 'sk'
+  const languageName = getLanguageNameForAI(language)
+  
   const aiPrompt = `Vytvor mini-itinerár okolo miesta ${rootPlace.name} v ${input.destination || 'okolí'}.
 
 PÔVODNÉ MIESTO (povinná zastávka #1):
@@ -2524,7 +2534,7 @@ Kategórie: attraction, activity, restaurant, accommodation, tip
 
 Vráť LEN zoznam tipov, bez úvodu, bez záveru. Začni priamo s "Tip 1:"`
   
-  const tipsText = await generateText(aiPrompt)
+  const tipsText = await generateText(aiPrompt, 2, language)
   onProgress?.(50, 'Spracovávam tipy...')
   
   // Vytvor mapu názov -> place_id
@@ -2576,6 +2586,8 @@ async function generateSinglePlaceTrip(
   onProgress?.(40, 'Generujem detailný popis...')
   
   // Vygeneruj detailný popis a tipy pomocou OpenAI
+  const language: Language = input.language || 'sk'
+  const languageName = getLanguageNameForAI(language)
   const detailPrompt = `Vytvor detailný popis a tipy pre návštevu miesta "${rootPlace.name}"${rootPlace.formatted_address ? ` v ${rootPlace.formatted_address}` : ''}.
 
 ${placeDetails ? `
@@ -2605,7 +2617,7 @@ ODPORÚČANIA V OKOLÍ:
 - [odporúčanie 1]
 - [odporúčanie 2]`
   
-  const detailText = await generateText(detailPrompt)
+  const detailText = await generateText(detailPrompt, 2, language)
   onProgress?.(60, 'Spracovávam informácie...')
   
   // Parsuj odpoveď
@@ -2690,9 +2702,12 @@ ODPORÚČANIA V OKOLÍ:
  */
 async function validatePlacesWithAI(
   tips: ParsedTip[],
-  allPlaces: Place[]
+  allPlaces: Place[],
+  input?: UserInput
 ): Promise<ParsedTip[]> {
   if (tips.length === 0) return tips
+  
+  const language: Language = input?.language || 'sk'
   
   try {
     // PREDBEŽNÉ FILTROVANIE - odstráň podozrivé miesta pred AI validáciou
@@ -2805,7 +2820,7 @@ Príklad: 1,2,4,5,7 (ak miesta 1,2,4,5,7 sú relevantné, ale 3 a 6 sú fake/spa
 Odpoveď (iba čísla oddelené čiarkou):`
     
     const { generateText } = await import('./aiService')
-    const validationResult = await generateText(validationPrompt)
+    const validationResult = await generateText(validationPrompt, 2, language)
     
     // Parsuj odpoveď - očakávame čísla oddelené čiarkou
     const validIndices = new Set<number>()
