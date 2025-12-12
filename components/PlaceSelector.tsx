@@ -22,6 +22,7 @@ interface PlaceSelectorProps {
         lng: number
       }
     }
+    photo_reference?: string
   }) => void
   disabled?: boolean
 }
@@ -87,12 +88,20 @@ export default function PlaceSelector({ onPlaceSelect, disabled }: PlaceSelector
       try {
         const Autocomplete = window.google.maps.places.Autocomplete
         const autocomplete = new Autocomplete(inputRef.current, {
-          fields: ['place_id', 'name', 'formatted_address', 'types', 'geometry'],
+          fields: ['place_id', 'name', 'formatted_address', 'types', 'geometry', 'photos'],
         })
 
         autocomplete.addListener('place_changed', () => {
           const place = autocomplete.getPlace()
           if (place.place_id && place.name) {
+            // Získaj photo_reference z prvého obrázka (ak existuje)
+            let photoReference: string | undefined
+            if (place.photos && place.photos.length > 0) {
+              const firstPhoto = place.photos[0]
+              // Nové API používa name, staré photo_reference
+              photoReference = firstPhoto.name || firstPhoto.photo_reference
+            }
+
             onPlaceSelect({
               place_id: place.place_id,
               name: place.name,
@@ -104,6 +113,7 @@ export default function PlaceSelector({ onPlaceSelect, disabled }: PlaceSelector
                   lng: place.geometry.location.lng(),
                 }
               } : undefined,
+              photo_reference: photoReference,
             })
             setSearchQuery(place.name)
           }

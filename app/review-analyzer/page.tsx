@@ -22,11 +22,13 @@ export default function ReviewAnalyzer() {
         lng: number
       }
     }
+    photo_reference?: string
   } | null>(null)
+  const [placePhotoUrl, setPlacePhotoUrl] = useState<string | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<ReviewAnalysisResult | null>(null)
 
-  const handlePlaceSelect = (place: {
+  const handlePlaceSelect = async (place: {
     place_id: string
     name: string
     formatted_address?: string
@@ -37,9 +39,26 @@ export default function ReviewAnalyzer() {
         lng: number
       }
     }
+    photo_reference?: string
   }) => {
     setSelectedPlace(place)
     setAnalysisResult(null)
+    setPlacePhotoUrl(null)
+
+    // Získaj URL fotky, ak existuje photo_reference
+    if (place.photo_reference) {
+      try {
+        const response = await fetch(
+          `/api/place-photo?photo_reference=${encodeURIComponent(place.photo_reference)}&maxWidth=800`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setPlacePhotoUrl(data.photoUrl)
+        }
+      } catch (error) {
+        console.error('Error fetching place photo:', error)
+      }
+    }
   }
 
   const handleAnalyze = async () => {
@@ -188,10 +207,23 @@ export default function ReviewAnalyzer() {
                   animate={{ opacity: 1, height: 'auto' }}
                   className="mt-6 p-4 glass border border-purple-500/20 rounded-lg"
                 >
-                  <h3 className="text-lg font-semibold text-purple-300 mb-2">{selectedPlace.name}</h3>
-                  {selectedPlace.formatted_address && (
-                    <p className="text-gray-400 text-sm">{selectedPlace.formatted_address}</p>
-                  )}
+                  <div className="flex gap-4">
+                    {placePhotoUrl && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={placePhotoUrl}
+                          alt={selectedPlace.name}
+                          className="w-32 h-32 object-cover rounded-lg"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-purple-300 mb-2">{selectedPlace.name}</h3>
+                      {selectedPlace.formatted_address && (
+                        <p className="text-gray-400 text-sm">{selectedPlace.formatted_address}</p>
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
