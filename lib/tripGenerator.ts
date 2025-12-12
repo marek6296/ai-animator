@@ -1058,7 +1058,7 @@ function parseSkeletonAndMatchPlaces(
     },
   }
   
-  // Parsuj skeleton text - hľadaj kategórie
+  // Parsuj skeleton text - formát: Tip X: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
   const lines = skeletonText.split('\n').filter(line => line.trim().length > 0)
   
   for (const line of lines) {
@@ -1069,16 +1069,95 @@ function parseSkeletonAndMatchPlaces(
       continue
     }
     
-    // Hľadaj kategóriu (začína s "-" alebo číslom)
-    const categoryMatch = trimmed.match(/^[-•\d.]+\s*(.+?)$/i)
-    if (!categoryMatch) continue
+    // Parsuj formát: Tip X: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
+    const tipMatch = trimmed.match(/^(?:Tip\s*)?\d+[.:]\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)(?:\s*\|\s*(.+?))?(?:\s*\|\s*(.+?))?$/i)
+    if (!tipMatch) {
+      // Fallback - skús starý formát
+      const categoryMatch = trimmed.match(/^[-•\d.]+\s*(.+?)$/i)
+      if (!categoryMatch) continue
+      const categoryText = categoryMatch[1].toLowerCase().trim()
+      
+      // Nájdi mapovanie pre túto kategóriu
+      let matchedMapping: typeof categoryMapping[string] | null = null
+      for (const [key, mapping] of Object.entries(categoryMapping)) {
+        if (categoryText.includes(key.toLowerCase())) {
+          matchedMapping = mapping
+          break
+        }
+      }
+      
+      if (matchedMapping) {
+        // Nájdi najlepšie miesto podľa kritérií
+        let bestPlace: Place | null = null
+        const categoryPlaces = placesByCategory.get(matchedMapping.category) || []
+        for (const place of categoryPlaces) {
+          if (!usedPlaceIds.has(place.place_id) && matchedMapping.criteria(place)) {
+            bestPlace = place
+            break
+          }
+        }
+        
+        if (bestPlace) {
+          usedPlaceIds.add(bestPlace.place_id)
+          tips.push({
+            place_id: bestPlace.place_id,
+            category: matchedMapping.category,
+            description: '',
+            duration: undefined,
+            price: undefined,
+          })
+        }
+      }
+      continue
+    }
     
-    const categoryText = categoryMatch[1].toLowerCase().trim()
+    // Extrahuj polia z formátu
+    const genericCategory = tipMatch[1]?.trim().toLowerCase() || ''
+    const aiCategory = tipMatch[2]?.trim().toLowerCase() || ''
+    const description = tipMatch[3]?.trim() || ''
+    const duration = tipMatch[4]?.trim() || undefined
+    const price = tipMatch[5]?.trim() || undefined
     
-    // Nájdi mapovanie pre túto kategóriu
+    // Validuj a normalizuj kategóriu z AI (druhé pole)
+    const validCategories: TripTip['category'][] = ['attraction', 'activity', 'restaurant', 'accommodation', 'tip']
+    let finalCategory: TripTip['category'] = 'attraction'
+    
+    if (aiCategory && validCategories.includes(aiCategory as TripTip['category'])) {
+      // Použij kategóriu z AI (druhé pole) - toto je správna kategória!
+      finalCategory = aiCategory as TripTip['category']
+      console.log(`✓ Using AI category "${finalCategory}" from skeleton`)
+    } else {
+      // Fallback - skús nájsť podľa generickej kategórie
+      let matchedMapping: typeof categoryMapping[string] | null = null
+      for (const [key, mapping] of Object.entries(categoryMapping)) {
+        if (genericCategory.includes(key.toLowerCase())) {
+          matchedMapping = mapping
+          break
+        }
+      }
+      
+      if (matchedMapping) {
+        finalCategory = matchedMapping.category
+        console.log(`✓ Using mapped category "${finalCategory}" from generic "${genericCategory}"`)
+      } else {
+        // Fallback - skús podľa všeobecných slov
+        if (genericCategory.includes('museum') || genericCategory.includes('múzeum') || genericCategory.includes('attraction') || genericCategory.includes('pamiatka')) {
+          finalCategory = 'attraction'
+        } else if (genericCategory.includes('park') || genericCategory.includes('activity') || genericCategory.includes('aktivita')) {
+          finalCategory = 'activity'
+        } else if (genericCategory.includes('restaurant') || genericCategory.includes('reštaurácia') || genericCategory.includes('jedlo') || genericCategory.includes('cafe')) {
+          finalCategory = 'restaurant'
+        } else if (genericCategory.includes('hotel') || genericCategory.includes('ubytovanie') || genericCategory.includes('accommodation')) {
+          finalCategory = 'accommodation'
+        }
+        console.log(`⚠ Using fallback category "${finalCategory}" for "${genericCategory}"`)
+      }
+    }
+    
+    // Nájdi mapovanie pre generickú kategóriu (pre vyhľadanie miesta)
     let matchedMapping: typeof categoryMapping[string] | null = null
     for (const [key, mapping] of Object.entries(categoryMapping)) {
-      if (categoryText.includes(key.toLowerCase())) {
+      if (genericCategory.includes(key.toLowerCase())) {
         matchedMapping = mapping
         break
       }
@@ -1086,76 +1165,78 @@ function parseSkeletonAndMatchPlaces(
     
     if (!matchedMapping) {
       // Fallback - skús nájsť podľa všeobecných slov
-      if (categoryText.includes('museum') || categoryText.includes('múzeum')) {
+      if (genericCategory.includes('museum') || genericCategory.includes('múzeum')) {
         matchedMapping = categoryMapping['top museum']
-      } else if (categoryText.includes('restaurant') || categoryText.includes('reštaurácia') || categoryText.includes('jedlo')) {
+      } else if (genericCategory.includes('restaurant') || genericCategory.includes('reštaurácia') || genericCategory.includes('jedlo')) {
         matchedMapping = categoryMapping['local restaurant']
-      } else if (categoryText.includes('park') || categoryText.includes('park')) {
+      } else if (genericCategory.includes('park') || genericCategory.includes('park')) {
         matchedMapping = categoryMapping['popular park']
-      } else if (categoryText.includes('attraction') || categoryText.includes('pamiatka')) {
+      } else if (genericCategory.includes('attraction') || genericCategory.includes('pamiatka')) {
         matchedMapping = categoryMapping['famous attraction']
       }
     }
     
-    if (matchedMapping) {
-      // Nájdi najlepšie miesto podľa kritérií
-      let bestPlace: Place | null = null
-      
-      // Skús najprv podľa kategórie
-      const categoryPlaces = placesByCategory.get(matchedMapping.category) || []
+    // Nájdi najlepšie miesto podľa kritérií
+    let bestPlace: Place | null = null
+    
+    // Skús najprv podľa FINÁLNEJ kategórie (z AI, nie z mapovania)
+    const categoryPlaces = placesByCategory.get(finalCategory) || []
+    for (const place of categoryPlaces) {
+      if (!usedPlaceIds.has(place.place_id)) {
+        // Ak máme mapovanie, skontroluj kritériá
+        if (matchedMapping && !matchedMapping.criteria(place)) {
+          continue
+        }
+        bestPlace = place
+        break
+      }
+    }
+    
+    // Ak nenašiel, skús podľa types z mapovania
+    if (!bestPlace && matchedMapping && matchedMapping.types) {
+      for (const type of matchedMapping.types) {
+        const typePlaces = placesByType.get(type) || []
+        for (const place of typePlaces) {
+          if (!usedPlaceIds.has(place.place_id) && matchedMapping.criteria(place)) {
+            bestPlace = place
+            break
+          }
+        }
+        if (bestPlace) break
+      }
+    }
+    
+    // Ak stále nenašiel, vezmi najlepšie miesto z FINÁLNEJ kategórie
+    if (!bestPlace) {
+      const categoryPlaces = placesByCategory.get(finalCategory) || []
       for (const place of categoryPlaces) {
-        if (!usedPlaceIds.has(place.place_id) && matchedMapping.criteria(place)) {
+        if (!usedPlaceIds.has(place.place_id)) {
           bestPlace = place
           break
         }
       }
-      
-      // Ak nenašiel, skús podľa types
-      if (!bestPlace && matchedMapping.types) {
-        for (const type of matchedMapping.types) {
-          const typePlaces = placesByType.get(type) || []
-          for (const place of typePlaces) {
-            if (!usedPlaceIds.has(place.place_id) && matchedMapping.criteria(place)) {
-              bestPlace = place
-              break
-            }
-          }
-          if (bestPlace) break
+    }
+    
+    // Ak stále nenašiel, vezmi akékoľvek miesto
+    if (!bestPlace) {
+      for (const place of allPlaces) {
+        if (!usedPlaceIds.has(place.place_id)) {
+          bestPlace = place
+          break
         }
       }
-      
-      // Ak stále nenašiel, vezmi najlepšie miesto z kategórie
-      if (!bestPlace) {
-        const categoryPlaces = placesByCategory.get(matchedMapping.category) || []
-        for (const place of categoryPlaces) {
-          if (!usedPlaceIds.has(place.place_id)) {
-            bestPlace = place
-            break
-          }
-        }
-      }
-      
-      // Ak stále nenašiel, vezmi akékoľvek miesto
-      if (!bestPlace) {
-        for (const place of allPlaces) {
-          if (!usedPlaceIds.has(place.place_id)) {
-            bestPlace = place
-            break
-          }
-        }
-      }
-      
-      if (bestPlace) {
-        usedPlaceIds.add(bestPlace.place_id)
-        tips.push({
-          place_id: bestPlace.place_id,
-          category: matchedMapping.category,
-          description: '', // Doplníme neskôr cez AI (voliteľne)
-          duration: undefined,
-          price: undefined,
-        })
-        console.log(`✓ Matched "${categoryText}" → ${bestPlace.name} (${bestPlace.place_id})`)
-      }
+    }
+    
+    if (bestPlace) {
+      usedPlaceIds.add(bestPlace.place_id)
+      tips.push({
+        place_id: bestPlace.place_id,
+        category: finalCategory, // Použij FINÁLNU kategóriu (z AI, nie z mapovania)
+        description: description || '',
+        duration: duration,
+        price: price,
+      })
+      console.log(`✓ Matched "${genericCategory}" → ${bestPlace.name} (${bestPlace.place_id}) with category "${finalCategory}"`)
     }
   }
   
