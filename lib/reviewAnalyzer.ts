@@ -10,35 +10,89 @@ const openai = new OpenAI({
 })
 
 /**
- * Detekuje jazyk textu (jednoduchá heuristika)
+ * Detekuje jazyk textu (vylepšená heuristika)
+ * Priorita: špecifické znaky > kľúčové slová > všeobecné znaky
  */
 function detectLanguage(text: string): string {
   if (!text || text.trim().length === 0) return 'unknown'
   
   const textLower = text.toLowerCase()
   
-  // Slovenské znaky
-  if (/[áäčďéíĺľňóôŕšťúýž]/.test(textLower)) return 'sk'
+  // NORČINA - špecifické znaky (æ, ø, å) - najprv, lebo sú najjedinečnejšie
+  if (/[æøåÆØÅ]/.test(text)) {
+    // Rozliš medzi dánčinou a norčinou podľa kľúčových slov
+    const norwegianWords = ['og', 'er', 'det', 'for', 'med', 'på', 'til', 'av', 'som', 'ikke', 'var', 'kan', 'vil', 'skal']
+    const danishWords = ['og', 'er', 'det', 'for', 'med', 'på', 'til', 'af', 'som', 'ikke', 'var', 'kan', 'vil', 'skal']
+    const norwegianCount = norwegianWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    const danishCount = danishWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    // Ak má viac norčiny ako dánčiny, alebo ak obsahuje typické nórske slová
+    if (textLower.includes('ikke') || textLower.includes('skal') || norwegianCount >= danishCount) {
+      return 'no' // Norčina
+    }
+    return 'da' // Dánčina
+  }
   
-  // České znaky
-  if (/[áčďéěíňóřšťúůýž]/.test(textLower)) return 'cs'
+  // ŠVÉDČINA - špecifické znaky (ä, ö, å)
+  if (/[äöåÄÖÅ]/.test(text)) {
+    const swedishWords = ['och', 'är', 'det', 'för', 'med', 'på', 'till', 'av', 'som', 'inte', 'var', 'kan', 'vill', 'ska']
+    const swedishCount = swedishWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    if (swedishCount >= 2) return 'sv'
+  }
   
-  // Anglické kľúčové slová
-  const englishWords = ['the', 'and', 'is', 'was', 'are', 'were', 'this', 'that', 'with', 'from']
-  const englishCount = englishWords.filter(word => textLower.includes(word)).length
+  // SLOVENČINA - špecifické znaky
+  if (/[áäčďéíĺľňóôŕšťúýž]/.test(text)) return 'sk'
+  
+  // ČEŠTINA - špecifické znaky
+  if (/[áčďéěíňóřšťúůýž]/.test(text)) return 'cs'
+  
+  // NEMČINA - špecifické znaky a kľúčové slová
+  if (/[äöüßÄÖÜ]/.test(text)) {
+    const germanWords = ['der', 'die', 'das', 'und', 'ist', 'sind', 'mit', 'für', 'auf', 'von', 'zu', 'nicht']
+    const germanCount = germanWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    if (germanCount >= 2) return 'de'
+  }
+  
+  // FRANCÚZŠTINA - špecifické znaky a kľúčové slová
+  if (/[àâäéèêëïîôùûüÿçÀÂÄÉÈÊËÏÎÔÙÛÜŸÇ]/.test(text)) {
+    const frenchWords = ['le', 'la', 'les', 'de', 'et', 'est', 'sont', 'avec', 'pour', 'sur', 'dans', 'ne', 'pas']
+    const frenchCount = frenchWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    if (frenchCount >= 2) return 'fr'
+  }
+  
+  // ŠPANIELČINA - špecifické znaky a kľúčové slová
+  if (/[áéíóúñüÁÉÍÓÚÑÜ]/.test(text)) {
+    const spanishWords = ['el', 'la', 'los', 'las', 'de', 'y', 'es', 'son', 'con', 'para', 'en', 'no', 'muy']
+    const spanishCount = spanishWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    if (spanishCount >= 2) return 'es'
+  }
+  
+  // TALIANČINA - špecifické znaky a kľúčové slová
+  if (/[àèéìíîòóùúÀÈÉÌÍÎÒÓÙÚ]/.test(text)) {
+    const italianWords = ['il', 'la', 'lo', 'gli', 'le', 'di', 'e', 'è', 'sono', 'con', 'per', 'in', 'non', 'molto']
+    const italianCount = italianWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    if (italianCount >= 2) return 'it'
+  }
+  
+  // HOLANDČINA - špecifické znaky
+  if (/[ëïËÏ]/.test(text)) {
+    const dutchWords = ['de', 'het', 'en', 'is', 'zijn', 'met', 'voor', 'op', 'van', 'te', 'niet', 'een']
+    const dutchCount = dutchWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
+    if (dutchCount >= 2) return 'nl'
+  }
+  
+  // POĽŠTINA - špecifické znaky
+  if (/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/.test(text)) return 'pl'
+  
+  // MAĎARČINA - špecifické znaky
+  if (/[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]/.test(text)) return 'hu'
+  
+  // RUMUNČINA - špecifické znaky
+  if (/[ăâîșțĂÂÎȘȚ]/.test(text)) return 'ro'
+  
+  // ANGLIČTINA - len ak obsahuje typické anglické slová A nemá špecifické znaky iných jazykov
+  const englishWords = ['the', 'and', 'is', 'was', 'are', 'were', 'this', 'that', 'with', 'from', 'very', 'good', 'great', 'nice']
+  const englishCount = englishWords.filter(word => new RegExp(`\\b${word}\\b`).test(textLower)).length
   if (englishCount >= 3) return 'en'
-  
-  // Nemčina
-  if (/[äöüß]/.test(textLower) || textLower.includes('der ') || textLower.includes('die ') || textLower.includes('das ')) return 'de'
-  
-  // Francúzština
-  if (/[àâäéèêëïîôùûüÿç]/.test(textLower) || textLower.includes('le ') || textLower.includes('la ') || textLower.includes('les ')) return 'fr'
-  
-  // Španielčina
-  if (/[áéíóúñü]/.test(textLower) || textLower.includes('el ') || textLower.includes('la ') || textLower.includes('los ')) return 'es'
-  
-  // Taliančina
-  if (/[àèéìíîòóùú]/.test(textLower) || textLower.includes('il ') || textLower.includes('la ') || textLower.includes('lo ')) return 'it'
   
   return 'unknown'
 }
@@ -80,6 +134,18 @@ export async function analyzeReviews(
   // Obmedz počet recenzií na 100 (kvôli token limitu)
   const reviewsToAnalyze = sortedReviews.slice(0, 100)
   
+  // Vypočítaj languageDistribution priamo z normalizovaných recenzií
+  const languageCounts: Record<string, number> = {}
+  reviewsToAnalyze.forEach(review => {
+    const lang = review.language || 'unknown'
+    languageCounts[lang] = (languageCounts[lang] || 0) + 1
+  })
+  const totalReviews = reviewsToAnalyze.length
+  const languageDistribution: Record<string, number> = {}
+  Object.entries(languageCounts).forEach(([lang, count]) => {
+    languageDistribution[lang] = Math.round((count / totalReviews) * 100)
+  })
+  
   // Vytvor JSON pre OpenAI
   const reviewsData = reviewsToAnalyze.map((review, index) => ({
     index: index + 1,
@@ -117,11 +183,6 @@ Vráť JSON v tomto presnom formáte:
   "strengths": ["Silná stránka 1", "Silná stránka 2"],
   "weaknesses": ["Slabá stránka 1", "Slabá stránka 2"],
   "recommendations": ["Odporučenie 1", "Odporučenie 2"],
-  "languageDistribution": {
-    "sk": 50,
-    "en": 30,
-    "cs": 20
-  },
   "ratingDistribution": {
     "5": 40,
     "4": 30,
@@ -140,8 +201,8 @@ Pravidlá:
 - keyThemes: 5-10 najčastejších tém, každá s 2-3 citátmi
 - strengths/weaknesses: 3-5 konkrétnych bodov
 - recommendations: 2-4 praktické odporúčania
-- languageDistribution: percentá podľa skutočného jazyka recenzií
 - ratingDistribution: počet recenzií pre každé hodnotenie
+- languageDistribution NEPOČÍTAJ - bude vypočítané automaticky z detekovaných jazykov
 - recentTrends: analyzuj trend za posledné 3 mesiace vs. staršie
 
 Vráť LEN JSON, bez markdown, bez úvodu, bez záveru.`
@@ -177,6 +238,7 @@ Vráť LEN JSON, bez markdown, bez úvodu, bez záveru.`
     }
 
     // Validuj a doplň chýbajúce polia
+    // languageDistribution používame vypočítané hodnoty, nie z OpenAI
     return {
       overallRating: analysis.overallRating || 0,
       totalReviews: analysis.totalReviews || reviewsToAnalyze.length,
@@ -185,7 +247,7 @@ Vráť LEN JSON, bez markdown, bez úvodu, bez záveru.`
       strengths: analysis.strengths || [],
       weaknesses: analysis.weaknesses || [],
       recommendations: analysis.recommendations || [],
-      languageDistribution: analysis.languageDistribution || {},
+      languageDistribution: languageDistribution, // Použijeme vypočítané hodnoty
       ratingDistribution: analysis.ratingDistribution || { '5': 0, '4': 0, '3': 0, '2': 0, '1': 0 },
       recentTrends: analysis.recentTrends,
     }
