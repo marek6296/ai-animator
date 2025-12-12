@@ -396,7 +396,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
       <div className="flex items-center justify-center gap-3 mb-8">
         <Sparkles className="w-8 h-8 text-cyan-400 neon-cyan" />
         <h2 className="text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-          PLÁNOVANIE VÝLETU
+          {t.tripPlanner.title}
         </h2>
       </div>
 
