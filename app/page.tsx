@@ -52,20 +52,19 @@ export default function Home() {
         />
       </div>
 
+      {/* Language Selector - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSelector />
+      </div>
+
       <div className="container mx-auto px-4 py-12 relative z-10">
-        {/* Header with Language Selector */}
-        <div className="relative mb-16">
-          {/* Language Selector */}
-          <div className="absolute top-0 right-0 z-20">
-            <LanguageSelector />
-          </div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center pr-32"
-          >
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
           <motion.div
             className="flex items-center justify-center gap-4 mb-6"
             whileHover={{ scale: 1.05 }}
@@ -98,8 +97,7 @@ export default function Home() {
           >
             {t.mainPage.subtitle}
           </motion.p>
-          </motion.div>
-        </div>
+        </motion.div>
 
         {/* Two Main Cards */}
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mt-16">
