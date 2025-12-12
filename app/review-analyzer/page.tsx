@@ -188,7 +188,7 @@ export default function ReviewAnalyzer() {
           className="text-center mb-12"
         >
           <motion.div
-            className="flex items-center justify-center gap-4 mb-6"
+            className="flex items-center justify-center gap-2 mb-6"
             whileHover={{ scale: 1.05 }}
           >
             <div className="relative">
