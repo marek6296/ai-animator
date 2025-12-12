@@ -1,11 +1,14 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Globe } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function LanguageSelector() {
   const { selectedLanguage, setSelectedLanguage, getLanguageName } = useLanguage()
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const languages: Array<{ code: 'sk' | 'en' | 'no'; name: string; flag: string }> = [
     { code: 'sk', name: 'Slovenčina', flag: '🇸🇰' },
@@ -13,12 +16,30 @@ export default function LanguageSelector() {
     { code: 'no', name: 'Norsk', flag: '🇳🇴' },
   ]
 
+  // Zatvor dropdown pri kliknutí mimo
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
   return (
-    <div className="relative group">
+    <div className="relative" ref={dropdownRef}>
       <button
         className="flex items-center gap-2 px-4 py-2 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-semibold hover:bg-cyan-400/10 transition-all"
         onClick={(e) => {
           e.stopPropagation()
+          setIsOpen(!isOpen)
         }}
       >
         <Globe className="w-5 h-5" />
@@ -26,16 +47,19 @@ export default function LanguageSelector() {
         <span className="hidden md:inline">{getLanguageName(selectedLanguage)}</span>
       </button>
       
-      <div className="absolute right-0 top-full mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+      {isOpen && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-lg border border-cyan-500/30 p-2 min-w-[150px]"
+          className="absolute right-0 top-full mt-2 z-50 glass rounded-lg border border-cyan-500/30 p-2 min-w-[150px]"
         >
           {languages.map((lang) => (
             <button
               key={lang.code}
-              onClick={() => setSelectedLanguage(lang.code)}
+              onClick={() => {
+                setSelectedLanguage(lang.code)
+                setIsOpen(false)
+              }}
               className={`w-full text-left px-3 py-2 rounded-md transition-all flex items-center gap-2 ${
                 selectedLanguage === lang.code
                   ? 'bg-cyan-500/20 text-cyan-400 font-semibold'
@@ -47,8 +71,7 @@ export default function LanguageSelector() {
             </button>
           ))}
         </motion.div>
-      </div>
+      )}
     </div>
   )
 }
-

@@ -321,21 +321,23 @@ export default function TripPlanner() {
           </div>
         ) : (
           <>
-            {/* Back Button */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mb-8"
-            >
-              <button
-                onClick={() => router.push('/')}
-                className="flex items-center gap-2 px-6 py-3 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-bold hover:bg-cyan-400/10 transition-all"
+            {/* Back Button and Language Selector */}
+            <div className="flex items-center justify-between mb-8">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
               >
-                <ArrowLeft className="w-5 h-5" />
-                {t.tripPlanner.backToMain}
-              </button>
-            </motion.div>
+                <button
+                  onClick={() => router.push('/')}
+                  className="flex items-center gap-2 px-6 py-3 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-bold hover:bg-cyan-400/10 transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  {t.tripPlanner.backToMain}
+                </button>
+              </motion.div>
+              <LanguageSelector />
+            </div>
 
             {/* Header */}
             <motion.div

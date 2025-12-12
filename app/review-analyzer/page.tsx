@@ -162,20 +162,22 @@ export default function ReviewAnalyzer() {
 
       <div className="container mx-auto px-4 py-12 relative z-10">
         {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-8"
-        >
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-2 px-6 py-3 glass border border-purple-500/30 rounded-lg text-purple-400 font-bold hover:bg-purple-400/10 transition-all"
+        <div className="flex items-center justify-between mb-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
           >
-            <ArrowLeft className="w-5 h-5" />
-            {t.reviewAnalyzer.backToMain}
-          </button>
-        </motion.div>
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center gap-2 px-6 py-3 glass border border-purple-500/30 rounded-lg text-purple-400 font-bold hover:bg-purple-400/10 transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              {t.reviewAnalyzer.backToMain}
+            </button>
+          </motion.div>
+          <LanguageSelector />
+        </div>
 
         {/* Header */}
         <motion.div

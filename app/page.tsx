@@ -53,6 +53,11 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-4 py-12 relative z-10">
+        {/* Language Selector */}
+        <div className="absolute top-4 right-4 z-20">
+          <LanguageSelector />
+        </div>
+        
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
