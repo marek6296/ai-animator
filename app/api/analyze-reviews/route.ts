@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPlaceDetails } from '@/lib/placesService'
 import { normalizeReviews, analyzeReviews } from '@/lib/reviewAnalyzer'
+import { getCachedAnalysis, setCachedAnalysis } from '@/lib/analysisCache'
 import type { ReviewAnalysisResult } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -38,16 +39,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`[analyze-reviews] Found ${placeDetails.reviews.length} reviews`)
+    console.log(`[analyze-reviews] Found ${placeDetails.reviews.length} reviews (Google Places API limit - usually 5 reviews)`)
+    
+    // Google Places API vracia len obmedzený počet recenzií (zvyčajne 5)
+    // Ak má miesto viac recenzií, API ich nevracia všetky
+    if (placeDetails.user_ratings_total && placeDetails.user_ratings_total > placeDetails.reviews.length) {
+      console.log(`[analyze-reviews] Note: Place has ${placeDetails.user_ratings_total} total reviews, but API returned only ${placeDetails.reviews.length}`)
+    }
 
     // KROK 3: Normalizuj recenzie
     const normalizedReviews = normalizeReviews(placeDetails.reviews)
     console.log(`[analyze-reviews] Normalized ${normalizedReviews.length} reviews`)
 
-    // KROK 4: Analyzuj recenzie pomocou AI
-    console.log(`[analyze-reviews] Starting AI analysis...`)
-    const analysis = await analyzeReviews(placeDetails.name, normalizedReviews)
-    console.log(`[analyze-reviews] Analysis completed`)
+    // KROK 4: Skús získať cacheovanú analýzu
+    const cachedAnalysis = getCachedAnalysis(placeDetails.place_id, placeDetails.reviews)
+    let analysis
+    
+    if (cachedAnalysis) {
+      console.log(`[analyze-reviews] Using cached analysis for ${placeDetails.place_id}`)
+      analysis = cachedAnalysis
+    } else {
+      // KROK 5: Analyzuj recenzie pomocou AI
+      console.log(`[analyze-reviews] Starting AI analysis...`)
+      analysis = await analyzeReviews(placeDetails.name, normalizedReviews)
+      console.log(`[analyze-reviews] Analysis completed`)
+      
+      // Ulož do cache
+      setCachedAnalysis(placeDetails.place_id, placeDetails.reviews, analysis, normalizedReviews)
+      console.log(`[analyze-reviews] Analysis cached for ${placeDetails.place_id}`)
+    }
 
     // KROK 5: Vytvor výsledok
     const result: ReviewAnalysisResult = {

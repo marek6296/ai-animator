@@ -11,6 +11,9 @@ interface ReviewAnalysisDisplayProps {
 export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayProps) {
   const { placeName, formattedAddress, rating, userRatingsTotal, analysis, normalizedReviews } = result
 
+  // Google Places API vracia len obmedzený počet recenzií (zvyčajne 5)
+  const hasMoreReviews = userRatingsTotal && userRatingsTotal > normalizedReviews.length
+
   // Filtruj recenzie podľa sentimentu (rating)
   const positiveReviews = normalizedReviews.filter(r => r.rating >= 4)
   const neutralReviews = normalizedReviews.filter(r => r.rating === 3)
@@ -60,7 +63,14 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
             </div>
           )}
           {userRatingsTotal && (
-            <span className="text-gray-400">({userRatingsTotal} recenzií)</span>
+            <span className="text-gray-400">
+              ({userRatingsTotal} celkom, {normalizedReviews.length} dostupných z API)
+              {hasMoreReviews && (
+                <span className="text-yellow-400 text-sm ml-2 block mt-1">
+                  ⚠ Google Places API vracia len obmedzený počet recenzií (zvyčajne 5)
+                </span>
+              )}
+            </span>
           )}
         </div>
       </motion.div>

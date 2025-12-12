@@ -278,7 +278,7 @@ Vráť LEN JSON, bez markdown, bez úvodu, bez záveru.`
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3,
+      temperature: 0, // 0 pre konzistentné výsledky
     })
 
     const content = response.choices[0]?.message?.content
