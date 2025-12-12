@@ -154,7 +154,7 @@ export default function Home() {
         >
           <div className="flex items-center gap-2 text-cyan-400">
             <MapPin className="w-5 h-5" />
-            <span className="text-sm font-medium">50+ Destinácií</span>
+            <span className="text-sm font-medium">50000+ Destinácií</span>
           </div>
           <div className="flex items-center gap-2 text-purple-400">
             <Sparkles className="w-5 h-5" />
