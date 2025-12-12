@@ -108,7 +108,7 @@ export default function Home() {
               <div className="flex items-center justify-center w-20 h-20 rounded-full bg-cyan-500/20 mb-6 group-hover:bg-cyan-500/30 transition-colors">
                 <Compass className="w-10 h-10 text-cyan-400" />
               </div>
-              <h2 className="text-3xl font-bold text-cyan-400 mb-4">Trip Planner</h2>
+              <h2 className="text-3xl font-bold text-cyan-400 mb-4">Miesta</h2>
               <p className="text-gray-300 text-lg leading-relaxed">
                 Navrhne výlet na základe recenzií a vyberie relevantné miesta, ktoré stoja za návštevu.
               </p>
@@ -133,7 +133,7 @@ export default function Home() {
               <div className="flex items-center justify-center w-20 h-20 rounded-full bg-purple-500/20 mb-6 group-hover:bg-purple-500/30 transition-colors">
                 <BarChart3 className="w-10 h-10 text-purple-400" />
               </div>
-              <h2 className="text-3xl font-bold text-purple-400 mb-4">Review Analyzer</h2>
+              <h2 className="text-3xl font-bold text-purple-400 mb-4">Analyzovať recenzie</h2>
               <p className="text-gray-300 text-lg leading-relaxed">
                 Vyber ľubovoľné miesto z Google Maps a získaj podrobnú AI analýzu všetkých recenzií.
               </p>
