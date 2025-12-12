@@ -25,6 +25,7 @@ export interface Translations {
   // Trip Planner
   tripPlanner: {
     title: string
+    subtitle: string
     backToMain: string
     backToNewTrip: string
     cancelGeneration: string
@@ -128,7 +129,8 @@ const translations: Record<Language, Translations> = {
       detailedReviews: 'Detailné Recenzie',
     },
     tripPlanner: {
-      title: 'PLÁNOVAČ VÝLETOV',
+      title: 'VYHĽADÁVAČ MIEST',
+      subtitle: 'Objavte <highlight1>najlepšie destinácie</highlight1> v Európe s <highlight2>inteligentným plánovačom</highlight2>. Získajte <highlight3>personalizované tipy</highlight3> na nezabudnuteľné zážitky.',
       backToMain: 'Späť na hlavnú stránku',
       backToNewTrip: 'Späť na vytvorenie nového výletu',
       cancelGeneration: 'Generovanie bolo zrušené',
@@ -226,7 +228,8 @@ const translations: Record<Language, Translations> = {
       detailedReviews: 'Detailed Reviews',
     },
     tripPlanner: {
-      title: 'TRIP PLANNER',
+      title: 'PLACE FINDER',
+      subtitle: 'Discover <highlight1>best destinations</highlight1> in Europe with an <highlight2>intelligent planner</highlight2>. Get <highlight3>personalized tips</highlight3> for unforgettable experiences.',
       backToMain: 'Back to Main Page',
       backToNewTrip: 'Back to Create New Trip',
       cancelGeneration: 'Generation cancelled',
@@ -324,7 +327,8 @@ const translations: Record<Language, Translations> = {
       detailedReviews: 'Detaljerte Anmeldelser',
     },
     tripPlanner: {
-      title: 'TURPLANLEGGER',
+      title: 'STEDFINNER',
+      subtitle: 'Oppdag de <highlight1>beste destinasjonene</highlight1> i Europa med en <highlight2>intelligent planlegger</highlight2>. Få <highlight3>personaliserte tips</highlight3> for uforglemmelige opplevelser.',
       backToMain: 'Tilbake til Hovedside',
       backToNewTrip: 'Tilbake til å opprette ny tur',
       cancelGeneration: 'Generering avbrutt',

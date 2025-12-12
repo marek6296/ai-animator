@@ -375,11 +375,13 @@ export default function TripPlanner() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
                 className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
-              >
-                Objavte <span className="text-cyan-400 font-semibold">najlepšie destinácie</span> v Európe s{' '}
-                <span className="text-purple-400 font-semibold">inteligentným plánovačom</span>. Získajte{' '}
-                <span className="text-pink-400 font-semibold">personalizované tipy</span> na nezabudnuteľné zážitky.
-              </motion.p>
+                dangerouslySetInnerHTML={{
+                  __html: t.tripPlanner.subtitle
+                    .replace(/<highlight1>(.*?)<\/highlight1>/g, '<span class="text-cyan-400 font-semibold">$1</span>')
+                    .replace(/<highlight2>(.*?)<\/highlight2>/g, '<span class="text-purple-400 font-semibold">$1</span>')
+                    .replace(/<highlight3>(.*?)<\/highlight3>/g, '<span class="text-pink-400 font-semibold">$1</span>')
+                }}
+              />
 
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
