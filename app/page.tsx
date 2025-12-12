@@ -85,7 +85,7 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
+            className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
           >
             Inteligentné nástroje pre <span className="text-cyan-400 font-semibold">nájdenie zaujímavých miest</span> a{' '}
             <span className="text-purple-400 font-semibold">analýzu recenzií</span>
@@ -110,7 +110,7 @@ export default function Home() {
               </div>
               <h2 className="text-3xl font-bold text-cyan-400 mb-4">Miesta</h2>
               <p className="text-gray-300 text-lg leading-relaxed">
-                Navrhne výlet na základe recenzií a vyberie relevantné miesta, ktoré stoja za návštevu.
+                Navrhne miesta na základe recenzií a vyberie relevantné miesta, ktoré stoja za návštevu.
               </p>
               <div className="mt-6 flex items-center text-cyan-400 font-semibold group-hover:translate-x-2 transition-transform">
                 Začať plánovať
