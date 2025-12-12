@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BarChart3, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, BarChart3, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PlaceSelector from '@/components/PlaceSelector'
 import ReviewAnalysisDisplay from '@/components/ReviewAnalysisDisplay'
@@ -185,31 +185,14 @@ export default function ReviewAnalyzer() {
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-12 flex flex-col items-center justify-center"
         >
-          <motion.div
-            className="flex items-center justify-center gap-2 mb-6"
+          <motion.h1
+            className="text-4xl md:text-5xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-6"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="relative">
-              <BarChart3 className="w-16 h-16 text-purple-400 neon-cyan" />
-              <motion.div
-                className="absolute inset-0 bg-purple-400/20 rounded-full blur-xl"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.5, 0.8, 0.5],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-              />
-            </div>
-            <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-              {t.reviewAnalyzer.title}
-            </h1>
-          </motion.div>
+            {t.reviewAnalyzer.title}
+          </motion.h1>
           
           <motion.p
             initial={{ opacity: 0 }}

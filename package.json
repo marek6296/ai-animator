@@ -4,9 +4,9 @@
   "description": "Inteligentný plánovač výletov po Európe - Easy Places",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NODE_OPTIONS='--no-deprecation' next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_OPTIONS='--no-deprecation' next start",
     "lint": "next lint"
   },
   "dependencies": {

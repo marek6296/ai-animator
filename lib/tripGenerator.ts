@@ -202,9 +202,20 @@ export async function generateTrip(
     const places: Place[] = []
     
     // Mapovanie kategórií na Google Places typy (presnejšie, bez všeobecných typov)
+    // PRIORITA: Zábavné aktivity sú na začiatku, parky až na konci
     const categoryToTypes: Record<string, string[]> = {
       'attraction': ['museum', 'art_gallery', 'church', 'cathedral', 'monument', 'historical_site', 'castle', 'palace', 'ruins', 'archaeological_site'],
-      'activity': ['park', 'natural_feature', 'amusement_park', 'zoo', 'aquarium', 'stadium', 'gym', 'spa', 'bowling_alley', 'movie_theater', 'night_club'],
+      'activity': [
+        // ZÁBAVNÉ AKTIVITY (priorita) - najprv tieto!
+        'amusement_park', 'theme_park', 'water_park', 'zoo', 'aquarium', 
+        'bowling_alley', 'movie_theater', 'night_club', 'casino', 'arcade',
+        'mini_golf', 'escape_room', 'adventure_sports', 'sports_activity_location',
+        'tourist_attraction', // Len ak je to skutočná aktivita
+        // ŠPORT A WELLNESS
+        'stadium', 'gym', 'spa', 'fitness_center', 'sports_complex',
+        // PRÍRODA (na konci - menej priorita)
+        'park', 'natural_feature'
+      ],
       'restaurant': ['restaurant', 'cafe', 'bar', 'food', 'bakery', 'meal_takeaway', 'meal_delivery'],
       'accommodation': ['lodging', 'hotel', 'motel', 'hostel', 'resort', 'bed_and_breakfast'],
       'tip': [], // Tipy sa generujú AI, nie z Google Places
@@ -417,9 +428,9 @@ export async function generateTrip(
         return false
       }
       
-      // Vylúč miesta s príliš málo recenziami (menej ako 3 = možno fake)
-      if ((place.user_ratings_total || 0) < 3) {
-        console.log(`❌ Excluding place "${place.name}" - too few reviews (${place.user_ratings_total || 0})`)
+      // Vylúč miesta s príliš málo recenziami (menej ako 1 = možno fake) - ZNÍŽENÁ PRÍSNOSŤ
+      if ((place.user_ratings_total || 0) < 1) {
+        console.log(`❌ Excluding place "${place.name}" - no reviews (${place.user_ratings_total || 0})`)
         return false
       }
       
@@ -449,8 +460,14 @@ export async function generateTrip(
       else if (types.some(t => ['lodging', 'hotel', 'motel', 'hostel', 'resort', 'bed_and_breakfast'].includes(t))) {
         placeCategory = 'accommodation'
       }
-      // PRIORITA 3: Aktivity
-      else if (types.some(t => ['park', 'natural_feature', 'amusement_park', 'zoo', 'aquarium', 'stadium', 'gym', 'spa', 'bowling_alley', 'movie_theater', 'night_club'].includes(t))) {
+      // PRIORITA 3: Aktivity (zábavné aktivity majú prioritu pred parkmi)
+      else if (types.some(t => [
+        'amusement_park', 'theme_park', 'water_park', 'zoo', 'aquarium', 
+        'bowling_alley', 'movie_theater', 'night_club', 'casino', 'arcade',
+        'mini_golf', 'escape_room', 'adventure_sports', 'sports_activity_location',
+        'stadium', 'gym', 'spa', 'fitness_center', 'sports_complex',
+        'park', 'natural_feature'
+      ].includes(t))) {
         placeCategory = 'activity'
       }
       // PRIORITA 4: Pamiatky (len skutočné pamiatky, nie všeobecné point_of_interest)
@@ -805,18 +822,27 @@ export async function generateTrip(
 
     const contextDescription = buildContextDescription()
 
-    // KROK 3: AI dostane iba preferencie, nie POI zoznam (10x lacnejšie!)
+    // KROK 3: AI dostane preferencie + zoznam top miest z Google Places (pre lepšie výsledky)
     // Použijeme už definovanú premennú selectedCategories
     const categoryInstructions = selectedCategories.map(cat => {
       switch(cat) {
-        case 'attraction': return '3-4 attraction (pamiatky, múzeá, historické miesta)'
-        case 'activity': return '2-3 activity (aktivity, zábava, športy)'
-        case 'restaurant': return '2-3 restaurant (reštaurácie, kaviarne, jedlo)'
-        case 'accommodation': return '1-2 accommodation (ubytovanie, hotely)'
-        case 'tip': return '1-2 tip (užitočné tipy, rady)'
+        case 'attraction': return '5-6 attraction (pamiatky, múzeá, historické miesta)'
+        case 'activity': return '4-5 activity (aktivity, zábava, športy)'
+        case 'restaurant': return '4-5 restaurant (reštaurácie, kaviarne, jedlo)'
+        case 'accommodation': return '2-3 accommodation (ubytovanie, hotely)'
+        case 'tip': return '3-4 tip (užitočné tipy, rady)'
         default: return ''
       }
     }).filter(Boolean).join(', ')
+    
+    // Vytvor zoznam top miest pre AI (top 40-50 miest s detailami)
+    const topPlacesForAI = finalPlaces.slice(0, Math.min(50, finalPlaces.length))
+    const placesListForAI = topPlacesForAI.map((place, index) => {
+      const types = place.types?.slice(0, 3).join(', ') || 'unknown'
+      const rating = place.rating ? `⭐ ${place.rating}/5` : ''
+      const reviews = place.user_ratings_total ? `(${place.user_ratings_total} recenzií)` : ''
+      return `${index + 1}. ${place.name} - ${types} ${rating} ${reviews}`
+    }).join('\n')
     
     // Získaj jazyk z inputu alebo použij slovenčinu ako default
     const language: Language = input.language || 'sk'
@@ -829,11 +855,16 @@ JAZYK: Všetky texty MUSIA byť v ${languageName}.
 KONTEKT O CESTOVATEĽOVI:
 ${contextDescription || 'Žiadne špecifické preferencie'}
 
+DOSTUPNÉ MIESTA Z GOOGLE PLACES (top ${topPlacesForAI.length} miest):
+${placesListForAI}
+
+POZNÁMKA: Tieto miesta sú skutočné a dostupné v ${input.destination}. Môžeš sa inšpirovať týmito miestami pri vytváraní generických kategórií, ale NEPOUŽÍVAJ konkrétne názvy miest - použij len generické kategórie!
+
 VYBRANÉ KATEGÓRIE (použi VÝHRADNE LEN tieto - NIKDY nepoužívaj iné!):
 ${selectedCategories.map(cat => {
   switch(cat) {
     case 'attraction': return '- attraction (POUŽIJ LEN pre: múzeá, galérie, historické pamiatky, kostoly, katedrály, hrady, zámky, monumenty, ruiny, archeologické lokality)'
-    case 'activity': return '- activity (POUŽIJ LEN pre: parky, prírodné pamiatky, zábavné parky, zoo, akváriá, športové aktivity, wellness, spa)'
+    case 'activity': return '- activity (POUŽIJ LEN pre: zábavné parky, zoo, akváriá, bowling, kino, nočné kluby, escape rooms, minigolf, športové aktivity, wellness, spa, fitness centrá - NIE len parky!)'
     case 'restaurant': return '- restaurant (POUŽIJ LEN pre: reštaurácie, kaviarne, bary s jedlom, pekárne)'
     case 'accommodation': return '- accommodation (POUŽIJ LEN pre: hotely, hostely, penzióny, rezorty)'
     case 'tip': return '- tip (POUŽIJ LEN pre: užitočné tipy, rady, praktické informácie - NIE konkrétne miesta!)'
@@ -854,23 +885,28 @@ DÔLEŽITÉ: NEPOUŽÍVAJ konkrétne názvy miest. Namiesto toho použij GENERIC
 - "famous attraction" (známa atrakcia)
 - "local restaurant" (lokálna reštaurácia)
 - "hidden gem" (skrytý poklad)
-- "popular park" (obľúbený park)
+- "amusement park" (zábavný park) - PREFERUJ pred "popular park"!
+- "zoo or aquarium" (zoo alebo akvárium)
+- "bowling or arcade" (bowling alebo arkádové hry)
+- "cinema" (kino)
+- "nightlife spot" (nočný život)
+- "wellness center" (wellness centrum)
+- "sports activity" (športová aktivita)
 - "romantic cafe" (romantická kaviareň)
 - "street food spot" (miesto so street food)
-- "nightlife area" (nočný život)
 - "shopping district" (nákupná štvrť)
 
 KRITICKÉ PRAVIDLÁ PRE TURISTICKÉ ATRAKCIE:
 1. attraction - MUSÍ byť skutočná turistická atrakcia: múzeá, galérie, historické pamiatky, kostoly, hrady, zámky, námestia, monumenty. NIE sú to: obchody, banky, úrady, nemocnice, školy, parkoviská, čerpacie stanice, autoservisy, kancelárie.
-2. activity - MUSÍ byť skutočná aktivita pre turistov: parky, záhrady, vyhliadky, turistické trasy, športové aktivity, wellness. NIE sú to: bežné obchody, služby, kancelárie.
+2. activity - MUSÍ byť skutočná aktivita pre turistov: zábavné parky, zoo, akváriá, bowling, kino, nočné kluby, escape rooms, minigolf, športové aktivity, wellness, spa, fitness centrá. Parky sú OK, ale NIE sú to hlavné aktivity - preferuj zábavné aktivity! NIE sú to: bežné obchody, služby, kancelárie.
 3. restaurant - MUSÍ byť skutočná reštaurácia/kaviareň s jedlom pre turistov. NIE sú to: fast food reťazce, potraviny, obchody.
 4. accommodation - MUSÍ byť skutočné ubytovanie: hotely, hostely, penzióny. NIE sú to: kancelárie, byty na prenájom.
 
-Vytvor ${selectedCategories.includes('tip') ? '12-15' : '10-12'} tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
+Vytvor ${selectedCategories.includes('tip') ? '18-20' : '15-18'} tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
 Tip 1: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis 400-450 znakov v ${languageName}] | [Trvanie] | [Cena]
 Tip 2: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
 Tip 3: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-... (pokračuj až do Tip ${selectedCategories.includes('tip') ? '15' : '12'})
+... (pokračuj až do Tip ${selectedCategories.includes('tip') ? '20' : '18'})
 
 Kategórie (použi VÝHRADNE LEN tieto hodnoty a LEN tie, ktoré sú vo VYBRANÝCH KATEGÓRIACH vyššie):
 ${selectedCategories.includes('attraction') ? '- attraction (POUŽIJ LEN pre: múzeá, galérie, historické pamiatky, kostoly, katedrály, hrady, zámky, monumenty, ruiny, archeologické lokality)' : ''}
@@ -884,12 +920,12 @@ DÔLEŽITÉ PRAVIDLÁ:
 2. Prvé pole MUSÍ byť GENERICKÁ KATEGÓRIA (nie konkrétny názov miesta!)
 3. Všetky polia MUSIA byť oddelené znakom | (pipe)
 4. Všetky texty MUSIA byť v ${languageName}
-5. Vytvor MINIMÁLNE ${selectedCategories.includes('tip') ? '12' : '10'} tipov, ideálne ${selectedCategories.includes('tip') ? '15' : '12'}
+5. Vytvor MINIMÁLNE ${selectedCategories.includes('tip') ? '18' : '15'} tipov, ideálne ${selectedCategories.includes('tip') ? '20' : '18'}
 6. Zahrň LEN vybrané kategórie: ${selectedCategories.join(', ')}
 7. NEPOUŽÍVAJ kategórie, ktoré NIE SÚ vo VYBRANÝCH KATEGÓRIACH vyššie!
 8. VYBERAJ LEN SKUTOČNÉ TURISTICKÉ ATRAKCIE - nie obchody, služby, kancelárie, úrady!
-9. ${selectedCategories.includes('tip') ? 'Zahrň MINIMÁLNE 2-3 tipy s kategóriou "tip" - všeobecné rady a praktické informácie!' : ''}
-10. Pre každú vybranú kategóriu vytvor MINIMÁLNE 2-3 tipy!
+9. ${selectedCategories.includes('tip') ? 'Zahrň MINIMÁLNE 3-4 tipy s kategóriou "tip" - všeobecné rady a praktické informácie!' : ''}
+10. Pre každú vybranú kategóriu vytvor MINIMÁLNE 4-5 tipov!
 
 Príklad správneho formátu:
 Tip 1: top museum | attraction | Najlepšie múzeum v meste s rozsiahlymi zbierkami... | 2-3 hodiny | €10-15
@@ -1029,6 +1065,41 @@ function parseSkeletonAndMatchPlaces(
       types: ['park', 'natural_feature'],
       category: 'activity',
       criteria: (p) => (p.types?.some(t => ['park', 'natural_feature'].includes(t)) || false)
+    },
+    'amusement park': {
+      types: ['amusement_park', 'theme_park', 'water_park'],
+      category: 'activity',
+      criteria: (p) => (p.types?.some(t => ['amusement_park', 'theme_park', 'water_park'].includes(t)) || false)
+    },
+    'zoo or aquarium': {
+      types: ['zoo', 'aquarium'],
+      category: 'activity',
+      criteria: (p) => (p.types?.some(t => ['zoo', 'aquarium'].includes(t)) || false)
+    },
+    'bowling or arcade': {
+      types: ['bowling_alley', 'arcade'],
+      category: 'activity',
+      criteria: (p) => (p.types?.some(t => ['bowling_alley', 'arcade'].includes(t)) || false)
+    },
+    'cinema': {
+      types: ['movie_theater'],
+      category: 'activity',
+      criteria: (p) => (p.types?.includes('movie_theater') || false)
+    },
+    'nightlife spot': {
+      types: ['night_club', 'bar'],
+      category: 'activity',
+      criteria: (p) => (p.types?.some(t => ['night_club', 'bar'].includes(t)) || false)
+    },
+    'wellness center': {
+      types: ['spa', 'gym', 'fitness_center'],
+      category: 'activity',
+      criteria: (p) => (p.types?.some(t => ['spa', 'gym', 'fitness_center'].includes(t)) || false)
+    },
+    'sports activity': {
+      types: ['sports_activity_location', 'sports_complex', 'stadium'],
+      category: 'activity',
+      criteria: (p) => (p.types?.some(t => ['sports_activity_location', 'sports_complex', 'stadium'].includes(t)) || false)
     },
     'fine dining': {
       types: ['restaurant'],
@@ -1408,7 +1479,7 @@ function parseTipsByName(
     console.error('Failed to parse any tips. Full text:', tipsText)
   }
   
-  return tips.slice(0, 12) // Max 12 tipov
+  return tips.slice(0, 20) // Max 20 tipov (zvýšené z 12)
 }
 
 function parseTipsSimple(
@@ -1453,7 +1524,7 @@ function parseTipsSimple(
     if (tips.length >= 12) break
   }
   
-  return tips.slice(0, 12)
+  return tips.slice(0, 20) // Max 20 tipov (zvýšené z 12)
 }
 
 /**
@@ -1498,7 +1569,7 @@ function parseTipsWithoutPlaceId(tipsText: string): ParsedTip[] {
     }
   }
   
-  return tips.slice(0, 12)
+  return tips.slice(0, 20) // Max 20 tipov (zvýšené z 12)
 }
 
 /**
@@ -1829,15 +1900,15 @@ Odpovedz len popisom v ${languageName}, bez úvodu, bez záveru, bez formátovan
       place_id: tip.place_id,
     }))
     
-    const reviewPrompt = `Skontroluj tento zoznam tipov na výlet do ${input.destination} a identifikuj DUPLIKÁTY alebo VEĽMI PODOBNÉ MIESTA.
+    const reviewPrompt = `Skontroluj tento zoznam tipov na výlet do ${input.destination} a identifikuj LEN SKUTOČNÉ DUPLIKÁTY.
 
 Zoznam tipov:
 ${tipsForReview.map(t => `${t.index}. ${t.title} (${t.category}) - ${t.description.substring(0, 100)}... - ${t.location}`).join('\n')}
 
 ÚLOHA:
-1. Identifikuj miesta, ktoré sú DUPLIKÁTY (rovnaké miesto s rôznymi názvami alebo variantmi)
-2. Identifikuj miesta, ktoré sú VEĽMI PODOBNÉ (napr. "Hrad Bzovík" a "Kláštor Bzovík" - obe sú v Bzovíku a môžu byť to isté miesto)
-3. Skontroluj, či všetky popisy sú konzistentné a relevantné
+1. Identifikuj LEN SKUTOČNÉ DUPLIKÁTY (presne rovnaké miesto s rôznymi názvami alebo variantmi)
+2. NEPOVAŽUJ za duplikáty podobné, ale rôzne miesta (napr. "Hrad Bzovík" a "Kláštor Bzovík" sú RÔZNE miesta, nie duplikáty!)
+3. Buď VEĽMI OPATRNÝ pri označovaní miest ako "inconsistent" - odstráň LEN ak je popis SKUTOČNE úplne nesprávny
 
 Vráť JSON v tomto formáte:
 {
@@ -1863,10 +1934,11 @@ Vráť JSON v tomto formáte:
 }
 
 Poznámky:
-- "duplicates" = presne rovnaké miesta
-- "similar" = veľmi podobné miesta (napr. rôzne časti toho istého komplexu)
-- "inconsistent" = popisy alebo informácie, ktoré nesedia
+- "duplicates" = PRESNE rovnaké miesta (rovnaký place_id alebo identické miesto)
+- "similar" = veľmi podobné miesta (napr. rôzne časti toho istého komplexu) - ODSTRÁŇ LEN ak sú SKUTOČNE to isté miesto
+- "inconsistent" = popisy alebo informácie, ktoré sú SKUTOČNE úplne nesprávne - BUĎ OPATRNÝ, odstráň LEN ak je popis úplne mimo
 - "toRemove" = indexy tipov, ktoré by sa mali odstrániť (vždy ponechaj ten s lepším popisom alebo fotkou)
+- DÔLEŽITÉ: Buď KONZERVATÍVNY - odstráň LEN ak si 100% istý, že je to duplikát alebo skutočne nesprávny popis!
 
 Vráť LEN JSON, bez dodatočného textu.`
 
@@ -2287,7 +2359,7 @@ function parseTipsWithPlaceId(tipsText: string): ParsedTip[] {
     console.error('Failed to parse any tips. Full text:', tipsText)
   }
   
-  return tips.slice(0, 12) // Max 12 tipov
+  return tips.slice(0, 20) // Max 20 tipov (zvýšené z 12)
 }
 
 function extractCountry(destination: string): string {
@@ -2735,9 +2807,9 @@ async function validatePlacesWithAI(
       const nameLower = place.name.toLowerCase()
       const types = place.types || []
       
-      // FILTER 1: Vylúč miesta s málo recenziami (menej ako 3 = možno fake)
-      if ((place.user_ratings_total || 0) < 3) {
-        console.log(`❌ Excluding "${place.name}" - too few reviews (${place.user_ratings_total || 0})`)
+      // FILTER 1: Vylúč miesta s málo recenziami (menej ako 1 = možno fake) - ZNÍŽENÁ PRÍSNOSŤ
+      if ((place.user_ratings_total || 0) < 1) {
+        console.log(`❌ Excluding "${place.name}" - no reviews (${place.user_ratings_total || 0})`)
         continue
       }
       
@@ -2752,17 +2824,23 @@ async function validatePlacesWithAI(
         continue
       }
       
-      // FILTER 3: Vylúč miesta bez relevantných typov (ak nemá žiadny turistický typ)
+      // FILTER 3: Vylúč miesta bez relevantných typov (ak nemá žiadny turistický typ) - ZNÍŽENÁ PRÍSNOSŤ
       const touristTypes = [
         'museum', 'art_gallery', 'church', 'cathedral', 'monument', 'historical_site',
         'castle', 'palace', 'ruins', 'archaeological_site', 'tourist_attraction',
         'park', 'natural_feature', 'viewpoint', 'restaurant', 'cafe', 'bar',
-        'lodging', 'hotel', 'hostel', 'resort'
+        'lodging', 'hotel', 'hostel', 'resort', 'point_of_interest', 'establishment'
       ]
       const hasTouristType = types.some(t => touristTypes.includes(t))
+      // Ak má aspoň nejaké typy, ale nie sú turistické, skontroluj, či to nie je zjavne ne-turistické miesto
       if (!hasTouristType && types.length > 0) {
-        console.log(`❌ Excluding "${place.name}" - no tourist types (${types.join(', ')})`)
-        continue
+        const nonTouristTypes = ['bank', 'atm', 'gas_station', 'parking', 'hospital', 'school', 'post_office']
+        const hasNonTouristType = types.some(t => nonTouristTypes.includes(t))
+        if (hasNonTouristType) {
+          console.log(`❌ Excluding "${place.name}" - has non-tourist types (${types.join(', ')})`)
+          continue
+        }
+        // Ak nemá turistické typy, ale ani zjavne ne-turistické, ponechaj ho (môže to byť relevantné)
       }
       
       // FILTER 4: Vylúč miesta s príliš vysokým ratingom a málo recenziami (možno fake)
