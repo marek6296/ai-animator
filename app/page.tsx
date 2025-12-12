@@ -53,18 +53,19 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-4 py-12 relative z-10">
-        {/* Language Selector */}
-        <div className="absolute top-4 right-4 z-20">
-          <LanguageSelector />
-        </div>
-        
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
+        {/* Header with Language Selector */}
+        <div className="relative mb-16">
+          {/* Language Selector */}
+          <div className="absolute top-0 right-0 z-20">
+            <LanguageSelector />
+          </div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center pr-32"
+          >
           <motion.div
             className="flex items-center justify-center gap-4 mb-6"
             whileHover={{ scale: 1.05 }}
@@ -97,7 +98,8 @@ export default function Home() {
           >
             {t.mainPage.subtitle}
           </motion.p>
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* Two Main Cards */}
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mt-16">
@@ -118,7 +120,7 @@ export default function Home() {
               </div>
               
               {/* Title */}
-              <h2 className="text-3xl font-bold text-cyan-400 mb-4">{t.mainPage.findPlaces}</h2>
+              <h2 className="text-2xl font-bold text-cyan-400 mb-4 whitespace-nowrap">{t.mainPage.findPlaces}</h2>
               
               {/* Description - flex-grow to push button down */}
               <p className="text-gray-300 text-lg leading-relaxed flex-grow mb-6">
@@ -150,7 +152,7 @@ export default function Home() {
               </div>
               
               {/* Title */}
-              <h2 className="text-3xl font-bold text-purple-400 mb-4">{t.mainPage.analyzeReviews}</h2>
+              <h2 className="text-2xl font-bold text-purple-400 mb-4 whitespace-nowrap">{t.mainPage.analyzeReviews}</h2>
               
               {/* Description - flex-grow to push button down */}
               <p className="text-gray-300 text-lg leading-relaxed flex-grow mb-6">
