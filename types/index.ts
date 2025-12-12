@@ -134,3 +134,54 @@ export interface ProgressUpdate {
   estimatedTimeRemaining?: number // v sekundách
 }
 
+// Review Analyzer Types
+export interface NormalizedReview {
+  text: string
+  rating: number
+  time: number // Unix timestamp
+  language: string
+  author_name?: string
+  relative_time_description?: string
+}
+
+export interface ReviewAnalysis {
+  overallRating: number
+  totalReviews: number
+  sentimentBreakdown: {
+    positive: number
+    neutral: number
+    negative: number
+  }
+  keyThemes: Array<{
+    theme: string
+    frequency: number
+    sentiment: 'positive' | 'neutral' | 'negative'
+    exampleQuotes: string[]
+  }>
+  strengths: string[]
+  weaknesses: string[]
+  recommendations: string[]
+  languageDistribution: Record<string, number>
+  ratingDistribution: {
+    '5': number
+    '4': number
+    '3': number
+    '2': number
+    '1': number
+  }
+  recentTrends?: {
+    trend: 'improving' | 'declining' | 'stable'
+    description: string
+  }
+}
+
+export interface ReviewAnalysisResult {
+  placeName: string
+  placeId: string
+  formattedAddress: string
+  rating?: number
+  userRatingsTotal?: number
+  analysis: ReviewAnalysis
+  normalizedReviews: NormalizedReview[]
+}
+
