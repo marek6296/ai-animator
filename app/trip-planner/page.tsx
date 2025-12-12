@@ -63,7 +63,7 @@ export default function TripPlanner() {
     setIsGenerating(false)
     setProgress(null)
     setRequestId(null)
-    toast('Generovanie bolo zrušené', { icon: 'ℹ️' })
+    toast(t.tripPlanner.cancelGeneration, { icon: 'ℹ️' })
   }
 
   const handleBackToForm = () => {
@@ -101,7 +101,7 @@ export default function TripPlanner() {
       })
 
       if (!response.ok) {
-        throw new Error('Chyba pri spustení generovania')
+        throw new Error(t.tripPlanner.generationStartedError)
       }
 
       if (!response.body) {
@@ -178,7 +178,7 @@ export default function TripPlanner() {
             return
           }
           console.error('Error reading stream:', error)
-          toast.error('Chyba pri čítaní progressu')
+          toast.error(t.tripPlanner.readingProgressError)
           setIsGenerating(false)
           setProgress(null)
         }
@@ -191,7 +191,7 @@ export default function TripPlanner() {
         if (data.step === 'complete') {
           if (data.error) {
             console.error('Generation error:', data.error)
-            toast.error(data.error || 'Nastala chyba pri generovaní')
+            toast.error(data.error || t.tripPlanner.generationError)
             setIsGenerating(false)
             setProgress(null)
             return
@@ -226,7 +226,7 @@ export default function TripPlanner() {
         return
       }
       console.error('Error:', error)
-      const errorMessage = error.message || 'Nastala chyba pri generovaní'
+      const errorMessage = error.message || t.tripPlanner.generationError
       toast.error(
         errorMessage.includes('OPENAI_API_KEY')
           ? 'Skontrolujte, či máte nastavený OPENAI_API_KEY v .env súbore'
@@ -306,7 +306,7 @@ export default function TripPlanner() {
                 className="flex items-center gap-2 px-6 py-3 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-bold hover:bg-cyan-400/10 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
-                Späť na vytvorenie nového výletu
+                {t.tripPlanner.backToNewTrip}
               </button>
             </motion.div>
 
@@ -393,11 +393,11 @@ export default function TripPlanner() {
                 </div>
                 <div className="flex items-center gap-2 text-purple-400">
                   <Sparkles className="w-5 h-5" />
-                  <span className="text-sm font-medium">Inteligentný Systém</span>
+                  <span className="text-sm font-medium">{t.tripPlanner.intelligentSystem}</span>
                 </div>
                 <div className="flex items-center gap-2 text-pink-400">
                   <Rocket className="w-5 h-5" />
-                  <span className="text-sm font-medium">Okamžité Výsledky</span>
+                  <span className="text-sm font-medium">{t.tripPlanner.instantResults}</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -425,7 +425,7 @@ export default function TripPlanner() {
                 <button
                   onClick={handleCancel}
                   className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-                  aria-label="Zrušiť"
+                  aria-label={t.tripPlanner.cancel}
                 >
                   <X className="w-6 h-6" />
                 </button>

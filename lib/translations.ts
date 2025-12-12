@@ -26,6 +26,48 @@ export interface Translations {
   tripPlanner: {
     title: string
     backToMain: string
+    backToNewTrip: string
+    cancelGeneration: string
+    generationError: string
+    readingProgressError: string
+    generationStartedError: string
+    intelligentSystem: string
+    instantResults: string
+    cancel: string
+    // Input Form
+    step1Title: string
+    step2Title: string
+    destination: string
+    destinationPlaceholder: string
+    destinationHint: string
+    destinationHintLoading: string
+    destinationApiWarning: string
+    selectedPlace: string
+    whatToSearch: string
+    categoryAttraction: string
+    categoryActivity: string
+    categoryRestaurant: string
+    categoryAccommodation: string
+    categoryTips: string
+    mustSelectCategory: string
+    planningMode: string
+    modeAround: string
+    modeAroundDesc: string
+    modeSingle: string
+    modeSingleDesc: string
+    specialRequirements: string
+    accessibilityNeeds: string
+    avoidStairs: string
+    travelingWithPet: string
+    wheelchairAccessible: string
+    kidFriendly: string
+    petFriendly: string
+    parking: string
+    outdoorSeating: string
+    back: string
+    next: string
+    generating: string
+    createTripPlan: string
   }
   
   // Review Analyzer
@@ -88,6 +130,48 @@ const translations: Record<Language, Translations> = {
     tripPlanner: {
       title: 'PLÁNOVAČ VÝLETOV',
       backToMain: 'Späť na hlavnú stránku',
+      backToNewTrip: 'Späť na vytvorenie nového výletu',
+      cancelGeneration: 'Generovanie bolo zrušené',
+      generationError: 'Nastala chyba pri generovaní',
+      readingProgressError: 'Chyba pri čítaní progressu',
+      generationStartedError: 'Chyba pri spustení generovania',
+      intelligentSystem: 'Inteligentný Systém',
+      instantResults: 'Okamžité Výsledky',
+      cancel: 'Zrušiť',
+      // Input Form
+      step1Title: 'KROK 1 – MESTO & KATEGÓRIE',
+      step2Title: 'KROK 2 – ŠPECIÁLNE POŽIADAVKY',
+      destination: 'Destinácia',
+      destinationPlaceholder: 'Zadajte mesto, región alebo konkrétne miesto (napr. Eiffel Tower, Paríž, Koloseum...)',
+      destinationHint: 'Musíte vybrať konkrétne miesto zo zoznamu návrhov (autocomplete)',
+      destinationHintLoading: 'Načítavam Google Maps API...',
+      destinationApiWarning: '⚠ Ak sa autocomplete nenačíta, skontrolujte NEXT_PUBLIC_GOOGLE_API_KEY v .env',
+      selectedPlace: '✓ Vybraté miesto:',
+      whatToSearch: 'Čo chcete hľadať?',
+      categoryAttraction: 'Pamiatky',
+      categoryActivity: 'Aktivity',
+      categoryRestaurant: 'Reštaurácie',
+      categoryAccommodation: 'Ubytovanie',
+      categoryTips: 'Tipy',
+      mustSelectCategory: '⚠ Musíte vybrať aspoň jednu kategóriu',
+      planningMode: 'Režim plánovania:',
+      modeAround: 'Trip okolo miesta',
+      modeAroundDesc: 'Nájdeme ďalšie miesta v okolí',
+      modeSingle: 'Detail miesta',
+      modeSingleDesc: 'Len informácie o tomto mieste',
+      specialRequirements: 'Špeciálne požiadavky',
+      accessibilityNeeds: 'Potrebujem bezbariérový prístup',
+      avoidStairs: 'Nechcem veľa schodov / náročné túry',
+      travelingWithPet: 'Cestujem so psom',
+      wheelchairAccessible: 'Bezbariérový vstup (Google)',
+      kidFriendly: 'Vhodné pre deti',
+      petFriendly: 'Vhodné pre zvieratá',
+      parking: 'Parkovanie k dispozícii',
+      outdoorSeating: 'Vonkajšie sedenie',
+      back: 'Späť',
+      next: 'Ďalej',
+      generating: 'Generujem plán...',
+      createTripPlan: 'Vytvoriť plán výletu',
     },
     reviewAnalyzer: {
       title: 'ANALÝZA RECENZIÍ',
@@ -144,6 +228,48 @@ const translations: Record<Language, Translations> = {
     tripPlanner: {
       title: 'TRIP PLANNER',
       backToMain: 'Back to Main Page',
+      backToNewTrip: 'Back to Create New Trip',
+      cancelGeneration: 'Generation cancelled',
+      generationError: 'An error occurred during generation',
+      readingProgressError: 'Error reading progress',
+      generationStartedError: 'Error starting generation',
+      intelligentSystem: 'Intelligent System',
+      instantResults: 'Instant Results',
+      cancel: 'Cancel',
+      // Input Form
+      step1Title: 'STEP 1 – LOCATION & CATEGORIES',
+      step2Title: 'STEP 2 – SPECIAL REQUIREMENTS',
+      destination: 'Destination',
+      destinationPlaceholder: 'Enter city, region or specific place (e.g. Eiffel Tower, Paris, Colosseum...)',
+      destinationHint: 'You must select a specific place from the suggestions list (autocomplete)',
+      destinationHintLoading: 'Loading Google Maps API...',
+      destinationApiWarning: '⚠ If autocomplete doesn\'t load, check NEXT_PUBLIC_GOOGLE_API_KEY in .env',
+      selectedPlace: '✓ Selected place:',
+      whatToSearch: 'What do you want to search for?',
+      categoryAttraction: 'Attractions',
+      categoryActivity: 'Activities',
+      categoryRestaurant: 'Restaurants',
+      categoryAccommodation: 'Accommodation',
+      categoryTips: 'Tips',
+      mustSelectCategory: '⚠ You must select at least one category',
+      planningMode: 'Planning mode:',
+      modeAround: 'Trip around place',
+      modeAroundDesc: 'We\'ll find more places nearby',
+      modeSingle: 'Place details',
+      modeSingleDesc: 'Only information about this place',
+      specialRequirements: 'Special Requirements',
+      accessibilityNeeds: 'I need wheelchair accessible access',
+      avoidStairs: 'I don\'t want many stairs / difficult hikes',
+      travelingWithPet: 'Traveling with a pet',
+      wheelchairAccessible: 'Wheelchair accessible entrance (Google)',
+      kidFriendly: 'Kid friendly',
+      petFriendly: 'Pet friendly',
+      parking: 'Parking available',
+      outdoorSeating: 'Outdoor seating',
+      back: 'Back',
+      next: 'Next',
+      generating: 'Generating plan...',
+      createTripPlan: 'Create Trip Plan',
     },
     reviewAnalyzer: {
       title: 'REVIEW ANALYZER',
@@ -200,6 +326,48 @@ const translations: Record<Language, Translations> = {
     tripPlanner: {
       title: 'TURPLANLEGGER',
       backToMain: 'Tilbake til Hovedside',
+      backToNewTrip: 'Tilbake til å opprette ny tur',
+      cancelGeneration: 'Generering avbrutt',
+      generationError: 'En feil oppstod under generering',
+      readingProgressError: 'Feil ved lesing av fremgang',
+      generationStartedError: 'Feil ved start av generering',
+      intelligentSystem: 'Intelligent System',
+      instantResults: 'Øyeblikkelige Resultater',
+      cancel: 'Avbryt',
+      // Input Form
+      step1Title: 'STEG 1 – STED & KATEGORIER',
+      step2Title: 'STEG 2 – SPESIELLE KRAV',
+      destination: 'Destinasjon',
+      destinationPlaceholder: 'Skriv inn by, region eller spesifikt sted (f.eks. Eiffeltårnet, Paris, Colosseum...)',
+      destinationHint: 'Du må velge et spesifikt sted fra forslagslisten (autocomplete)',
+      destinationHintLoading: 'Laster Google Maps API...',
+      destinationApiWarning: '⚠ Hvis autocomplete ikke laster, sjekk NEXT_PUBLIC_GOOGLE_API_KEY i .env',
+      selectedPlace: '✓ Valgt sted:',
+      whatToSearch: 'Hva vil du søke etter?',
+      categoryAttraction: 'Severdigheter',
+      categoryActivity: 'Aktiviteter',
+      categoryRestaurant: 'Restauranter',
+      categoryAccommodation: 'Overnatting',
+      categoryTips: 'Tips',
+      mustSelectCategory: '⚠ Du må velge minst én kategori',
+      planningMode: 'Planleggingsmodus:',
+      modeAround: 'Tur rundt stedet',
+      modeAroundDesc: 'Vi finner flere steder i nærheten',
+      modeSingle: 'Stedsdetaljer',
+      modeSingleDesc: 'Kun informasjon om dette stedet',
+      specialRequirements: 'Spesielle Krav',
+      accessibilityNeeds: 'Jeg trenger rullestoltilgjengelig tilgang',
+      avoidStairs: 'Jeg vil ikke ha mange trapper / vanskelige turer',
+      travelingWithPet: 'Reiser med kjæledyr',
+      wheelchairAccessible: 'Rullestoltilgjengelig inngang (Google)',
+      kidFriendly: 'Barnevennlig',
+      petFriendly: 'Kjæledyrvennlig',
+      parking: 'Parkering tilgjengelig',
+      outdoorSeating: 'Utendørs sitteplasser',
+      back: 'Tilbake',
+      next: 'Neste',
+      generating: 'Genererer plan...',
+      createTripPlan: 'Opprett Turplan',
     },
     reviewAnalyzer: {
       title: 'ANMELDELSESANALYSATOR',

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import type { UserInput } from '@/types'
 import toast from 'react-hot-toast'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 // Typy pre Google Maps
 declare global {
@@ -60,6 +61,7 @@ const FOOD_PREFERENCES = [
 ]
 
 export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
+  const { t } = useLanguage()
   const [currentStep, setCurrentStep] = useState(1)
   const [destination, setDestination] = useState('')
   const [destinationPlaceId, setDestinationPlaceId] = useState('')
@@ -413,8 +415,8 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 {currentStep > step ? <CheckCircle2 className="w-6 h-6" /> : step}
               </div>
               <span className="text-xs mt-2 text-gray-400 text-center">
-                {step === 1 && 'Mesto & Kategórie'}
-                {step === 2 && 'Špeciálne požiadavky'}
+                {step === 1 && t.tripPlanner.step1Title.replace('KROK 1 – ', '').replace('STEP 1 – ', '').replace('STEG 1 – ', '')}
+                {step === 2 && t.tripPlanner.step2Title.replace('KROK 2 – ', '').replace('STEP 2 – ', '').replace('STEG 2 – ', '')}
               </span>
             </div>
             {step < 2 && (
@@ -439,13 +441,13 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 1 – MESTO & KATEGÓRIE</h3>
+              <h3 className="text-2xl font-black text-cyan-400 mb-6">{t.tripPlanner.step1Title}</h3>
               
               {/* Destinácia */}
               <div>
                 <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
                   <MapPin className="w-6 h-6" />
-                  Destinácia <span className="text-pink-400">*</span>
+                  {t.tripPlanner.destination} <span className="text-pink-400">*</span>
                 </label>
                 <div className="relative">
                   {/* Používame starý Autocomplete (stále funguje pre existujúcich zákazníkov) */}
@@ -455,7 +457,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                     type="text"
                     value={destination}
                     onChange={(e) => handleDestinationChange(e.target.value)}
-                    placeholder="Zadajte mesto, región alebo konkrétne miesto (napr. Eiffel Tower, Paríž, Koloseum...)"
+                    placeholder={t.tripPlanner.destinationPlaceholder}
                     disabled={isGenerating || !isGoogleLoaded}
                     className="w-full px-5 py-4 glass border border-cyan-500/30 rounded-lg text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/50 transition-all disabled:opacity-50"
                     required
@@ -470,17 +472,17 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 </div>
                 <p className="text-sm text-gray-400 mt-2">
                   {isGoogleLoaded 
-                    ? 'Musíte vybrať konkrétne miesto zo zoznamu návrhov (autocomplete)' 
-                    : 'Načítavam Google Maps API...'}
+                    ? t.tripPlanner.destinationHint
+                    : t.tripPlanner.destinationHintLoading}
                 </p>
                 {!isGoogleLoaded && (
                   <p className="text-xs text-yellow-400 mt-1">
-                    ⚠ Ak sa autocomplete nenačíta, skontrolujte NEXT_PUBLIC_GOOGLE_API_KEY v .env
+                    {t.tripPlanner.destinationApiWarning}
                   </p>
                 )}
                 {selectedPlace && (
                   <div className="mt-3 p-3 glass border border-green-400/30 rounded-lg">
-                    <p className="text-sm text-green-400 font-bold">✓ Vybraté miesto:</p>
+                    <p className="text-sm text-green-400 font-bold">{t.tripPlanner.selectedPlace}</p>
                     <p className="text-white">{selectedPlace.name}</p>
                     {selectedPlace.formatted_address && (
                       <p className="text-xs text-gray-400">{selectedPlace.formatted_address}</p>
@@ -501,15 +503,15 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 <div className="mt-6">
                   <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
                     <Sparkles className="w-6 h-6" />
-                    Čo chcete hľadať? <span className="text-pink-400">*</span>
+                    {t.tripPlanner.whatToSearch} <span className="text-pink-400">*</span>
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[
-                      { id: 'attraction', label: 'Pamiatky', icon: '🏛️' },
-                      { id: 'activity', label: 'Aktivity', icon: '🏔️' },
-                      { id: 'restaurant', label: 'Reštaurácie', icon: '🍽️' },
-                      { id: 'accommodation', label: 'Ubytovanie', icon: '🏨' },
-                      { id: 'tip', label: 'Tipy', icon: '💡' },
+                      { id: 'attraction', label: t.tripPlanner.categoryAttraction, icon: '🏛️' },
+                      { id: 'activity', label: t.tripPlanner.categoryActivity, icon: '🏔️' },
+                      { id: 'restaurant', label: t.tripPlanner.categoryRestaurant, icon: '🍽️' },
+                      { id: 'accommodation', label: t.tripPlanner.categoryAccommodation, icon: '🏨' },
+                      { id: 'tip', label: t.tripPlanner.categoryTips, icon: '💡' },
                     ].map((category) => {
                       const isSelected = selectedCategories.includes(category.id as any)
                       return (
@@ -542,7 +544,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                   </div>
                   {selectedCategories.length === 0 && (
                     <p className="text-sm text-yellow-400 mt-2">
-                      ⚠ Musíte vybrať aspoň jednu kategóriu
+                      {t.tripPlanner.mustSelectCategory}
                     </p>
                   )}
                 </div>
@@ -551,7 +553,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                 {selectedPlace && selectedPlace.types && 
                  selectedPlace.types.some(t => ['point_of_interest', 'tourist_attraction', 'museum', 'park', 'restaurant'].includes(t)) && (
                   <div className="mt-4">
-                    <label className="block text-sm text-gray-400 mb-2">Režim plánovania:</label>
+                    <label className="block text-sm text-gray-400 mb-2">{t.tripPlanner.planningMode}</label>
                     <div className="grid grid-cols-2 gap-3">
                       <label className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
                         mode === 'around'
@@ -567,8 +569,8 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                           disabled={isGenerating}
                           className="sr-only"
                         />
-                        <span className="text-sm font-bold mb-1">Trip okolo miesta</span>
-                        <span className="text-xs text-gray-400">Nájdeme ďalšie miesta v okolí</span>
+                        <span className="text-sm font-bold mb-1">{t.tripPlanner.modeAround}</span>
+                        <span className="text-xs text-gray-400">{t.tripPlanner.modeAroundDesc}</span>
                       </label>
                       <label className={`flex flex-col p-4 border-2 rounded-lg cursor-pointer transition-all glass ${
                         mode === 'single'
@@ -584,8 +586,8 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                           disabled={isGenerating}
                           className="sr-only"
                         />
-                        <span className="text-sm font-bold mb-1">Detail miesta</span>
-                        <span className="text-xs text-gray-400">Len informácie o tomto mieste</span>
+                        <span className="text-sm font-bold mb-1">{t.tripPlanner.modeSingle}</span>
+                        <span className="text-xs text-gray-400">{t.tripPlanner.modeSingleDesc}</span>
                       </label>
                     </div>
                   </div>
@@ -604,13 +606,13 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <h3 className="text-2xl font-black text-cyan-400 mb-6">KROK 2 – ŠPECIÁLNE POŽIADAVKY</h3>
+              <h3 className="text-2xl font-black text-cyan-400 mb-6">{t.tripPlanner.step2Title}</h3>
               
               {/* Špeciálne požiadavky (Google Maps friendly) */}
               <div>
                 <label className="flex items-center gap-3 text-lg font-bold text-cyan-400 mb-4">
                   <Heart className="w-6 h-6" />
-                  Špeciálne požiadavky
+                  {t.tripPlanner.specialRequirements}
                 </label>
                 <div className="space-y-3">
                   {/* Pôvodné prepínače */}
@@ -622,7 +624,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                       disabled={isGenerating}
                       className="w-5 h-5 accent-cyan-400"
                     />
-                    <span className="text-gray-300">Potrebujem bezbariérový prístup</span>
+                    <span className="text-gray-300">{t.tripPlanner.accessibilityNeeds}</span>
                   </label>
                   <label className="flex items-center gap-3 p-4 border-2 border-gray-600 rounded-lg cursor-pointer transition-all glass hover:border-cyan-400/50">
                     <input
@@ -632,7 +634,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                       disabled={isGenerating}
                       className="w-5 h-5 accent-cyan-400"
                     />
-                    <span className="text-gray-300">Nechcem veľa schodov / náročné túry</span>
+                    <span className="text-gray-300">{t.tripPlanner.avoidStairs}</span>
                   </label>
                   <label className="flex items-center gap-3 p-4 border-2 border-gray-600 rounded-lg cursor-pointer transition-all glass hover:border-cyan-400/50">
                     <input
@@ -642,17 +644,17 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
                       disabled={isGenerating}
                       className="w-5 h-5 accent-cyan-400"
                     />
-                    <span className="text-gray-300">Cestujem so psom</span>
+                    <span className="text-gray-300">{t.tripPlanner.travelingWithPet}</span>
                   </label>
 
                   {/* Nové Google Maps filtre */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[
-                      { id: 'wheelchair_accessible', label: 'Bezbariérový vstup (Google)' },
-                      { id: 'kid_friendly', label: 'Vhodné pre deti' },
-                      { id: 'pet_friendly', label: 'Vhodné pre zvieratá' },
-                      { id: 'parking', label: 'Parkovanie k dispozícii' },
-                      { id: 'outdoor_seating', label: 'Vonkajšie sedenie' },
+                      { id: 'wheelchair_accessible', label: t.tripPlanner.wheelchairAccessible },
+                      { id: 'kid_friendly', label: t.tripPlanner.kidFriendly },
+                      { id: 'pet_friendly', label: t.tripPlanner.petFriendly },
+                      { id: 'parking', label: t.tripPlanner.parking },
+                      { id: 'outdoor_seating', label: t.tripPlanner.outdoorSeating },
                     ].map((option) => {
                       const isSelected = specialRequirements.includes(option.id)
                       return (
@@ -698,7 +700,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
             className="flex items-center gap-2 px-6 py-3 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyan-400/10 transition-all"
           >
             <ChevronLeft className="w-5 h-5" />
-            Späť
+            {t.tripPlanner.back}
           </button>
 
           {currentStep < 2 ? (
@@ -708,7 +710,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
               disabled={isGenerating}
               className="flex items-center gap-2 px-6 py-3 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-bold hover:bg-cyan-400/10 transition-all"
             >
-              Ďalej
+              {t.tripPlanner.next}
               <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
@@ -720,7 +722,7 @@ export default function InputForm({ onSubmit, isGenerating }: InputFormProps) {
               className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 text-white font-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed btn-futuristic glow-cyan hover:glow-purple transition-all"
             >
               <Send className="w-5 h-5" />
-              {isGenerating ? 'Generujem plán...' : 'Vytvoriť plán výletu'}
+              {isGenerating ? t.tripPlanner.generating : t.tripPlanner.createTripPlan}
             </motion.button>
           )}
         </div>
