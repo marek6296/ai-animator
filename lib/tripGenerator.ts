@@ -1176,6 +1176,20 @@ function parseSkeletonAndMatchPlaces(
       }
     }
     
+    // Pre kategóriu "tip" nehľadaj miesto - len vytvor textový tip
+    if (finalCategory === 'tip') {
+      // Vytvor tip bez place_id - len text
+      tips.push({
+        place_id: '', // Tipy nemajú place_id - použijeme prázdny string
+        category: 'tip',
+        description: description || genericCategory,
+        duration: duration || undefined,
+        price: price || undefined,
+      })
+      console.log(`✓ Added text-only tip: "${description.substring(0, 50)}"`)
+      continue // Preskoč hľadanie miesta
+    }
+    
     // Nájdi najlepšie miesto podľa kritérií
     let bestPlace: Place | null = null
     
@@ -1508,9 +1522,15 @@ async function generateTripWithTips(
   }
   
   // Odstráň duplikáty podľa place_id pred spracovaním
+  // Tipy s kategóriou "tip" nemajú place_id a nehľadajú sa miesta
   const uniqueTipsMap = new Map<string, ParsedTip>()
+  const tipOnlyTips: ParsedTip[] = []
+  
   for (const tip of tips) {
-    if (tip.place_id && !uniqueTipsMap.has(tip.place_id)) {
+    if (tip.category === 'tip') {
+      // Tipy bez place_id - len textové tipy
+      tipOnlyTips.push(tip)
+    } else if (tip.place_id && !uniqueTipsMap.has(tip.place_id)) {
       uniqueTipsMap.set(tip.place_id, tip)
     }
   }
@@ -1520,7 +1540,7 @@ async function generateTripWithTips(
   
   for (let i = 0; i < uniqueTips.length; i++) {
     const tip = uniqueTips[i]
-    const progress = 60 + (i / uniqueTips.length) * 20
+    const progress = 60 + ((tipOnlyTips.length + i) / (uniqueTips.length + tipOnlyTips.length)) * 20
     
     // Skontroluj, či už sme toto miesto pridali
     if (addedPlaceIds.has(tip.place_id)) {

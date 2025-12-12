@@ -45,10 +45,11 @@ export default function TipDetailModal({ tip, isOpen, onClose }: TipDetailModalP
   const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({})
 
   useEffect(() => {
-    if (isOpen && tip.place_id && !details && !loading) {
+    // Pre tipy bez place_id nehľadaj detaily
+    if (isOpen && tip.place_id && tip.place_id !== '' && tip.category !== 'tip' && !details && !loading) {
       fetchPlaceDetails()
     }
-  }, [isOpen, tip.place_id])
+  }, [isOpen, tip.place_id, tip.category])
 
   // Zablokuj scrollovanie body keď je modal otvorený (bez globálnych wheel/touch listenerov)
   useEffect(() => {

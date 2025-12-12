@@ -302,8 +302,8 @@ export default function ResultsDisplay({ results, userInput }: ResultsDisplayPro
                   >
                     {/* ÚPLNE NOVÝ DIZAJN - Moderný, symetrický, čitateľný */}
                     <div className="flex flex-col h-full bg-gray-950">
-                      {/* Fotka - menšia, na vrchu */}
-                      {displayImageUrl && displayImageUrl.trim() !== '' ? (
+                      {/* Fotka - menšia, na vrchu (len ak nie je tip bez place_id) */}
+                      {tip.category !== 'tip' && displayImageUrl && displayImageUrl.trim() !== '' ? (
                         <div className="relative w-full h-48 overflow-hidden bg-gray-800">
                           <motion.img
                             key={displayImageUrl}
