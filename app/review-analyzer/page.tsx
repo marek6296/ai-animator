@@ -45,18 +45,47 @@ export default function ReviewAnalyzer() {
     setAnalysisResult(null)
     setPlacePhotoUrl(null)
 
-    // Získaj URL fotky, ak existuje photo_reference
-    if (place.photo_reference) {
-      try {
-        const response = await fetch(
-          `/api/place-photo?photo_reference=${encodeURIComponent(place.photo_reference)}&maxWidth=800`
-        )
-        if (response.ok) {
-          const data = await response.json()
-          setPlacePhotoUrl(data.photoUrl)
+    // Získaj detaily miesta vrátane fotiek cez Place Details API
+    try {
+      const detailsResponse = await fetch(
+        `/api/place-details?place_id=${encodeURIComponent(place.place_id)}&formatted_address=${encodeURIComponent(place.formatted_address || '')}`
+      )
+      
+      if (detailsResponse.ok) {
+        const detailsData = await detailsResponse.json()
+        const placeDetails = detailsData.details
+        
+        // Získaj prvú fotku z detaily miesta
+        if (placeDetails?.photos && placeDetails.photos.length > 0) {
+          const firstPhoto = placeDetails.photos[0]
+          const photoReference = firstPhoto.photo_reference || firstPhoto.name
+          
+          if (photoReference) {
+            const photoResponse = await fetch(
+              `/api/place-photo?photo_reference=${encodeURIComponent(photoReference)}&maxWidth=800`
+            )
+            if (photoResponse.ok) {
+              const photoData = await photoResponse.json()
+              setPlacePhotoUrl(photoData.photoUrl)
+            }
+          }
         }
-      } catch (error) {
-        console.error('Error fetching place photo:', error)
+      }
+    } catch (error) {
+      console.error('Error fetching place details for photo:', error)
+      // Fallback: skús použiť photo_reference z place, ak existuje
+      if (place.photo_reference) {
+        try {
+          const response = await fetch(
+            `/api/place-photo?photo_reference=${encodeURIComponent(place.photo_reference)}&maxWidth=800`
+          )
+          if (response.ok) {
+            const data = await response.json()
+            setPlacePhotoUrl(data.photoUrl)
+          }
+        } catch (fallbackError) {
+          console.error('Error fetching place photo (fallback):', fallbackError)
+        }
       }
     }
   }
@@ -208,13 +237,21 @@ export default function ReviewAnalyzer() {
                   className="mt-6 p-4 glass border border-purple-500/20 rounded-lg"
                 >
                   <div className="flex gap-4">
-                    {placePhotoUrl && (
+                    {placePhotoUrl ? (
                       <div className="flex-shrink-0">
                         <img
                           src={placePhotoUrl}
                           alt={selectedPlace.name}
                           className="w-32 h-32 object-cover rounded-lg"
+                          onError={(e) => {
+                            console.error('Error loading place photo:', e)
+                            setPlacePhotoUrl(null)
+                          }}
                         />
+                      </div>
+                    ) : (
+                      <div className="flex-shrink-0 w-32 h-32 bg-gray-700 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-500 text-xs">Načítavam...</span>
                       </div>
                     )}
                     <div className="flex-1">
