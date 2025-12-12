@@ -337,7 +337,7 @@ export default function Home() {
                   />
                 </div>
                 <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  TRIP PLANNER
+                  EASY TRIP
                 </h1>
               </motion.div>
               
