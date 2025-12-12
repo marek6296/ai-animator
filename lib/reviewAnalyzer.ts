@@ -10,10 +10,51 @@ const openai = new OpenAI({
 })
 
 /**
- * Detekuje jazyk textu (vylepšená heuristika)
+ * Detekuje jazyk textu pomocou OpenAI (presnejšie ako heuristika)
+ * Fallback na heuristiku ak OpenAI zlyhá
+ */
+async function detectLanguageWithAI(text: string): Promise<string> {
+  if (!text || text.trim().length === 0) return 'unknown'
+  
+  // Pre krátke texty použij heuristiku
+  if (text.trim().length < 20) {
+    return detectLanguageHeuristic(text)
+  }
+  
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'Detekuj jazyk textu. Vráť len ISO 639-1 kód jazyka (napr. sk, en, no, da, sv, de, fr, es, it, nl, pl, hu, ro, cs). Ak nie si istý, vráť "unknown".'
+        },
+        {
+          role: 'user',
+          content: `Aký jazyk je tento text? Vráť len ISO kód jazyka.\n\n"${text.substring(0, 200)}"`
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 10,
+    })
+    
+    const detectedLang = response.choices[0]?.message?.content?.trim().toLowerCase() || 'unknown'
+    // Validuj, že je to platný ISO kód (2 písmená)
+    if (/^[a-z]{2}$/.test(detectedLang)) {
+      return detectedLang
+    }
+    return detectLanguageHeuristic(text)
+  } catch (error) {
+    console.warn('AI language detection failed, using heuristic:', error)
+    return detectLanguageHeuristic(text)
+  }
+}
+
+/**
+ * Detekuje jazyk textu (heuristika ako fallback)
  * Priorita: špecifické znaky > kľúčové slová > všeobecné znaky
  */
-function detectLanguage(text: string): string {
+function detectLanguageHeuristic(text: string): string {
   if (!text || text.trim().length === 0) return 'unknown'
   
   const textLower = text.toLowerCase()
@@ -99,6 +140,7 @@ function detectLanguage(text: string): string {
 
 /**
  * Normalizuje recenzie z Google Places API
+ * Detekcia jazyka sa robí pomocou heuristiky (rýchlejšie)
  */
 export function normalizeReviews(reviews: Array<{
   author_name?: string
@@ -111,7 +153,7 @@ export function normalizeReviews(reviews: Array<{
     text: review.text || '',
     rating: review.rating || 0,
     time: review.time || Date.now() / 1000,
-    language: detectLanguage(review.text || ''),
+    language: detectLanguageHeuristic(review.text || ''),
     author_name: review.author_name,
     relative_time_description: review.relative_time_description,
   }))
@@ -135,16 +177,32 @@ export async function analyzeReviews(
   const reviewsToAnalyze = sortedReviews.slice(0, 100)
   
   // Vypočítaj languageDistribution priamo z normalizovaných recenzií
+  // Použijeme heuristiku (rýchlejšie a lacnejšie)
   const languageCounts: Record<string, number> = {}
   reviewsToAnalyze.forEach(review => {
     const lang = review.language || 'unknown'
     languageCounts[lang] = (languageCounts[lang] || 0) + 1
   })
+  
   const totalReviews = reviewsToAnalyze.length
   const languageDistribution: Record<string, number> = {}
+  let totalPercentage = 0
+  
   Object.entries(languageCounts).forEach(([lang, count]) => {
-    languageDistribution[lang] = Math.round((count / totalReviews) * 100)
+    const percentage = Math.round((count / totalReviews) * 100)
+    if (percentage > 0) {
+      languageDistribution[lang] = percentage
+      totalPercentage += percentage
+    }
   })
+  
+  // Normalizuj percentá, ak sa sčítavajú na viac ako 100% (kvôli zaokrúhľovaniu)
+  if (totalPercentage > 100 && Object.keys(languageDistribution).length > 0) {
+    const factor = 100 / totalPercentage
+    Object.keys(languageDistribution).forEach(lang => {
+      languageDistribution[lang] = Math.round(languageDistribution[lang] * factor)
+    })
+  }
   
   // Vytvor JSON pre OpenAI
   const reviewsData = reviewsToAnalyze.map((review, index) => ({

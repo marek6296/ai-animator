@@ -9,7 +9,12 @@ interface ReviewAnalysisDisplayProps {
 }
 
 export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayProps) {
-  const { placeName, formattedAddress, rating, userRatingsTotal, analysis } = result
+  const { placeName, formattedAddress, rating, userRatingsTotal, analysis, normalizedReviews } = result
+
+  // Filtruj recenzie podľa sentimentu (rating)
+  const positiveReviews = normalizedReviews.filter(r => r.rating >= 4)
+  const neutralReviews = normalizedReviews.filter(r => r.rating === 3)
+  const negativeReviews = normalizedReviews.filter(r => r.rating <= 2)
 
   const getTrendIcon = () => {
     if (!analysis.recentTrends) return <Minus className="w-5 h-5" />
@@ -65,7 +70,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="grid md:grid-cols-3 gap-6"
+        className="grid md:grid-cols-4 gap-6"
       >
         <div className="glass rounded-xl p-6 border border-purple-500/20">
           <div className="text-sm text-gray-400 mb-2">Celkové hodnotenie</div>
@@ -82,18 +87,31 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
               />
             ))}
           </div>
+          <div className="text-xs text-gray-500 mt-2">{analysis.totalReviews} recenzií</div>
         </div>
 
-        <div className="glass rounded-xl p-6 border border-purple-500/20">
+        <div className="glass rounded-xl p-6 border border-green-500/30">
           <div className="text-sm text-gray-400 mb-2">Pozitívne</div>
           <div className="text-3xl font-bold text-green-400">{analysis.sentimentBreakdown.positive}%</div>
-          <div className="text-xs text-gray-500 mt-2">Neutrálne: {analysis.sentimentBreakdown.neutral}%</div>
+          <div className="text-xs text-gray-500 mt-2">
+            {Math.round((analysis.sentimentBreakdown.positive / 100) * analysis.totalReviews)} recenzií
+          </div>
         </div>
 
-        <div className="glass rounded-xl p-6 border border-purple-500/20">
+        <div className="glass rounded-xl p-6 border border-yellow-500/30">
+          <div className="text-sm text-gray-400 mb-2">Neutrálne</div>
+          <div className="text-3xl font-bold text-yellow-400">{analysis.sentimentBreakdown.neutral}%</div>
+          <div className="text-xs text-gray-500 mt-2">
+            {Math.round((analysis.sentimentBreakdown.neutral / 100) * analysis.totalReviews)} recenzií
+          </div>
+        </div>
+
+        <div className="glass rounded-xl p-6 border border-red-500/30">
           <div className="text-sm text-gray-400 mb-2">Negatívne</div>
           <div className="text-3xl font-bold text-red-400">{analysis.sentimentBreakdown.negative}%</div>
-          <div className="text-xs text-gray-500 mt-2">Celkom: {analysis.totalReviews} recenzií</div>
+          <div className="text-xs text-gray-500 mt-2">
+            {Math.round((analysis.sentimentBreakdown.negative / 100) * analysis.totalReviews)} recenzií
+          </div>
         </div>
       </motion.div>
 
@@ -260,20 +278,161 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
             Rozdelenie podľa jazyka
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(analysis.languageDistribution).map(([lang, count]) => {
-              const percentage = analysis.totalReviews > 0
-                ? (count / analysis.totalReviews) * 100
-                : 0
-              return (
-                <div key={lang} className="text-center p-4 glass border border-purple-500/20 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-400">{count}</div>
-                  <div className="text-sm text-gray-400 mt-1">{lang.toUpperCase()}</div>
-                  <div className="text-xs text-gray-500 mt-1">{percentage.toFixed(1)}%</div>
-                </div>
-              )
-            })}
+            {Object.entries(analysis.languageDistribution)
+              .sort(([, a], [, b]) => b - a) // Zoraď podľa percenta (najvyššie prvé)
+              .map(([lang, percentage]) => {
+                // percentage je už percento (0-100), nie počet
+                const count = Math.round((percentage / 100) * analysis.totalReviews)
+                return (
+                  <div key={lang} className="text-center p-4 glass border border-purple-500/20 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-400">{percentage}%</div>
+                    <div className="text-sm text-gray-400 mt-1">{lang.toUpperCase()}</div>
+                    <div className="text-xs text-gray-500 mt-1">{count} recenzií</div>
+                  </div>
+                )
+              })}
           </div>
         </motion.div>
+      )}
+
+      {/* Sentiment Reviews - Pozitívne, Neutrálne, Negatívne */}
+      {normalizedReviews && normalizedReviews.length > 0 && (
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Pozitívne recenzie */}
+          {positiveReviews.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="glass rounded-2xl p-6 border border-green-500/30"
+            >
+              <h3 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
+                Pozitívne recenzie ({positiveReviews.length})
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {positiveReviews.slice(0, 10).map((review, index) => (
+                  <div key={index} className="p-3 glass border border-green-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 ${
+                            i < review.rating
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-600'
+                          }`}
+                        />
+                      ))}
+                      {review.author_name && (
+                        <span className="text-xs text-gray-400 ml-2">{review.author_name}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300 line-clamp-3">{review.text}</p>
+                    {review.relative_time_description && (
+                      <p className="text-xs text-gray-500 mt-1">{review.relative_time_description}</p>
+                    )}
+                  </div>
+                ))}
+                {positiveReviews.length > 10 && (
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    + {positiveReviews.length - 10} ďalších pozitívnych recenzií
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Neutrálne recenzie */}
+          {neutralReviews.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="glass rounded-2xl p-6 border border-yellow-500/30"
+            >
+              <h3 className="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                <Minus className="w-5 h-5" />
+                Neutrálne recenzie ({neutralReviews.length})
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {neutralReviews.slice(0, 10).map((review, index) => (
+                  <div key={index} className="p-3 glass border border-yellow-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 ${
+                            i < review.rating
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-600'
+                          }`}
+                        />
+                      ))}
+                      {review.author_name && (
+                        <span className="text-xs text-gray-400 ml-2">{review.author_name}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300 line-clamp-3">{review.text}</p>
+                    {review.relative_time_description && (
+                      <p className="text-xs text-gray-500 mt-1">{review.relative_time_description}</p>
+                    )}
+                  </div>
+                ))}
+                {neutralReviews.length > 10 && (
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    + {neutralReviews.length - 10} ďalších neutrálnych recenzií
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Negatívne recenzie */}
+          {negativeReviews.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+              className="glass rounded-2xl p-6 border border-red-500/30"
+            >
+              <h3 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                <XCircle className="w-5 h-5" />
+                Negatívne recenzie ({negativeReviews.length})
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {negativeReviews.slice(0, 10).map((review, index) => (
+                  <div key={index} className="p-3 glass border border-red-500/20 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-3 h-3 ${
+                            i < review.rating
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-600'
+                          }`}
+                        />
+                      ))}
+                      {review.author_name && (
+                        <span className="text-xs text-gray-400 ml-2">{review.author_name}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300 line-clamp-3">{review.text}</p>
+                    {review.relative_time_description && (
+                      <p className="text-xs text-gray-500 mt-1">{review.relative_time_description}</p>
+                    )}
+                  </div>
+                ))}
+                {negativeReviews.length > 10 && (
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    + {negativeReviews.length - 10} ďalších negatívnych recenzií
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </div>
       )}
 
       {/* Recent Trends */}
@@ -281,7 +440,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 1.0 }}
           className="glass rounded-2xl p-8 border border-purple-500/30"
         >
           <h3 className="text-2xl font-bold text-purple-400 mb-4 flex items-center gap-2">
