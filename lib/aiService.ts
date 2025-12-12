@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { generateImageWithSDXL } from './stableDiffusionService'
+import { createSystemPromptWithLanguage, type Language } from './languageUtils'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
@@ -102,10 +103,16 @@ export async function generateImage(
   throw new Error('Nepodarilo sa vygenerovať obrázok po viacerých pokusoch')
 }
 
-export async function generateText(prompt: string, retries = 2): Promise<string> {
+export async function generateText(
+  prompt: string, 
+  retries = 2,
+  language: Language = 'sk'
+): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY nie je nastavený v .env súbore')
   }
+
+  const systemPrompt = createSystemPromptWithLanguage(language)
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -114,7 +121,7 @@ export async function generateText(prompt: string, retries = 2): Promise<string>
         messages: [
           {
             role: 'system',
-            content: 'Si kreatívny asistent, ktorý pomáha vytvárať komiksy a príbehy. Odpovedaj výlučne v slovenčine. Buď presný a dodržiavaj formátovanie.',
+            content: systemPrompt,
           },
           {
             role: 'user',

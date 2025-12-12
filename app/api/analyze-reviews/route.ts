@@ -11,7 +11,7 @@ export const maxDuration = 300
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { place_id, formatted_address } = body
+    const { place_id, formatted_address, language = 'sk' } = body
 
     if (!place_id) {
       return NextResponse.json(
@@ -60,8 +60,8 @@ export async function POST(request: NextRequest) {
       analysis = cachedAnalysis
     } else {
       // KROK 5: Analyzuj recenzie pomocou AI
-      console.log(`[analyze-reviews] Starting AI analysis...`)
-      analysis = await analyzeReviews(placeDetails.name, normalizedReviews)
+      console.log(`[analyze-reviews] Starting AI analysis in language: ${language}...`)
+      analysis = await analyzeReviews(placeDetails.name, normalizedReviews, language)
       console.log(`[analyze-reviews] Analysis completed`)
       
       // Ulož do cache

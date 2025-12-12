@@ -1,4 +1,7 @@
 export interface UserInput {
+  // JAZYK
+  language?: 'sk' | 'en' | 'no' // Jazyk pre AI generovanie obsahu
+  
   // KROK 1 - ZÁKLAD
   destination?: string // Destinácia (mesto, región, alebo konkrétny point) - DEPRECATED, použite root_place_id
   destinationPlaceId?: string // Google Places place_id pre presnú identifikáciu - DEPRECATED, použite root_place_id

@@ -3,9 +3,12 @@
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { MapPin, Sparkles, BarChart3, Compass } from 'lucide-react'
+import LanguageSelector from '@/components/LanguageSelector'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function Home() {
   const router = useRouter()
+  const { t } = useLanguage()
 
   return (
     <main className="min-h-screen animated-gradient grid-pattern relative overflow-hidden">
@@ -77,7 +80,7 @@ export default function Home() {
               />
             </div>
             <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              EASY PLACES
+              {t.mainPage.title}
             </h1>
           </motion.div>
           
@@ -87,8 +90,7 @@ export default function Home() {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
           >
-            Inteligentné nástroje pre <span className="text-cyan-400 font-semibold">nájdenie zaujímavých miest</span> a{' '}
-            <span className="text-purple-400 font-semibold">analýzu recenzií</span>
+            {t.mainPage.subtitle}
           </motion.p>
         </motion.div>
 
@@ -108,12 +110,12 @@ export default function Home() {
               <div className="flex items-center justify-center w-20 h-20 rounded-full bg-cyan-500/20 mb-6 group-hover:bg-cyan-500/30 transition-colors">
                 <Compass className="w-10 h-10 text-cyan-400" />
               </div>
-              <h2 className="text-3xl font-bold text-cyan-400 mb-4">Miesta</h2>
+              <h2 className="text-3xl font-bold text-cyan-400 mb-4">{t.mainPage.findPlaces}</h2>
               <p className="text-gray-300 text-lg leading-relaxed">
-                Navrhne miesta na základe recenzií a vyberie relevantné miesta, ktoré stoja za návštevu.
+                {t.mainPage.findPlacesDescription}
               </p>
               <div className="mt-6 flex items-center text-cyan-400 font-semibold group-hover:translate-x-2 transition-transform">
-                Začať plánovať
+                {t.mainPage.startPlanning}
                 <span className="ml-2">→</span>
               </div>
             </div>
@@ -133,12 +135,12 @@ export default function Home() {
               <div className="flex items-center justify-center w-20 h-20 rounded-full bg-purple-500/20 mb-6 group-hover:bg-purple-500/30 transition-colors">
                 <BarChart3 className="w-10 h-10 text-purple-400" />
               </div>
-              <h2 className="text-3xl font-bold text-purple-400 mb-4">Analyzovať recenzie</h2>
+              <h2 className="text-3xl font-bold text-purple-400 mb-4">{t.mainPage.analyzeReviews}</h2>
               <p className="text-gray-300 text-lg leading-relaxed">
-                Vyber ľubovoľné miesto z Google Maps a získaj podrobnú AI analýzu všetkých recenzií.
+                {t.mainPage.analyzeReviewsDescription}
               </p>
               <div className="mt-6 flex items-center text-purple-400 font-semibold group-hover:translate-x-2 transition-transform">
-                Analyzovať miesto
+                {t.mainPage.analyzePlace}
                 <span className="ml-2">→</span>
               </div>
             </div>
@@ -154,15 +156,15 @@ export default function Home() {
         >
           <div className="flex items-center gap-2 text-cyan-400">
             <MapPin className="w-5 h-5" />
-            <span className="text-sm font-medium">50000+ Destinácií</span>
+            <span className="text-sm font-medium">{t.mainPage.destinations}</span>
           </div>
           <div className="flex items-center gap-2 text-purple-400">
             <Sparkles className="w-5 h-5" />
-            <span className="text-sm font-medium">AI Analýza</span>
+            <span className="text-sm font-medium">{t.mainPage.aiAnalysis}</span>
           </div>
           <div className="flex items-center gap-2 text-pink-400">
             <BarChart3 className="w-5 h-5" />
-            <span className="text-sm font-medium">Detailné Recenzie</span>
+            <span className="text-sm font-medium">{t.mainPage.detailedReviews}</span>
           </div>
         </motion.div>
       </div>

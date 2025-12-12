@@ -1,5 +1,6 @@
 import { generateText } from './aiService'
 import { searchPlacesInCity, getPlacePhotoUrl, findPlaceByName, getPlaceDetails, type Place } from './placesService'
+import { createSystemPromptWithLanguage, getLanguageNameForAI, type Language } from './languageUtils'
 import type { UserInput, Trip, TripTip } from '@/types'
 
 // Jednoduchá funkcia pre fuzzy matching názvov
@@ -835,7 +836,13 @@ export async function generateTrip(
       }
     }).filter(Boolean).join(', ')
     
+    // Získaj jazyk z inputu alebo použij slovenčinu ako default
+    const language: Language = input.language || 'sk'
+    const languageName = getLanguageNameForAI(language)
+    
     const aiPrompt = `Vytvor skeleton plán výletu do ${input.destination} v Európe.
+
+JAZYK: Všetky texty MUSIA byť v ${languageName}.
 
 KONTEKT O CESTOVATEĽOVI:
 ${contextDescription || 'Žiadne špecifické preferencie'}
@@ -871,7 +878,7 @@ KRITICKÉ PRAVIDLÁ PRE TURISTICKÉ ATRAKCIE:
 4. accommodation - MUSÍ byť skutočné ubytovanie: hotely, hostely, penzióny. NIE sú to: kancelárie, byty na prenájom.
 
 Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
-Tip 1: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis 400-450 znakov v slovenčine] | [Trvanie] | [Cena]
+Tip 1: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis 400-450 znakov v ${languageName}] | [Trvanie] | [Cena]
 Tip 2: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
 Tip 3: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
 ... (pokračuj až do Tip 12)
@@ -887,7 +894,7 @@ DÔLEŽITÉ PRAVIDLÁ:
 1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
 2. Prvé pole MUSÍ byť GENERICKÁ KATEGÓRIA (nie konkrétny názov miesta!)
 3. Všetky polia MUSIA byť oddelené znakom | (pipe)
-4. Všetky texty MUSIA byť v slovenčine
+4. Všetky texty MUSIA byť v ${languageName}
 5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
 6. Zahrň LEN vybrané kategórie: ${categoryInstructions}
 7. NEPOUŽÍVAJ kategórie, ktoré NIE SÚ vo VYBRANÝCH KATEGÓRIACH vyššie!
@@ -1903,8 +1910,10 @@ Vráť LEN JSON, bez dodatočného textu.`
   onProgress?.(80, 'Vytváram súhrn...')
   
   // Vygeneruj súhrn
-  const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v slovenčine. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
-  const summary = await generateText(summaryPrompt)
+  const language: Language = input.language || 'sk'
+  const languageName = getLanguageNameForAI(language)
+  const summaryPrompt = `Vytvor krátky súhrn (3-4 vety) o ${input.destination} v ${languageName}. Zahrň základné informácie o meste, jeho histórii, kultúre a prečo je to dobrá destinácia pre výlet.`
+  const summary = await generateText(summaryPrompt, 2, language)
   
   // Extrahuj krajinu
   const country = extractCountry(input.destination || '')

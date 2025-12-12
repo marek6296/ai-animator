@@ -7,10 +7,13 @@ import { ArrowLeft, BarChart3, Sparkles, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PlaceSelector from '@/components/PlaceSelector'
 import ReviewAnalysisDisplay from '@/components/ReviewAnalysisDisplay'
+import LanguageSelector from '@/components/LanguageSelector'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { ReviewAnalysisResult } from '@/types'
 
 export default function ReviewAnalyzer() {
   const router = useRouter()
+  const { selectedLanguage, t } = useLanguage()
   const [selectedPlace, setSelectedPlace] = useState<{
     place_id: string
     name: string
@@ -170,7 +173,7 @@ export default function ReviewAnalyzer() {
             className="flex items-center gap-2 px-6 py-3 glass border border-purple-500/30 rounded-lg text-purple-400 font-bold hover:bg-purple-400/10 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
-            Späť na hlavnú stránku
+            {t.reviewAnalyzer.backToMain}
           </button>
         </motion.div>
 
@@ -201,7 +204,7 @@ export default function ReviewAnalyzer() {
               />
             </div>
             <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-              REVIEW ANALYZER
+              {t.reviewAnalyzer.title}
             </h1>
           </motion.div>
           
@@ -211,7 +214,7 @@ export default function ReviewAnalyzer() {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
           >
-            Vyberte miesto z Google Maps a získajte <span className="text-purple-400 font-semibold">podrobnú AI analýzu</span> všetkých recenzií
+            {t.reviewAnalyzer.selectPlace}
           </motion.p>
         </motion.div>
 
@@ -224,7 +227,7 @@ export default function ReviewAnalyzer() {
             className="max-w-3xl mx-auto mb-8"
           >
             <div className="glass rounded-2xl p-8 border border-purple-500/30">
-              <h2 className="text-2xl font-bold text-purple-400 mb-6">Vyberte miesto</h2>
+              <h2 className="text-2xl font-bold text-purple-400 mb-6">{t.reviewAnalyzer.selectPlace}</h2>
               <PlaceSelector
                 onPlaceSelect={handlePlaceSelect}
                 disabled={isAnalyzing}
@@ -272,12 +275,12 @@ export default function ReviewAnalyzer() {
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Analyzujem recenzie...
+                    {t.reviewAnalyzer.analyzing}
                   </>
                 ) : (
                   <>
                     <BarChart3 className="w-5 h-5" />
-                    Analyzovať recenzie
+                    {t.reviewAnalyzer.analyzeButton}
                   </>
                 )}
               </button>

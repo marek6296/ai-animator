@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Star, TrendingUp, TrendingDown, Minus, CheckCircle2, XCircle, Lightbulb, Languages, BarChart3 } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { ReviewAnalysisResult } from '@/types'
 
 interface ReviewAnalysisDisplayProps {
@@ -9,6 +10,7 @@ interface ReviewAnalysisDisplayProps {
 }
 
 export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayProps) {
+  const { t } = useLanguage()
   const { placeName, formattedAddress, rating, userRatingsTotal, analysis, normalizedReviews } = result
 
   // Google Places API vracia len obmedzený počet recenzií (zvyčajne 5)
@@ -64,10 +66,10 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
           )}
           {userRatingsTotal && (
             <span className="text-gray-400">
-              ({userRatingsTotal} celkom, {normalizedReviews.length} dostupných z API)
+              ({userRatingsTotal} {t.reviewAnalysis.totalReviews}, {normalizedReviews.length} {t.reviewAnalysis.availableFromApi})
               {hasMoreReviews && (
                 <span className="text-yellow-400 text-sm ml-2 block mt-1">
-                  ⚠ Google Places API vracia len obmedzený počet recenzií (zvyčajne 5)
+                  ⚠ {t.reviewAnalysis.apiLimitWarning}
                 </span>
               )}
             </span>
@@ -83,7 +85,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         className="grid md:grid-cols-4 gap-6"
       >
         <div className="glass rounded-xl p-6 border border-purple-500/20">
-          <div className="text-sm text-gray-400 mb-2">Celkové hodnotenie</div>
+          <div className="text-sm text-gray-400 mb-2">{t.reviewAnalysis.overallRating}</div>
           <div className="text-3xl font-bold text-purple-400">{analysis.overallRating.toFixed(1)}</div>
           <div className="flex items-center gap-1 mt-2">
             {[...Array(5)].map((_, i) => (
@@ -97,30 +99,30 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
               />
             ))}
           </div>
-          <div className="text-xs text-gray-500 mt-2">{analysis.totalReviews} recenzií</div>
+          <div className="text-xs text-gray-500 mt-2">{analysis.totalReviews} {t.reviewAnalysis.reviews}</div>
         </div>
 
         <div className="glass rounded-xl p-6 border border-green-500/30">
-          <div className="text-sm text-gray-400 mb-2">Pozitívne</div>
+          <div className="text-sm text-gray-400 mb-2">{t.reviewAnalysis.positive}</div>
           <div className="text-3xl font-bold text-green-400">{analysis.sentimentBreakdown.positive}%</div>
           <div className="text-xs text-gray-500 mt-2">
-            {Math.round((analysis.sentimentBreakdown.positive / 100) * analysis.totalReviews)} recenzií
+            {Math.round((analysis.sentimentBreakdown.positive / 100) * analysis.totalReviews)} {t.reviewAnalysis.reviews}
           </div>
         </div>
 
         <div className="glass rounded-xl p-6 border border-yellow-500/30">
-          <div className="text-sm text-gray-400 mb-2">Neutrálne</div>
+          <div className="text-sm text-gray-400 mb-2">{t.reviewAnalysis.neutral}</div>
           <div className="text-3xl font-bold text-yellow-400">{analysis.sentimentBreakdown.neutral}%</div>
           <div className="text-xs text-gray-500 mt-2">
-            {Math.round((analysis.sentimentBreakdown.neutral / 100) * analysis.totalReviews)} recenzií
+            {Math.round((analysis.sentimentBreakdown.neutral / 100) * analysis.totalReviews)} {t.reviewAnalysis.reviews}
           </div>
         </div>
 
         <div className="glass rounded-xl p-6 border border-red-500/30">
-          <div className="text-sm text-gray-400 mb-2">Negatívne</div>
+          <div className="text-sm text-gray-400 mb-2">{t.reviewAnalysis.negative}</div>
           <div className="text-3xl font-bold text-red-400">{analysis.sentimentBreakdown.negative}%</div>
           <div className="text-xs text-gray-500 mt-2">
-            {Math.round((analysis.sentimentBreakdown.negative / 100) * analysis.totalReviews)} recenzií
+            {Math.round((analysis.sentimentBreakdown.negative / 100) * analysis.totalReviews)} {t.reviewAnalysis.reviews}
           </div>
         </div>
       </motion.div>
@@ -135,7 +137,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         >
           <h3 className="text-2xl font-bold text-purple-400 mb-6 flex items-center gap-2">
             <BarChart3 className="w-6 h-6" />
-            Kľúčové témy
+            {t.reviewAnalysis.keyThemes}
           </h3>
           <div className="grid md:grid-cols-2 gap-4">
             {analysis.keyThemes.map((theme, index) => (
@@ -181,7 +183,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
           >
             <h3 className="text-2xl font-bold text-green-400 mb-6 flex items-center gap-2">
               <CheckCircle2 className="w-6 h-6" />
-              Silné stránky
+              {t.reviewAnalysis.strengths}
             </h3>
             <ul className="space-y-3">
               {analysis.strengths.map((strength, index) => (
@@ -203,7 +205,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
           >
             <h3 className="text-2xl font-bold text-red-400 mb-6 flex items-center gap-2">
               <XCircle className="w-6 h-6" />
-              Slabé stránky
+              {t.reviewAnalysis.weaknesses}
             </h3>
             <ul className="space-y-3">
               {analysis.weaknesses.map((weakness, index) => (
@@ -227,7 +229,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         >
           <h3 className="text-2xl font-bold text-cyan-400 mb-6 flex items-center gap-2">
             <Lightbulb className="w-6 h-6" />
-            Odporúčania
+            {t.reviewAnalysis.recommendations}
           </h3>
           <ul className="space-y-3">
             {analysis.recommendations.map((rec, index) => (
@@ -247,7 +249,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         transition={{ delay: 0.5 }}
         className="glass rounded-2xl p-8 border border-purple-500/30"
       >
-        <h3 className="text-2xl font-bold text-purple-400 mb-6">Rozdelenie hodnotení</h3>
+        <h3 className="text-2xl font-bold text-purple-400 mb-6">{t.reviewAnalysis.ratingDistribution}</h3>
         <div className="space-y-3">
           {(['5', '4', '3', '2', '1'] as const).map((rating) => {
             const count = analysis.ratingDistribution[rating] || 0
@@ -285,7 +287,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         >
           <h3 className="text-2xl font-bold text-purple-400 mb-6 flex items-center gap-2">
             <Languages className="w-6 h-6" />
-            Rozdelenie podľa jazyka
+            {t.reviewAnalysis.languageDistribution}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Object.entries(analysis.languageDistribution)
@@ -297,7 +299,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                   <div key={lang} className="text-center p-4 glass border border-purple-500/20 rounded-lg">
                     <div className="text-2xl font-bold text-purple-400">{percentage}%</div>
                     <div className="text-sm text-gray-400 mt-1">{lang.toUpperCase()}</div>
-                    <div className="text-xs text-gray-500 mt-1">{count} recenzií</div>
+                    <div className="text-xs text-gray-500 mt-1">{count} {t.reviewAnalysis.reviews}</div>
                   </div>
                 )
               })}
@@ -318,7 +320,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
             >
               <h3 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
-                Pozitívne recenzie ({positiveReviews.length})
+                {t.reviewAnalysis.positiveReviews} ({positiveReviews.length})
               </h3>
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {positiveReviews.map((review, index) => (
@@ -358,7 +360,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
             >
               <h3 className="text-xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
                 <Minus className="w-5 h-5" />
-                Neutrálne recenzie ({neutralReviews.length})
+                {t.reviewAnalysis.neutralReviews} ({neutralReviews.length})
               </h3>
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {neutralReviews.map((review, index) => (
@@ -398,7 +400,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
             >
               <h3 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
                 <XCircle className="w-5 h-5" />
-                Negatívne recenzie ({negativeReviews.length})
+                {t.reviewAnalysis.negativeReviews} ({negativeReviews.length})
               </h3>
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {negativeReviews.map((review, index) => (
@@ -440,7 +442,7 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
         >
           <h3 className="text-2xl font-bold text-purple-400 mb-4 flex items-center gap-2">
             {getTrendIcon()}
-            <span className={getTrendColor()}>Nedávne trendy</span>
+            <span className={getTrendColor()}>{t.reviewAnalysis.recentTrends}</span>
           </h3>
           <p className="text-gray-300">{analysis.recentTrends.description}</p>
         </motion.div>

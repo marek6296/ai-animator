@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import ToasterProvider from '@/components/ToasterProvider'
+import { LanguageProvider } from '@/contexts/LanguageContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="sk">
       <body className={inter.className}>
-        {children}
-        <ToasterProvider />
+        <LanguageProvider>
+          {children}
+          <ToasterProvider />
+        </LanguageProvider>
       </body>
     </html>
   )

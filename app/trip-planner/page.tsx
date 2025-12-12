@@ -8,10 +8,13 @@ import toast from 'react-hot-toast'
 import InputForm from '@/components/InputForm'
 import ResultsDisplay from '@/components/ResultsDisplay'
 import ProgressBar from '@/components/ProgressBar'
+import LanguageSelector from '@/components/LanguageSelector'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { UserInput, GenerationResult, ProgressUpdate } from '@/types'
 
 export default function TripPlanner() {
   const router = useRouter()
+  const { selectedLanguage, t } = useLanguage()
   const [userInput, setUserInput] = useState<UserInput | null>(null)
   const [results, setResults] = useState<GenerationResult | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -74,7 +77,13 @@ export default function TripPlanner() {
   }
 
   const handleSubmit = async (input: UserInput) => {
-    setUserInput(input)
+    // Pridaj jazyk do inputu
+    const inputWithLanguage = {
+      ...input,
+      language: selectedLanguage,
+    }
+    
+    setUserInput(inputWithLanguage)
     setIsGenerating(true)
     setResults(null)
     setProgress(null)
@@ -324,7 +333,7 @@ export default function TripPlanner() {
                 className="flex items-center gap-2 px-6 py-3 glass border border-cyan-500/30 rounded-lg text-cyan-400 font-bold hover:bg-cyan-400/10 transition-all"
               >
                 <ArrowLeft className="w-5 h-5" />
-                Späť na hlavnú stránku
+                {t.tripPlanner.backToMain}
               </button>
             </motion.div>
 
@@ -355,7 +364,7 @@ export default function TripPlanner() {
                   />
                 </div>
                 <h1 className="text-6xl md:text-7xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  TRIP PLANNER
+                  {t.tripPlanner.title}
                 </h1>
               </motion.div>
               
