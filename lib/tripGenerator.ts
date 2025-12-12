@@ -245,24 +245,22 @@ export async function generateTrip(
       }
     }
     
-    // Ak má aj záujmy, pridaj ich typy (pre kompatibilitu)
-    const userInterests = input.interests || []
-    if (userInterests.length > 0) {
-      for (const interest of userInterests) {
-        const types = interestToTypes[interest]
-        if (types) {
-          for (const type of types) {
-            if (!searchQueries.includes(type)) {
-              searchQueries.push(type)
-            }
-          }
-        }
+    // NEPRIDÁVAJ záujmy (interests) - používaj LEN vybrané kategórie!
+    // Ak nemá žiadne typy, pridáme základné (fallback) - ale LEN ak sú vybrané kategórie
+    if (searchQueries.length === 0 && selectedCategories.length > 0) {
+      // Fallback len pre vybrané kategórie
+      if (selectedCategories.includes('attraction')) {
+        searchQueries.push('museum', 'tourist_attraction')
       }
-    }
-    
-    // Ak nemá žiadne typy, pridáme základné (fallback)
-    if (searchQueries.length === 0) {
-      searchQueries.push('tourist_attraction', 'restaurant', 'park', 'museum')
+      if (selectedCategories.includes('restaurant')) {
+        searchQueries.push('restaurant')
+      }
+      if (selectedCategories.includes('activity')) {
+        searchQueries.push('park')
+      }
+      if (selectedCategories.includes('accommodation')) {
+        searchQueries.push('lodging')
+      }
     }
 
     // Hľadaj miesta podľa záujmov - použij location bias ak máme súradnice
@@ -288,23 +286,7 @@ export async function generateTrip(
       }
     }
     
-    // Vždy pridáme aj všeobecné turistické atrakcie
-    if (!searchQueries.includes('tourist_attraction')) {
-      onProgress?.(40, 'Hľadám turistické atrakcie...')
-      try {
-        const attractions = await searchPlacesInCity(englishCity, 'tourist attractions', 15, locationBias)
-        // Filtruj výsledky - musia obsahovať názov mesta v adrese
-        const filteredAttractions = attractions.filter(place => {
-          if (!place.formatted_address) return false
-          const addressLower = place.formatted_address.toLowerCase()
-          const cityLower = cityNameForSearch.toLowerCase()
-          return addressLower.includes(cityLower) || cityLower.includes(addressLower.split(',')[0]?.toLowerCase() || '')
-        })
-        places.push(...filteredAttractions)
-      } catch (error) {
-        console.warn('Error searching attractions:', error)
-      }
-    }
+    // NEPRIDÁVAJ všeobecné turistické atrakcie - používaj LEN vybrané kategórie!
 
     // Odstráň duplikáty podľa place_id
     const uniquePlaces = new Map<string, Place>()
@@ -847,17 +829,24 @@ JAZYK: Všetky texty MUSIA byť v ${languageName}.
 KONTEKT O CESTOVATEĽOVI:
 ${contextDescription || 'Žiadne špecifické preferencie'}
 
-VYBRANÉ KATEGÓRIE (použi LEN tieto):
+VYBRANÉ KATEGÓRIE (použi VÝHRADNE LEN tieto - NIKDY nepoužívaj iné!):
 ${selectedCategories.map(cat => {
   switch(cat) {
-    case 'attraction': return '- attraction (pamiatky, múzeá, historické miesta)'
-    case 'activity': return '- activity (aktivity, zábava, športy)'
-    case 'restaurant': return '- restaurant (reštaurácie, kaviarne, jedlo)'
-    case 'accommodation': return '- accommodation (ubytovanie, hotely)'
-    case 'tip': return '- tip (užitočné tipy, rady, praktické informácie)'
+    case 'attraction': return '- attraction (POUŽIJ LEN pre: múzeá, galérie, historické pamiatky, kostoly, katedrály, hrady, zámky, monumenty, ruiny, archeologické lokality)'
+    case 'activity': return '- activity (POUŽIJ LEN pre: parky, prírodné pamiatky, zábavné parky, zoo, akváriá, športové aktivity, wellness, spa)'
+    case 'restaurant': return '- restaurant (POUŽIJ LEN pre: reštaurácie, kaviarne, bary s jedlom, pekárne)'
+    case 'accommodation': return '- accommodation (POUŽIJ LEN pre: hotely, hostely, penzióny, rezorty)'
+    case 'tip': return '- tip (POUŽIJ LEN pre: užitočné tipy, rady, praktické informácie - NIE konkrétne miesta!)'
     default: return ''
   }
 }).filter(Boolean).join('\n')}
+
+KRITICKÉ PRAVIDLÁ PRE KATEGORIZÁCIU:
+- attraction: NIKDY nepoužívaj pre reštaurácie, obchody, služby, úrady, banky, nemocnice, školy, parkoviská, čerpacie stanice, autoservisy, kancelárie
+- activity: NIKDY nepoužívaj pre reštaurácie, obchody, služby, úrady, kancelárie
+- restaurant: NIKDY nepoužívaj pre obchody, potraviny, fast food reťazce (ak nie sú skutočné reštaurácie)
+- accommodation: NIKDY nepoužívaj pre kancelárie, byty na prenájom, úrady
+- tip: NIKDY nepoužívaj pre konkrétne miesta - len všeobecné rady a tipy
 
 DÔLEŽITÉ: NEPOUŽÍVAJ konkrétne názvy miest. Namiesto toho použij GENERICKÉ KATEGÓRIE, napríklad:
 - "top museum" (najlepšie múzeum)
@@ -877,28 +866,30 @@ KRITICKÉ PRAVIDLÁ PRE TURISTICKÉ ATRAKCIE:
 3. restaurant - MUSÍ byť skutočná reštaurácia/kaviareň s jedlom pre turistov. NIE sú to: fast food reťazce, potraviny, obchody.
 4. accommodation - MUSÍ byť skutočné ubytovanie: hotely, hostely, penzióny. NIE sú to: kancelárie, byty na prenájom.
 
-Vytvor 10-12 tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
+Vytvor ${selectedCategories.includes('tip') ? '12-15' : '10-12'} tipov na výlet. Pre každý tip MUSÍŠ použiť tento PRESNÝ formát (každý tip na novom riadku):
 Tip 1: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis 400-450 znakov v ${languageName}] | [Trvanie] | [Cena]
 Tip 2: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
 Tip 3: [GENERICKÁ KATEGÓRIA] | [Kategória] | [Popis] | [Trvanie] | [Cena]
-... (pokračuj až do Tip 12)
+... (pokračuj až do Tip ${selectedCategories.includes('tip') ? '15' : '12'})
 
-Kategórie (použi presne tieto hodnoty a LEN tie, ktoré sú vo VYBRANÝCH KATEGÓRIACH vyššie):
-- attraction (pre pamiatky, múzeá, historické miesta)
-- activity (pre aktivity, zábavu, športy)
-- restaurant (pre reštaurácie, kaviarne, jedlo)
-- accommodation (pre ubytovanie, hotely)
-- tip (pre užitočné tipy, rady, praktické informácie)
+Kategórie (použi VÝHRADNE LEN tieto hodnoty a LEN tie, ktoré sú vo VYBRANÝCH KATEGÓRIACH vyššie):
+${selectedCategories.includes('attraction') ? '- attraction (POUŽIJ LEN pre: múzeá, galérie, historické pamiatky, kostoly, katedrály, hrady, zámky, monumenty, ruiny, archeologické lokality)' : ''}
+${selectedCategories.includes('activity') ? '- activity (POUŽIJ LEN pre: parky, prírodné pamiatky, zábavné parky, zoo, akváriá, športové aktivity, wellness, spa)' : ''}
+${selectedCategories.includes('restaurant') ? '- restaurant (POUŽIJ LEN pre: reštaurácie, kaviarne, bary s jedlom, pekárne)' : ''}
+${selectedCategories.includes('accommodation') ? '- accommodation (POUŽIJ LEN pre: hotely, hostely, penzióny, rezorty)' : ''}
+${selectedCategories.includes('tip') ? '- tip (POUŽIJ LEN pre: všeobecné tipy, rady, praktické informácie - NIE konkrétne miesta! Príklady: "Najlepší čas na návštevu", "Ako sa dostať do mesta", "Čo si vziať so sebou", "Miestne zvyky a tradície")' : ''}
 
 DÔLEŽITÉ PRAVIDLÁ:
 1. Každý tip MUSÍ začínať "Tip X:" kde X je číslo
 2. Prvé pole MUSÍ byť GENERICKÁ KATEGÓRIA (nie konkrétny názov miesta!)
 3. Všetky polia MUSIA byť oddelené znakom | (pipe)
 4. Všetky texty MUSIA byť v ${languageName}
-5. Vytvor MINIMÁLNE 10 tipov, ideálne 12
-6. Zahrň LEN vybrané kategórie: ${categoryInstructions}
+5. Vytvor MINIMÁLNE ${selectedCategories.includes('tip') ? '12' : '10'} tipov, ideálne ${selectedCategories.includes('tip') ? '15' : '12'}
+6. Zahrň LEN vybrané kategórie: ${selectedCategories.join(', ')}
 7. NEPOUŽÍVAJ kategórie, ktoré NIE SÚ vo VYBRANÝCH KATEGÓRIACH vyššie!
 8. VYBERAJ LEN SKUTOČNÉ TURISTICKÉ ATRAKCIE - nie obchody, služby, kancelárie, úrady!
+9. ${selectedCategories.includes('tip') ? 'Zahrň MINIMÁLNE 2-3 tipy s kategóriou "tip" - všeobecné rady a praktické informácie!' : ''}
+10. Pre každú vybranú kategóriu vytvor MINIMÁLNE 2-3 tipy!
 
 Príklad správneho formátu:
 Tip 1: top museum | attraction | Najlepšie múzeum v meste s rozsiahlymi zbierkami... | 2-3 hodiny | €10-15
@@ -1156,6 +1147,8 @@ function parseSkeletonAndMatchPlaces(
           finalCategory = 'restaurant'
         } else if (genericCategory.includes('hotel') || genericCategory.includes('ubytovanie') || genericCategory.includes('accommodation')) {
           finalCategory = 'accommodation'
+        } else if (genericCategory.includes('tip') || genericCategory.includes('rada') || genericCategory.includes('rady')) {
+          finalCategory = 'tip'
         }
         console.log(`⚠ Using fallback category "${finalCategory}" for "${genericCategory}"`)
       }
