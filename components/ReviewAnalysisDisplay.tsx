@@ -310,8 +310,8 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                 <CheckCircle2 className="w-5 h-5" />
                 Pozitívne recenzie ({positiveReviews.length})
               </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {positiveReviews.slice(0, 10).map((review, index) => (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                {positiveReviews.map((review, index) => (
                   <div key={index} className="p-3 glass border border-green-500/20 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       {[...Array(5)].map((_, i) => (
@@ -334,11 +334,6 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                     )}
                   </div>
                 ))}
-                {positiveReviews.length > 10 && (
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    + {positiveReviews.length - 10} ďalších pozitívnych recenzií
-                  </p>
-                )}
               </div>
             </motion.div>
           )}
@@ -355,8 +350,8 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                 <Minus className="w-5 h-5" />
                 Neutrálne recenzie ({neutralReviews.length})
               </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {neutralReviews.slice(0, 10).map((review, index) => (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                {neutralReviews.map((review, index) => (
                   <div key={index} className="p-3 glass border border-yellow-500/20 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       {[...Array(5)].map((_, i) => (
@@ -379,11 +374,6 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                     )}
                   </div>
                 ))}
-                {neutralReviews.length > 10 && (
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    + {neutralReviews.length - 10} ďalších neutrálnych recenzií
-                  </p>
-                )}
               </div>
             </motion.div>
           )}
@@ -400,8 +390,8 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                 <XCircle className="w-5 h-5" />
                 Negatívne recenzie ({negativeReviews.length})
               </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {negativeReviews.slice(0, 10).map((review, index) => (
+              <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                {negativeReviews.map((review, index) => (
                   <div key={index} className="p-3 glass border border-red-500/20 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
                       {[...Array(5)].map((_, i) => (
@@ -424,11 +414,6 @@ export default function ReviewAnalysisDisplay({ result }: ReviewAnalysisDisplayP
                     )}
                   </div>
                 ))}
-                {negativeReviews.length > 10 && (
-                  <p className="text-xs text-gray-500 text-center mt-2">
-                    + {negativeReviews.length - 10} ďalších negatívnych recenzií
-                  </p>
-                )}
               </div>
             </motion.div>
           )}
