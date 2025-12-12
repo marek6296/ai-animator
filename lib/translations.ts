@@ -65,10 +65,11 @@ export interface Translations {
     petFriendly: string
     parking: string
     outdoorSeating: string
-    back: string
-    next: string
-    generating: string
-    createTripPlan: string
+      back: string
+      next: string
+      generating: string
+      createTripPlan: string
+      tripGeneratedSuccess: string
   }
   
   // Review Analyzer
@@ -172,8 +173,9 @@ const translations: Record<Language, Translations> = {
       outdoorSeating: 'Vonkajšie sedenie',
       back: 'Späť',
       next: 'Ďalej',
-      generating: 'Generujem plán...',
-      createTripPlan: 'Vytvoriť plán výletu',
+      generating: 'Vyhľadávam miesta...',
+      createTripPlan: 'Vyhľadať miesta',
+      tripGeneratedSuccess: 'Miesta boli úspešne vyhľadané!',
     },
     reviewAnalyzer: {
       title: 'ANALÝZA RECENZIÍ',
@@ -271,8 +273,9 @@ const translations: Record<Language, Translations> = {
       outdoorSeating: 'Outdoor seating',
       back: 'Back',
       next: 'Next',
-      generating: 'Generating plan...',
-      createTripPlan: 'Create Trip Plan',
+      generating: 'Searching for places...',
+      createTripPlan: 'Search Places',
+      tripGeneratedSuccess: 'Places found successfully!',
     },
     reviewAnalyzer: {
       title: 'REVIEW ANALYZER',
@@ -370,8 +373,9 @@ const translations: Record<Language, Translations> = {
       outdoorSeating: 'Utendørs sitteplasser',
       back: 'Tilbake',
       next: 'Neste',
-      generating: 'Genererer plan...',
-      createTripPlan: 'Opprett Turplan',
+      generating: 'Søker etter steder...',
+      createTripPlan: 'Søk Steder',
+      tripGeneratedSuccess: 'Steder funnet!',
     },
     reviewAnalyzer: {
       title: 'ANMELDELSESANALYSATOR',

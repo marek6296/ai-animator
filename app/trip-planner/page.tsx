@@ -208,7 +208,7 @@ export default function TripPlanner() {
               })
             }
             setResults(data.result)
-            toast.success('Plán výletu bol úspešne vygenerovaný!')
+            toast.success(t.tripPlanner.tripGeneratedSuccess)
           } else {
             console.error('No result in progress data:', data)
             toast.error('Nepodarilo sa vygenerovať obsah. Skúste to znova.')
