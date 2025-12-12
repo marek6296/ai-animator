@@ -107,19 +107,26 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
             whileHover={{ scale: 1.02, y: -5 }}
-            className="glass rounded-2xl p-8 border border-cyan-500/30 cursor-pointer group relative overflow-hidden"
+            className="glass rounded-2xl p-8 border border-cyan-500/30 cursor-pointer group relative overflow-hidden flex flex-col h-full"
             onClick={() => router.push('/trip-planner')}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Icon */}
               <div className="flex items-center justify-center w-20 h-20 rounded-full bg-cyan-500/20 mb-6 group-hover:bg-cyan-500/30 transition-colors">
                 <Compass className="w-10 h-10 text-cyan-400" />
               </div>
+              
+              {/* Title */}
               <h2 className="text-3xl font-bold text-cyan-400 mb-4">{t.mainPage.findPlaces}</h2>
-              <p className="text-gray-300 text-lg leading-relaxed">
+              
+              {/* Description - flex-grow to push button down */}
+              <p className="text-gray-300 text-lg leading-relaxed flex-grow mb-6">
                 {t.mainPage.findPlacesDescription}
               </p>
-              <div className="mt-6 flex items-center text-cyan-400 font-semibold group-hover:translate-x-2 transition-transform">
+              
+              {/* Button - aligned to bottom right */}
+              <div className="flex justify-end items-center text-cyan-400 font-semibold group-hover:translate-x-2 transition-transform">
                 {t.mainPage.startPlanning}
                 <span className="ml-2">→</span>
               </div>
@@ -132,19 +139,26 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
             whileHover={{ scale: 1.02, y: -5 }}
-            className="glass rounded-2xl p-8 border border-purple-500/30 cursor-pointer group relative overflow-hidden"
+            className="glass rounded-2xl p-8 border border-purple-500/30 cursor-pointer group relative overflow-hidden flex flex-col h-full"
             onClick={() => router.push('/review-analyzer')}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Icon */}
               <div className="flex items-center justify-center w-20 h-20 rounded-full bg-purple-500/20 mb-6 group-hover:bg-purple-500/30 transition-colors">
                 <BarChart3 className="w-10 h-10 text-purple-400" />
               </div>
+              
+              {/* Title */}
               <h2 className="text-3xl font-bold text-purple-400 mb-4">{t.mainPage.analyzeReviews}</h2>
-              <p className="text-gray-300 text-lg leading-relaxed">
+              
+              {/* Description - flex-grow to push button down */}
+              <p className="text-gray-300 text-lg leading-relaxed flex-grow mb-6">
                 {t.mainPage.analyzeReviewsDescription}
               </p>
-              <div className="mt-6 flex items-center text-purple-400 font-semibold group-hover:translate-x-2 transition-transform">
+              
+              {/* Button - aligned to bottom right */}
+              <div className="flex justify-end items-center text-purple-400 font-semibold group-hover:translate-x-2 transition-transform">
                 {t.mainPage.analyzePlace}
                 <span className="ml-2">→</span>
               </div>
