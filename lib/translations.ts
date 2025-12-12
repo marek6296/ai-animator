@@ -32,10 +32,17 @@ export interface Translations {
   reviewAnalyzer: {
     title: string
     backToMain: string
-      selectPlace: string
-      analyzing: string
-      noReviews: string
-      analyzeButton: string
+    selectPlace: string
+    analyzing: string
+    noReviews: string
+    analyzeButton: string
+    analyzeAnother: string
+    placeSearchPlaceholder: string
+    placeSearchHint: string
+    selectPlaceError: string
+    analyzeError: string
+    analyzeSuccess: string
+    loadingPhoto: string
   }
   
   // Review Analysis Display
@@ -89,6 +96,13 @@ const translations: Record<Language, Translations> = {
       analyzing: 'Analyzujem recenzie...',
       noReviews: 'Toto miesto nemá žiadne recenzie',
       analyzeButton: 'Analyzovať recenzie',
+      analyzeAnother: 'Analyzovať ďalšie miesto',
+      placeSearchPlaceholder: 'Vyhľadajte miesto na Google Maps...',
+      placeSearchHint: 'Začnite písať názov miesta a vyberte z návrhov Google Maps',
+      selectPlaceError: 'Prosím, vyberte miesto',
+      analyzeError: 'Nastala chyba pri analýze recenzií',
+      analyzeSuccess: 'Analýza recenzií bola úspešne dokončená!',
+      loadingPhoto: 'Načítavam...',
     },
     reviewAnalysis: {
       overallRating: 'Celkové hodnotenie',
@@ -138,6 +152,13 @@ const translations: Record<Language, Translations> = {
       analyzing: 'Analyzing reviews...',
       noReviews: 'This place has no reviews',
       analyzeButton: 'Analyze Reviews',
+      analyzeAnother: 'Analyze Another Place',
+      placeSearchPlaceholder: 'Search for a place on Google Maps...',
+      placeSearchHint: 'Start typing the place name and select from Google Maps suggestions',
+      selectPlaceError: 'Please select a place',
+      analyzeError: 'An error occurred while analyzing reviews',
+      analyzeSuccess: 'Review analysis completed successfully!',
+      loadingPhoto: 'Loading...',
     },
     reviewAnalysis: {
       overallRating: 'Overall Rating',
@@ -187,6 +208,13 @@ const translations: Record<Language, Translations> = {
       analyzing: 'Analyserer anmeldelser...',
       noReviews: 'Dette stedet har ingen anmeldelser',
       analyzeButton: 'Analyser Anmeldelser',
+      analyzeAnother: 'Analyser Et Annet Sted',
+      placeSearchPlaceholder: 'Søk etter et sted på Google Maps...',
+      placeSearchHint: 'Begynn å skrive stedsnavnet og velg fra Google Maps-forslag',
+      selectPlaceError: 'Vennligst velg et sted',
+      analyzeError: 'En feil oppstod under analyse av anmeldelser',
+      analyzeSuccess: 'Anmeldelsesanalyse fullført!',
+      loadingPhoto: 'Laster...',
     },
     reviewAnalysis: {
       overallRating: 'Samlet Vurdering',

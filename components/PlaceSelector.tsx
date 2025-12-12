@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { MapPin, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 declare global {
   interface Window {
@@ -28,6 +29,7 @@ interface PlaceSelectorProps {
 }
 
 export default function PlaceSelector({ onPlaceSelect, disabled }: PlaceSelectorProps) {
+  const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const autocompleteRef = useRef<any>(null)
@@ -51,7 +53,7 @@ export default function PlaceSelector({ onPlaceSelect, disabled }: PlaceSelector
           } else if (attempts > 50) {
             clearInterval(checkInterval)
             console.error('[PlaceSelector] Google Maps API timeout')
-            toast.error('Google Maps API sa nepodarilo načítať')
+            toast.error('Failed to load Google Maps API')
           }
         }, 100)
         return () => clearInterval(checkInterval)
@@ -71,13 +73,13 @@ export default function PlaceSelector({ onPlaceSelect, disabled }: PlaceSelector
           } else if (attempts > 50) {
             clearInterval(checkInterval)
             console.error('[PlaceSelector] Google Maps API timeout after script load')
-            toast.error('Google Maps API sa nepodarilo načítať')
+            toast.error('Failed to load Google Maps API')
           }
         }, 100)
       }
       script.onerror = () => {
         console.error('[PlaceSelector] Failed to load Google Maps API')
-        toast.error('Chyba pri načítaní Google Maps API')
+        toast.error('Error loading Google Maps API')
       }
       document.head.appendChild(script)
     }
@@ -122,7 +124,7 @@ export default function PlaceSelector({ onPlaceSelect, disabled }: PlaceSelector
         autocompleteRef.current = autocomplete
       } catch (error) {
         console.error('[PlaceSelector] Error initializing autocomplete:', error)
-        toast.error('Chyba pri inicializácii autocomplete')
+        toast.error('Error initializing autocomplete')
       }
     }
 
@@ -138,13 +140,13 @@ export default function PlaceSelector({ onPlaceSelect, disabled }: PlaceSelector
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Vyhľadajte miesto na Google Maps..."
+          placeholder={t.reviewAnalyzer.placeSearchPlaceholder}
           disabled={disabled || isLoading}
           className="w-full pl-12 pr-4 py-4 glass border border-cyan-500/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
       <p className="mt-2 text-sm text-gray-400">
-        Začnite písať názov miesta a vyberte z návrhov Google Maps
+        {t.reviewAnalyzer.placeSearchHint}
       </p>
     </div>
   )

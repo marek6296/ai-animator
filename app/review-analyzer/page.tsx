@@ -95,7 +95,7 @@ export default function ReviewAnalyzer() {
 
   const handleAnalyze = async () => {
     if (!selectedPlace) {
-      toast.error('Prosím, vyberte miesto')
+      toast.error(t.reviewAnalyzer.selectPlaceError)
       return
     }
 
@@ -111,20 +111,21 @@ export default function ReviewAnalyzer() {
         body: JSON.stringify({
           place_id: selectedPlace.place_id,
           formatted_address: selectedPlace.formatted_address,
+          language: selectedLanguage,
         }),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(errorData.error || 'Chyba pri analýze recenzií')
+        throw new Error(errorData.error || t.reviewAnalyzer.analyzeError)
       }
 
       const result: ReviewAnalysisResult = await response.json()
       setAnalysisResult(result)
-      toast.success('Analýza recenzií bola úspešne dokončená!')
+      toast.success(t.reviewAnalyzer.analyzeSuccess)
     } catch (error: any) {
       console.error('Error analyzing reviews:', error)
-      toast.error(error.message || 'Nastala chyba pri analýze recenzií')
+      toast.error(error.message || t.reviewAnalyzer.analyzeError)
     } finally {
       setIsAnalyzing(false)
     }
@@ -256,7 +257,7 @@ export default function ReviewAnalyzer() {
                       </div>
                     ) : (
                       <div className="flex-shrink-0 w-32 h-32 bg-gray-700 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-500 text-xs">Načítavam...</span>
+                        <span className="text-gray-500 text-xs">{t.reviewAnalyzer.loadingPhoto}</span>
                       </div>
                     )}
                     <div className="flex-1">
@@ -307,7 +308,7 @@ export default function ReviewAnalyzer() {
                 }}
                 className="px-6 py-3 glass border border-purple-500/30 rounded-lg text-purple-400 font-bold hover:bg-purple-400/10 transition-all"
               >
-                Analyzovať ďalšie miesto
+                {t.reviewAnalyzer.analyzeAnother}
               </button>
             </div>
           </motion.div>
