@@ -122,7 +122,7 @@ const translations: Record<Language, Translations> = {
       analyzeReviews: 'Analyzovať recenzie',
       findPlacesDescription: 'Navrhne miesta na základe recenzií a vyberie relevantné miesta, ktoré stoja za návštevu.',
       analyzeReviewsDescription: 'Vyber ľubovoľné miesto z Google Maps a získaj podrobnú AI analýzu všetkých recenzií.',
-      startPlanning: 'Začať plánovať',
+      startPlanning: 'Hľadať miesta',
       analyzePlace: 'Analyzovať miesto',
       destinations: '50000+ Destinácií',
       aiAnalysis: 'AI Analýza',
